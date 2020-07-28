@@ -1,6 +1,6 @@
 # uScope
 ## Revision history
-- *v1.0*: use EVSYS to trigger alternating SRAM-UART DMA from circular ADC buffers
+- **v1.0: use EVSYS to trigger alternating SRAM-UART DMA from circular ADC buffers**
 - v0.9: transfer ADC buffers to UART (success), setup EVSYS for precision timing
 - v0.8: attempt to SW trigger timely, alternating SRAM-UART transfers from DMAC_Handler, consider EVSYS
 - v0.7: setup FTDI device output, switch SERCOM 5 to 0, working SRAM (dummy buffer) to UART DMA
