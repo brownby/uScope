@@ -10,15 +10,21 @@
 */
 
 #include "Arduino.h" // required before wiring_private.h
+                     // includes USBDesc.h, USBCore.h, USBAPI.h, and USB_host.h
 #include "wiring_private.h" // for pinPeripheral in adc_init()
+#include "USB/PluggableUSB.h"
+#include "USB/CDC.h"
+#include "USB/SAMD21_USBDevice.h"
 
 #define F_CPU 48000000 // CPU clock frequency
 #define ADCPIN A1      // selected arbitrarily, consider moving away from DAC / A0
 #define NBEATS 64    // number of beats for adc transfer
 #define NPTS 1024      // number of points within waveform definition
 
+
+
 uint16_t adc_buffer0[NBEATS]; // buffer with length set by NBEATS
-uint16_t adc_buffer1[NBEATS]; // buffer with length set by NBEATS
+uint16_t adc_buffer1[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
 volatile bool bufnum; // track which buffer to write to, while USB reads
@@ -28,8 +34,8 @@ enum type {sine, sawtooth}; // supported waveform types
 
 static uint32_t adctobuf0 = 0;  // dma channel for adc to buf0
 static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
-static uint32_t sramtouart0 = 2; // dma channel for sram, buf0 to uart
-static uint32_t sramtouart1 = 3; // dma channel for sram, buf1 to uart
+//static uint32_t sramtouart0 = 2; // dma channel for sram, buf0 to uart
+//static uint32_t sramtouart1 = 3; // dma channel for sram, buf1 to uart
 
 static uint32_t baud = 115200;
 uint64_t br = (uint64_t)65536 * (F_CPU - 16 * baud) / F_CPU;
@@ -46,62 +52,11 @@ volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16))); // write-back de
 dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16))); // channel descriptors
 dmacdescriptor descriptor __attribute__ ((aligned (16)));
 
-void uart_init(){
-   
-   PORT->Group[0].DIRSET.reg = (1 << 10); // set TX pin direction to output
-   PORT->Group[0].PINCFG[10].bit.PMUXEN = 1; 
-   PORT->Group[0].PINCFG[10].bit.INEN = 1; 
-   PORT->Group[0].PMUX[5].bit.PMUXE = PORT_PMUX_PMUXE_C_Val; 
+//extern uint8_t pluggedEndpoint;
+extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
 
-   PORT->Group[0].DIRCLR.reg = (1 << 11); // set RX pin direction to input
-   PORT->Group[0].PINCFG[11].bit.PMUXEN = 1; 
-   PORT->Group[0].PINCFG[11].bit.INEN = 1;
-   PORT->Group[0].PINCFG[11].reg &= ~PORT_PINCFG_PULLEN; 
-   PORT->Group[0].PMUX[5].bit.PMUXO = PORT_PMUX_PMUXO_C_Val;
 
-   PM->APBCMASK.reg |= PM_APBCMASK_SERCOM0; 
-   GCLK->CLKCTRL.bit.ID = GCLK_CLKCTRL_ID_SERCOM0_CORE; 
-   GCLK->CLKCTRL.bit.CLKEN = 0x1;
-   GCLK->CLKCTRL.bit.GEN = GCLK_CLKCTRL_GEN_GCLK0;
-
-   SERCOM0->USART.CTRLA.bit.ENABLE=0; // disable USART
-   while(SERCOM0->USART.SYNCBUSY.bit.ENABLE == 1);
-   
-   SERCOM0->USART.CTRLA.bit.MODE=0x01;     // 0x1: USART with internal clock
-   SERCOM0->USART.CTRLA.bit.CMODE = 0;     // asychronous
-   SERCOM0->USART.CTRLA.bit.RXPO = 3;      // pad to be used for RX
-   SERCOM0->USART.CTRLA.bit.TXPO = 1;      // pad to be sued for TX
-   SERCOM0->USART.CTRLA.bit.DORD = 1;      // transmitted first
-   SERCOM0->USART.CTRLA.bit.FORM = 1;      // USART frame
-   SERCOM0->USART.CTRLB.bit.CHSIZE = 0;    // 8 bits
-   SERCOM0->USART.CTRLB.bit.PMODE = 0;     // parity odd
-   SERCOM0->USART.CTRLB.bit.SBMODE = 1;    // 1 stop bit
-
-   SERCOM0->USART.BAUD.reg = (uint16_t)br;
-   SERCOM0->USART.INTENSET.bit.TXC = 1;    // TX complete interrupt flag
-   
-   SERCOM0->USART.CTRLB.bit.RXEN = 1;      // RX enabled or enabled with USART
-   SERCOM0->USART.CTRLB.bit.TXEN = 1;      // TX enabled or enabled with USART
-   
-   SERCOM0->USART.CTRLA.bit.ENABLE = 1;    // enable USART
-   
-   while(SERCOM0->USART.SYNCBUSY.bit.ENABLE == 1); // wait
-
-}
-
-void uart_putc(char c){
-  
-  while (SERCOM0->USART.INTFLAG.bit.DRE == 0); // wait for DATA.reg to be empty
-  SERCOM0->USART.DATA.reg = c;  
-
-}
-
-void uart_puts(char *s){
- 
-   while(*s)
-     uart_putc(*s++);
-   
-}
+#define CDC_ENDPOINT_IN 3
 
 void adc_init(){
 
@@ -137,7 +92,7 @@ void adc_init(){
 
 void adc_to_sram_dma() { 
   
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select adc channel, 0
+   DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select adc channel, 0
   DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
   
   DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
@@ -176,73 +131,12 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x1) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1) | DMAC_BTCTRL_EVOSEL(0x1); 
 
   memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
- 
 }
   
 void start_adc_sram_dma() {
 
   DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select channel
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-  
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select channel
-  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-  
-}
-
-void sram_to_uart_dma() { 
-  
-  DMAC->CHID.reg = DMAC_CHID_ID(sramtouart0); // select adc channel, 0
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
-  
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  DMAC->CHCTRLB.bit.LVL = 0x00; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x02; // for SERCOM0 TX trigger
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHCTRLB.bit.EVIE = 1; // enable input as event user
-  DMAC->CHCTRLB.bit.EVACT = 0x5; // transfer trigger
-  DMAC->CHINTENSET.reg = ~DMAC_CHINTENSET_MASK; // disable channel interrupts
-  
-  descriptor.DESCADDR = 0; // one-shot after trigger
-  descriptor.SRCADDR = (uint32_t) adc_buffer0 + NBEATS*2;
-  descriptor.DSTADDR = (uint32_t) &SERCOM0->USART.DATA.reg; 
-  descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x1) | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x0); // size 0x1 = half, 0x0 = byte 
-
-  memcpy(&descriptor_section[sramtouart0], &descriptor, sizeof(dmacdescriptor));
-
-  DMAC->CHID.reg = DMAC_CHID_ID(sramtouart1); // select adc channel, 0
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
-  
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  DMAC->CHCTRLB.bit.LVL = 0x00; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x02; // 0x02 for SERCOM0 TX trigger
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHCTRLB.bit.EVIE = 1; // enable input as event user
-  DMAC->CHCTRLB.bit.EVACT =  0x5; // transfer trigger
-  DMAC->CHINTENSET.reg = ~DMAC_CHINTENSET_MASK; // disable channel interrupts
-  
-  descriptor.DESCADDR = 0; // one-shot after trigger  
-  descriptor.SRCADDR = (uint32_t) adc_buffer1 + NBEATS*2;
-  descriptor.DSTADDR = (uint32_t) &SERCOM0->USART.DATA.reg; 
-  descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x1) | DMAC_BTCTRL_SRCINC | DMAC_BTCTRL_VALID |  DMAC_BTCTRL_BLOCKACT(0x0); // size 0x1 = half, 0x0 = byte 
-
-  memcpy(&descriptor_section[sramtouart1], &descriptor, sizeof(dmacdescriptor));
-
-}
-  
-void start_sram_uart_dma() {
-
-  DMAC->CHID.reg = DMAC_CHID_ID(sramtouart0); // select channel
-  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  DMAC->CHID.reg = DMAC_CHID_ID(sramtouart1); // select channel
-  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-  
 }
 
 void dma_init() {
@@ -259,28 +153,6 @@ void dma_init() {
 
 }
 
-void evsys_init(){
-
-  PM->APBCMASK.reg |= PM_APBCMASK_EVSYS;
-  PM->APBCMASK.reg |= PM_APBCMASK_TCC0;
-
-  EVSYS->CTRL.reg = EVSYS_CTRL_SWRST; // soft reset
-  while (EVSYS->CTRL.reg & EVSYS_CTRL_SWRST); // wait
-  
-  EVSYS->USER.reg = EVSYS_USER_USER(0x02) | EVSYS_USER_CHANNEL(0x1); // user is sramtouart0 (2), see note about n + 1, p421
-  EVSYS->CHANNEL.reg = EVSYS_CHANNEL_PATH_RESYNCHRONIZED |           // given for DMA
-                       EVSYS_CHANNEL_EDGSEL_BOTH_EDGES |
-                       EVSYS_CHANNEL_EVGEN(0x1E) |                   // generator is adctobuf0
-                       EVSYS_CHANNEL_CHANNEL(0x1);                   // matches USER.reg above  
-
-  EVSYS->USER.reg = EVSYS_USER_USER(0x03) | EVSYS_USER_CHANNEL(0x2); // user is sramtouart1 (3), see note about n + 1, p421
-  EVSYS->CHANNEL.reg = EVSYS_CHANNEL_PATH_RESYNCHRONIZED |           // given for DMA
-                       EVSYS_CHANNEL_EDGSEL_BOTH_EDGES |
-                       EVSYS_CHANNEL_EVGEN(0x1F) |                   // generator is adctobuf1
-                       EVSYS_CHANNEL_CHANNEL(0x2);                   // matches USER.reg above    
-}
-
-
 void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   
   __disable_irq(); // disable interrupts
@@ -288,17 +160,25 @@ void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   bufnum =  DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk; // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL; // clear transfer complete flag
+
+  // tell USB where to find data, tell USB data is ready
+  if(bufnum == 0)
+  {
+    usbd.epBank1SetAddress(CDC_ENDPOINT_IN, &adc_buffer0);
+  }
+  else
+  {
+    usbd.epBank1SetAddress(CDC_ENDPOINT_IN, &adc_buffer1);
+  }
+  usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, NBEATS*2); // each beat is 16 bits
+
+  usbd.epBank1AckTransferComplete(CDC_ENDPOINT_IN);
+
+  usbd.epBank1SetReady(CDC_ENDPOINT_IN);
   
   //SerialUSB.println(bufnum); // will affect DAC performance, used to verify buffer alternation
 
   __enable_irq(); // enable interrupts
-  
-}
-
-void test_uart(){
-  
-  uart_puts("hello there\n");
-  delay(1000);
   
 }
 
@@ -318,7 +198,7 @@ void test_dac(type waveform){
       break;
 
     default:
-      SerialUSB.println("please enter an accepted waveform class");
+      Serial.println("please enter an accepted waveform class");
       break;
       
   }
@@ -334,43 +214,30 @@ void test_dac(type waveform){
 
 void test_adc(){
 
-  switch (bufnum){    
-    case 0: 
-      for (int i = 0; i < NBEATS; i++){
-        SerialUSB.println(adc_buffer0[i]);
-      }
-      
-    case 1: 
-      for (int i = 0; i < NBEATS; i++){
-        SerialUSB.println(adc_buffer1[i]);
-      }       
-  } 
+  for (int i = 0; i < NBEATS; i++){
+//    Serial.println(adc_buffer0[i]);
+  }
+  
 }
 
 void setup() {
   
-  SerialUSB.begin(0); // initialize, Serial_ wrapper?
   analogWriteResolution(10);
 
-  uart_init();
+//  Serial.println(pluggedEndpoint);
+
   adc_init();
   dma_init(); 
-  evsys_init();
   
   adc_to_sram_dma();
-  sram_to_uart_dma();
 
   bufnum = 0;
-  start_adc_sram_dma();
-//  start_sram_uart_dma(); // need to resolve EVSYS strobes
-  
+  start_adc_sram_dma(); 
 }
 
 void loop() {
 
   type waveform = sine;
   test_dac(waveform);
-
-//  test_uart();
   
 }
