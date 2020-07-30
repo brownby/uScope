@@ -23,8 +23,8 @@
 
 
 
-uint16_t adc_buffer0[NBEATS]; // buffer with length set by NBEATS
-uint16_t adc_buffer1[NBEATS];
+uint8_t adc_buffer0[NBEATS]; // buffer with length set by NBEATS
+uint8_t adc_buffer1[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
 volatile bool bufnum; // track which buffer to write to, while USB reads
@@ -92,7 +92,7 @@ void adc_init(){
 
 void adc_to_sram_dma() { 
   
-   DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select adc channel, 0
+  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select adc channel, 0
   DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
   
   DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
@@ -106,9 +106,9 @@ void adc_to_sram_dma() {
   
   descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf1]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS*2; // end of target address
+  descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x1) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1) | DMAC_BTCTRL_EVOSEL(0x1); 
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1) | DMAC_BTCTRL_EVOSEL(0x1); 
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
 
@@ -126,9 +126,9 @@ void adc_to_sram_dma() {
   
   descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer1 + NBEATS*2; // end of target address
+  descriptor.DSTADDR = (uint32_t) adc_buffer1 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x1) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1) | DMAC_BTCTRL_EVOSEL(0x1); 
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1) | DMAC_BTCTRL_EVOSEL(0x1); 
 
   memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
 }
@@ -137,6 +137,9 @@ void start_adc_sram_dma() {
 
   DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select channel
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+
+  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select channel
+  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
 }
 
 void dma_init() {
@@ -170,7 +173,7 @@ void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   {
     usbd.epBank1SetAddress(CDC_ENDPOINT_IN, &adc_buffer1);
   }
-  usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, NBEATS*2); // each beat is 16 bits
+  usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, NBEATS); // each beat is 8 bits
 
   usbd.epBank1AckTransferComplete(CDC_ENDPOINT_IN);
 
