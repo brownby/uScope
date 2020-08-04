@@ -4,7 +4,7 @@
  * Intended for use with MKR Zero (SAMD21)
  * 
  * J. Evan Smith, Ben Y. Brown
- * Last revised: 27 July 2020
+ * Last revised: 31 July 2020
  * 
  * Checkpoint (v1.0): use EVSYS to trigger alternating SRAM-UART DMA from circular ADC buffers
 */
@@ -20,8 +20,7 @@
 #define ADCPIN A1      // selected arbitrarily, consider moving away from DAC / A0
 #define NBEATS 64    // number of beats for adc transfer
 #define NPTS 1024      // number of points within waveform definition
-
-
+#define TX_TIMEOUT_MS 70 // timeout for USB transfer in ms
 
 uint8_t adc_buffer0[NBEATS]; // buffer with length set by NBEATS
 uint8_t adc_buffer1[NBEATS];
@@ -55,6 +54,16 @@ dmacdescriptor descriptor __attribute__ ((aligned (16)));
 //extern uint8_t pluggedEndpoint;
 extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
 
+static char prevTransmitTimedOut[7] =
+{
+  0,
+  0,
+  0,
+  0,
+  0,
+  0,
+  0
+};
 
 #define CDC_ENDPOINT_IN 3
 
@@ -79,7 +88,7 @@ void adc_init(){
   ADC->SAMPCTRL.reg = 0x00; // minimize sample time, given in 1/2 CLK_ADC cycles, p863
   while(ADC->STATUS.bit.SYNCBUSY == 1); // wait
 
-  ADC->CTRLB.bit.PRESCALER = 0x4; // 0x3 = DIV32 or 0x2 = DIV16
+  ADC->CTRLB.bit.PRESCALER = 0x6; // 0x3 = DIV32 or 0x2 = DIV16
   ADC->CTRLB.bit.RESSEL = 0x3;    // result resolution, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;     // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;    // ADC is single-ended, ignore MUXNEG defined above
@@ -158,11 +167,40 @@ void dma_init() {
 
 void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   
-  __disable_irq(); // disable interrupts
+//  __disable_irq(); // disable interrupts
 
   bufnum =  DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk; // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL; // clear transfer complete flag
+
+  if (usbd.epBank1IsReady(CDC_ENDPOINT_IN))
+  {
+    // previous transfer is still not complete 
+
+    // convert the timeout from microseconds to a number of times through 
+    // the wait loop; it takes (roughly) 23 clock cycles per iteration
+    uint32_t timeout = microsecondsToClockCycles(TX_TIMEOUT_MS * 1000) / 23;
+
+    // Wait for (previous) transfer to complete
+    // inspired by Paul Stoffregen's work on Teensy
+    while(!usbd.epBank1IsTransferComplete(CDC_ENDPOINT_IN))
+    {
+//      digitalWrite(LED_BUILTIN, HIGH);
+//      if (prevTransmitTimedOut[CDC_ENDPOINT_IN] || timeout-- == 0)
+//      {
+//        prevTransmitTimedOut[CDC_ENDPOINT_IN] = 1;
+//        
+//        usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, 0);
+//
+////        __enable_irq();
+//
+//        return;
+//      }
+    }
+  }
+
+
+  prevTransmitTimedOut[CDC_ENDPOINT_IN] = 0;
 
   // tell USB where to find data, tell USB data is ready
   if(bufnum == 0)
@@ -181,7 +219,7 @@ void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   
   //SerialUSB.println(bufnum); // will affect DAC performance, used to verify buffer alternation
 
-  __enable_irq(); // enable interrupts
+//  __enable_irq(); // enable interrupts
   
 }
 
@@ -227,6 +265,8 @@ void setup() {
   
   analogWriteResolution(10);
 
+//  usbd.epBank1EnableTransferComplete(CDC_ENDPOINT_IN);
+
 //  Serial.println(pluggedEndpoint);
 
   adc_init();
@@ -242,5 +282,9 @@ void loop() {
 
   type waveform = sine;
   test_dac(waveform);
+
+  digitalWrite(LED_BUILTIN, LOW);
+
+//  Serial.println(TransmitTimedOut[CDC_ENDPOINT_IN]);
   
 }
