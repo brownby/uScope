@@ -33,8 +33,6 @@ enum type {sine, sawtooth}; // supported waveform types
 
 static uint32_t adctobuf0 = 0;  // dma channel for adc to buf0
 static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
-//static uint32_t sramtouart0 = 2; // dma channel for sram, buf0 to uart
-//static uint32_t sramtouart1 = 3; // dma channel for sram, buf1 to uart
 
 static uint32_t baud = 115200;
 uint64_t br = (uint64_t)65536 * (F_CPU - 16 * baud) / F_CPU;
@@ -88,7 +86,7 @@ void adc_init(){
   ADC->SAMPCTRL.reg = 0x00; // minimize sample time, given in 1/2 CLK_ADC cycles, p863
   while(ADC->STATUS.bit.SYNCBUSY == 1); // wait
 
-  ADC->CTRLB.bit.PRESCALER = 0x6; // 0x3 = DIV32 or 0x2 = DIV16
+  ADC->CTRLB.bit.PRESCALER = 0x3; // 0x3 = DIV32 or 0x2 = DIV16
   ADC->CTRLB.bit.RESSEL = 0x3;    // result resolution, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;     // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;    // ADC is single-ended, ignore MUXNEG defined above
@@ -167,7 +165,7 @@ void dma_init() {
 
 void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   
-//  __disable_irq(); // disable interrupts
+  __disable_irq(); // disable interrupts
 
   bufnum =  DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk; // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
@@ -177,7 +175,7 @@ void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   {
     // previous transfer is still not complete 
 
-    // convert the timeout from microseconds to a number of times through 
+    // convert the timeout from milliseconds to a number of times through 
     // the wait loop; it takes (roughly) 23 clock cycles per iteration
     uint32_t timeout = microsecondsToClockCycles(TX_TIMEOUT_MS * 1000) / 23;
 
@@ -185,17 +183,16 @@ void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
     // inspired by Paul Stoffregen's work on Teensy
     while(!usbd.epBank1IsTransferComplete(CDC_ENDPOINT_IN))
     {
-//      digitalWrite(LED_BUILTIN, HIGH);
-//      if (prevTransmitTimedOut[CDC_ENDPOINT_IN] || timeout-- == 0)
-//      {
-//        prevTransmitTimedOut[CDC_ENDPOINT_IN] = 1;
-//        
-//        usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, 0);
-//
-////        __enable_irq();
-//
-//        return;
-//      }
+      if (prevTransmitTimedOut[CDC_ENDPOINT_IN] || (timeout-- == 0))
+      {
+        prevTransmitTimedOut[CDC_ENDPOINT_IN] = 1;
+        
+        usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, 0);
+
+        __enable_irq();
+
+        return;
+      }
     }
   }
 
@@ -219,7 +216,7 @@ void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   
   //SerialUSB.println(bufnum); // will affect DAC performance, used to verify buffer alternation
 
-//  __enable_irq(); // enable interrupts
+  __enable_irq(); // enable interrupts
   
 }
 
@@ -265,10 +262,6 @@ void setup() {
   
   analogWriteResolution(10);
 
-//  usbd.epBank1EnableTransferComplete(CDC_ENDPOINT_IN);
-
-//  Serial.println(pluggedEndpoint);
-
   adc_init();
   dma_init(); 
   
@@ -282,9 +275,5 @@ void loop() {
 
   type waveform = sine;
   test_dac(waveform);
-
-  digitalWrite(LED_BUILTIN, LOW);
-
-//  Serial.println(TransmitTimedOut[CDC_ENDPOINT_IN]);
   
 }
