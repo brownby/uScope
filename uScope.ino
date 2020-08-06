@@ -16,14 +16,93 @@
 #include "USB/CDC.h"
 #include "USB/SAMD21_USBDevice.h"
 
+// FOR UART DEBUG OF USB CHANGES, TO DELETE LATER
+
 #define F_CPU 48000000 // CPU clock frequency
+static uint32_t baud = 115200;
+uint64_t br = (uint64_t)65536 * (F_CPU - 16 * baud) / F_CPU;
+
 #define ADCPIN A1      // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 64    // number of beats for adc transfer
+#define NBEATS 2048    // number of beats for adc transfer
 #define NPTS 1024      // number of points within waveform definition
 #define TX_TIMEOUT_MS 70 // timeout for USB transfer in ms
+#define CONTROL_ENDPOINT 0
+#define CDC_ENDPOINT_OUT 2
+#define CDC_ENDPOINT_IN 3
+
+// USB stuff here inspired by ataradov
+
+#define USB_CMD(dir, rcpt, type, cmd) \
+    ((USB_##cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
+
+typedef struct PACK
+{
+  uint8_t   bmRequestType;
+  uint8_t   bRequest;
+  uint16_t  wValue;
+  uint16_t  wIndex;
+  uint16_t  wLength;
+} usb_request_t;
+
+enum
+{
+  USB_GET_STATUS        = 0,
+  USB_CLEAR_FEATURE     = 1,
+  USB_SET_FEATURE       = 3,
+  USB_SET_ADDRESS       = 5,
+  USB_GET_DESCRIPTOR    = 6,
+  USB_SET_DESCRIPTOR    = 7,
+  USB_GET_CONFIGURATION = 8,
+  USB_SET_CONFIGURATION = 9,
+  USB_GET_INTERFACE     = 10,
+  USB_SET_INTERFACE     = 11,
+  USB_SYNCH_FRAME       = 12,
+};
+
+enum
+{
+  USB_DEVICE_DESCRIPTOR                    = 1,
+  USB_CONFIGURATION_DESCRIPTOR             = 2,
+  USB_STRING_DESCRIPTOR                    = 3,
+  USB_INTERFACE_DESCRIPTOR                 = 4,
+  USB_ENDPOINT_DESCRIPTOR                  = 5,
+  USB_DEVICE_QUALIFIER_DESCRIPTOR          = 6,
+  USB_OTHER_SPEED_CONFIGURATION_DESCRIPTOR = 7,
+  USB_INTERFACE_POWER_DESCRIPTOR           = 8,
+  USB_OTG_DESCRIPTOR                       = 9,
+  USB_DEBUG_DESCRIPTOR                     = 10,
+  USB_INTERFACE_ASSOCIATION_DESCRIPTOR     = 11,
+  USB_BINARY_OBJECT_STORE_DESCRIPTOR       = 15,
+  USB_DEVICE_CAPABILITY_DESCRIPTOR         = 16,
+};
+
+
+enum
+{
+  USB_DEVICE_RECIPIENT     = 0,
+  USB_INTERFACE_RECIPIENT  = 1,
+  USB_ENDPOINT_RECIPIENT   = 2,
+  USB_OTHER_RECIPIENT      = 3,
+};
+
+enum
+{
+  USB_STANDARD_REQUEST     = 0,
+  USB_CLASS_REQUEST        = 1,
+  USB_VENDOR_REQUEST       = 2,
+};
+
+enum
+{
+  USB_OUT_TRANSFER         = 0,
+  USB_IN_TRANSFER          = 1,
+};
+
+
 
 uint8_t adc_buffer0[NBEATS]; // buffer with length set by NBEATS
 uint8_t adc_buffer1[NBEATS];
+uint8_t empty_buffer[NBEATS] = {0}; // for testing
 uint16_t waveout[NPTS];       // buffer for waveform
 
 volatile bool bufnum; // track which buffer to write to, while USB reads
@@ -34,9 +113,6 @@ enum type {sine, sawtooth}; // supported waveform types
 static uint32_t adctobuf0 = 0;  // dma channel for adc to buf0
 static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
 
-static uint32_t baud = 115200;
-uint64_t br = (uint64_t)65536 * (F_CPU - 16 * baud) / F_CPU;
-
 typedef struct {
   uint16_t BTCTRL;   // block transfer control
   uint16_t BTCNT;    // block transfer count
@@ -45,12 +121,88 @@ typedef struct {
   uint32_t DESCADDR; // next descriptor address
 } dmacdescriptor;
 
+typedef struct configuration{
+    typedef struct interface{
+      typedef struct endpointOut{
+        uint8_t bDescriptorType     = 5; // for endpoint
+        uint8_t bEndpointAddress    = 0x00 | 2; // 0x00 = outEP
+        uint8_t bmAttributes        = 3 << 0; // 0:1 = transfer type, 2:3 iso_sync_type, 4:5 = iso_usage_type, 6:7 = reserved
+        uint8_t wMaxPacketSize      = 64;
+        uint8_t bInterval           = 1;  // interval for polling endpoint for data transfers
+      }; endpointOut epOutDescriptor;
+      typedef struct endpointIn{
+        uint8_t bDescriptorType     = 5; // for endpoint
+        uint8_t bEndpointAddress    = 0x80 | 1; // 0x80 = inEP
+        uint8_t bmAttributes        = 3 << 0; // 0:1 = transfer type, 2:3 iso_sync_type, 4:5 = iso_usage_type, 6:7 = reserved
+        uint8_t wMaxPacketSize      = 64;
+        uint8_t bInterval           = 1;  // interval for polling endpoint for data transfers
+      }; endpointIn epInDescriptor;
+      uint8_t bDescriptorType     = 4; // for interface
+      uint8_t bInterfaceNumber    = 0; 
+      uint8_t bAlternateSetting   = 0; // see audio10.pdf --> 0 = zero-bandwidth alt, 1 = operational setting
+      uint8_t bNumEndpoints       = 2;
+      uint8_t bInterfaceClass     = 0x01; // 0x01 = audio class, others...
+      uint8_t bInterfaceSubClass  = 0x00; // 0x00 = undefined, 0x01 = control, 0x02 = streaming, 0x03 = MIDI streaming
+      uint8_t bInterfaceProtocol  = 0x00; // none, not applicable to audio
+      uint8_t iInterface          = 0x00; // none, index of a string to describe interface, often unused
+    }; interface interDescriptor;
+    uint8_t bDescriptorType     = 2; // for configuration
+    uint8_t bNumInterfaces      = 1;
+    uint8_t bConfigurationValue = 1; // ID for configuration
+    uint8_t iConfiguration      = 0x00; // none, index of a string to describe configuration, often unused
+    uint8_t bmAttributes        = 0x80; // bit 5 = remote wakeup, bit 6 = self-powered
+    uint8_t bMaxPower           = 200; // 400 mA  
+} confDescriptor;
+
+typedef struct device{
+  confDescriptor configuration;
+  uint8_t bDescriptorType = 1; // for device
+  uint16_t bcdUSB             = 0x0200; // version of USB spec, here 2.0
+  uint8_t bDeviceClass       = 0x00; // 0x00 = none / defined at interface level later, 0x0a = CDC data
+  uint8_t bDeviceSubClass    = 0x00; // within audio, ...
+  uint8_t bDeviceProtocol    = 0x00; // 0x00 = none
+  uint8_t bMaxPacketSize0    = 64;
+  uint16_t idVendor           = 0x2341; // Arduino
+  uint16_t idProduct          = 0x804f; // MKZero
+  uint16_t bcdDevice          = 0x0100; // release number of the device
+  char iManufacturer[50]  = "Arduion + Harvard Active Learning";
+  char iProduct[50]       = "MKR Zero uScope";
+  char iSerialNumber[50]  = "ALL-0001";
+  uint8_t bNumConfigurations = 1;
+} deviceDescriptor;
+
+typedef struct stringDesc {
+  uint8_t bDescriptorType = 3; // for string descriptor
+  uint16_t wLANGID = 0x0409; // US English
+} stringDescriptor;
+
+__attribute__((__aligned__(4))) deviceDescriptor descriptor_usb;
+
+__attribute__((__aligned__(4))) confDescriptor confDescriptor_usb;
+
+__attribute__((__aligned__(4))) stringDescriptor string0Descriptor_usb;
+
 volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16))); // write-back descriptor
 dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16))); // channel descriptors
 dmacdescriptor descriptor __attribute__ ((aligned (16)));
 
 //extern uint8_t pluggedEndpoint;
 extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
+extern UsbDeviceDescriptor usb_endpoints[];
+extern const uint8_t usb_num_endpoints;
+//__attribute__((__aligned__(4))) uint8_t usbRecv[64];
+
+// try ataradov's definitions for ctrl buffers
+static uint32_t usb_ctrl_in_buf[16];
+static uint32_t usb_ctrl_out_buf[16];
+
+typedef struct { 
+    UsbDeviceDescBank DeviceDescBank[2]; 
+} UsbdDescriptor;
+
+__attribute__((__aligned__(4)))  UsbDeviceDescriptor EP[USB_EPT_NUM];
+
+uint8_t ascii = 48;
 
 static char prevTransmitTimedOut[7] =
 {
@@ -63,7 +215,69 @@ static char prevTransmitTimedOut[7] =
   0
 };
 
-#define CDC_ENDPOINT_IN 3
+void uart_init(){
+   
+   PORT->Group[0].DIRSET.reg = (1 << 10); // set TX pin direction to output
+   PORT->Group[0].PINCFG[10].bit.PMUXEN = 1; 
+   PORT->Group[0].PINCFG[10].bit.INEN = 1; 
+   PORT->Group[0].PMUX[5].bit.PMUXE = PORT_PMUX_PMUXE_C_Val; 
+
+   PORT->Group[0].DIRCLR.reg = (1 << 11); // set RX pin direction to input
+   PORT->Group[0].PINCFG[11].bit.PMUXEN = 1; 
+   PORT->Group[0].PINCFG[11].bit.INEN = 1;
+   PORT->Group[0].PINCFG[11].reg &= ~PORT_PINCFG_PULLEN; 
+   PORT->Group[0].PMUX[5].bit.PMUXO = PORT_PMUX_PMUXO_C_Val;
+
+   PM->APBCMASK.reg |= PM_APBCMASK_SERCOM0; 
+   GCLK->CLKCTRL.bit.ID = GCLK_CLKCTRL_ID_SERCOM0_CORE; 
+   GCLK->CLKCTRL.bit.CLKEN = 0x1;
+   GCLK->CLKCTRL.bit.GEN = GCLK_CLKCTRL_GEN_GCLK0;
+
+   SERCOM0->USART.CTRLA.bit.ENABLE=0; // disable USART
+   while(SERCOM0->USART.SYNCBUSY.bit.ENABLE == 1);
+   
+   SERCOM0->USART.CTRLA.bit.MODE=0x01;     // 0x1: USART with internal clock
+   SERCOM0->USART.CTRLA.bit.CMODE = 0;     // asychronous
+   SERCOM0->USART.CTRLA.bit.RXPO = 3;      // pad to be used for RX, pin 3 in Arduino-land
+   SERCOM0->USART.CTRLA.bit.TXPO = 1;      // pad to be sued for TX, pin 2 in Arduino-land
+   SERCOM0->USART.CTRLA.bit.DORD = 1;      // LSB transmitted first
+   SERCOM0->USART.CTRLA.bit.FORM = 1;      // USART frame with parity
+   SERCOM0->USART.CTRLB.bit.CHSIZE = 0;    // 8 bits
+   SERCOM0->USART.CTRLB.bit.PMODE = 0;     // parity even
+   SERCOM0->USART.CTRLB.bit.SBMODE = 1;    // 2 stop bits
+
+   SERCOM0->USART.BAUD.reg = (uint16_t)br;
+   SERCOM0->USART.INTENSET.bit.TXC = 1;    // TX complete interrupt flag
+   
+   SERCOM0->USART.CTRLB.bit.RXEN = 1;      // RX enabled or enabled with USART
+   SERCOM0->USART.CTRLB.bit.TXEN = 1;      // TX enabled or enabled with USART
+   
+   SERCOM0->USART.CTRLA.bit.ENABLE = 1;    // enable USART
+   
+   while(SERCOM0->USART.SYNCBUSY.bit.ENABLE == 1); // wait
+
+}
+
+void uart_putc(char c){
+
+  while (SERCOM0->USART.INTFLAG.bit.DRE == 0); // wait for DATA.reg to be empty
+  SERCOM0->USART.DATA.reg = c;  
+
+}
+
+void uart_write(uint16_t data){
+  
+  while (SERCOM0->USART.INTFLAG.bit.DRE == 0); // wait for DATA.reg to be empty
+  SERCOM0->USART.DATA.reg = (uint32_t)data;  
+
+}
+
+void uart_puts(char *s){
+ 
+   while(*s)
+     uart_putc(*s++);
+   
+}
 
 void adc_init(){
 
@@ -154,7 +368,7 @@ void dma_init() {
   PM->AHBMASK.reg |= PM_AHBMASK_DMAC; // enable AHB clock
   PM->APBBMASK.reg |= PM_APBBMASK_DMAC; // enable APBB clock
 
-  NVIC_SetPriority(DMAC_IRQn, 0x00); // top priority
+  NVIC_SetPriority(DMAC_IRQn, 0x01); // second priority
   NVIC_EnableIRQ(DMAC_IRQn); // enable interrupts, will trigger DMAC_Handler
 
   DMAC->BASEADDR.reg = (uint32_t)descriptor_section; // where to find descriptor
@@ -164,42 +378,34 @@ void dma_init() {
 }
 
 void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
-  
-  __disable_irq(); // disable interrupts
 
+  __disable_irq(); // disable interrupts
+  
   bufnum =  DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk; // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL; // clear transfer complete flag
 
-  if (usbd.epBank1IsReady(CDC_ENDPOINT_IN))
-  {
-    // previous transfer is still not complete 
+  // print out ready flags
+//  uart_puts("\nBK1RDY: ");
+//  uart_write((uint16_t)USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPSTATUS.bit.BK1RDY+ascii);
+//
+//  uart_puts("\nTRCPT1: ");
+//  uart_write((uint16_t)USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1+ascii);
 
-    // convert the timeout from milliseconds to a number of times through 
-    // the wait loop; it takes (roughly) 23 clock cycles per iteration
-    uint32_t timeout = microsecondsToClockCycles(TX_TIMEOUT_MS * 1000) / 23;
+//  if (usbd.epBank1IsReady(CDC_ENDPOINT_IN))
+//  {
+//    if(!usbd.epBank1IsTransferComplete(CDC_ENDPOINT_IN))
+//    {
+//      uart_puts("\nA");
+//
+//      // Leave ISR
+//      __enable_irq();
+//
+//      return;
+//    }
+//  }
 
-    // Wait for (previous) transfer to complete
-    // inspired by Paul Stoffregen's work on Teensy
-    while(!usbd.epBank1IsTransferComplete(CDC_ENDPOINT_IN))
-    {
-      if (prevTransmitTimedOut[CDC_ENDPOINT_IN] || (timeout-- == 0))
-      {
-        prevTransmitTimedOut[CDC_ENDPOINT_IN] = 1;
-        
-        usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, 0);
-
-        __enable_irq();
-
-        return;
-      }
-    }
-  }
-
-
-  prevTransmitTimedOut[CDC_ENDPOINT_IN] = 0;
-
-  // tell USB where to find data, tell USB data is ready
+//  uart_puts("\nB");
   if(bufnum == 0)
   {
     usbd.epBank1SetAddress(CDC_ENDPOINT_IN, &adc_buffer0);
@@ -208,6 +414,7 @@ void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   {
     usbd.epBank1SetAddress(CDC_ENDPOINT_IN, &adc_buffer1);
   }
+ 
   usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, NBEATS); // each beat is 8 bits
 
   usbd.epBank1AckTransferComplete(CDC_ENDPOINT_IN);
@@ -217,7 +424,123 @@ void DMAC_Handler() { // DMAC ISR, so case sensitive nomenclature
   //SerialUSB.println(bufnum); // will affect DAC performance, used to verify buffer alternation
 
   __enable_irq(); // enable interrupts
+
+}
+
+void usb_init() 
+{
+  NVIC_SetPriority(USB_IRQn, 0x00); // top priority
+  NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
   
+  USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.reg =  1 << 3; // enable interrupts from resets initiated by host (EORST bit)
+  USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1; // enable interrupts from device setup requests
+}
+
+void USB_Handler()
+{
+
+  __disable_irq();
+
+  uart_puts("\nin handler");
+
+  if(USB->DEVICE.INTFLAG.reg & (1 << 3)) // if EORST interrupt
+  {
+    uart_puts("\nReset");
+    USB->DEVICE.INTFLAG.reg = (1 << 3); // clear interrupt flag
+    USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN;
+
+    USB->DEVICE.DeviceEndpoint[0].EPCFG.bit.EPTYPE0 = 1; // Control SETUP/OUT
+    USB->DEVICE.DeviceEndpoint[0].EPCFG.bit.EPTYPE1 = 1; // Control IN
+    USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.BK0RDY = 1;
+    USB->DEVICE.DeviceEndpoint[0].EPSTATUSCLR.bit.BK1RDY = 1;
+
+    EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = 64;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+
+    EP[CONTROL_ENDPOINT].DeviceDescBank[0].ADDR.reg = (uint32_t)usb_ctrl_out_buf;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.SIZE = 64;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 8;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT = 0;
+
+    // Here is where configuration for EP2 and 3 would go, possibly as isochronous? they're disabled by default on reset since EPCFG is cleared
+
+    USB->DEVICE.DeviceEndpoint[0].EPSTATUSCLR.bit.BK0RDY = 1;
+    USB->DEVICE.DeviceEndpoint[0].EPINTENSET.bit.RXSTP = 1;
+  }
+
+  if (USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP)
+  {
+    uart_puts("\nSetup");
+    USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.reg = USB_DEVICE_EPINTFLAG_RXSTP; // acknowledge interrupt
+    USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSCLR.bit.BK0RDY = 1;
+  
+    usb_request_t * request = (usb_request_t *)usb_ctrl_out_buf;
+//    usb_request_t request;
+//    memcpy(&request, &usbRecv, sizeof(usb_request_t));
+  
+    if(((request->bRequest << 8) | request->bmRequestType) == USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR))
+    {
+      uint8_t type = request->wValue >> 8;
+      uint8_t index = request->wValue & 0xff;
+      uint16_t length = request->wLength;
+  
+      if (type == USB_DEVICE_DESCRIPTOR)
+      {
+        uart_puts("\ndevice");
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&descriptor_usb; // tell where to find
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(deviceDescriptor);
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+  
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+      } 
+      else if (type == USB_CONFIGURATION_DESCRIPTOR)
+      {
+        uart_puts("\nconfig");
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&confDescriptor_usb; // tell where to find
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(confDescriptor);
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+  
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+      }
+      else if (type == USB_STRING_DESCRIPTOR)
+      {
+        uart_puts("\nstring");
+        if(index == 0)
+        {
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&string0Descriptor_usb; // tell where to find
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(stringDescriptor);
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+  
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        }
+        else
+        {
+          // For now just send ZLP, will figure this out more later
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = 0;
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+  
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        }
+      }
+    }
+    else
+    {
+      // For now just send ZLP, will figure this out more later
+      EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = 0;
+      EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+  
+      USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
+      USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+    }
+  }
+
+  __enable_irq();
 }
 
 void test_dac(type waveform){
@@ -236,7 +559,7 @@ void test_dac(type waveform){
       break;
 
     default:
-      Serial.println("please enter an accepted waveform class");
+//      Serial.println("please enter an accepted waveform class");
       break;
       
   }
@@ -246,7 +569,6 @@ void test_dac(type waveform){
     for (int i = 0; i < NPTS; i++){ 
       analogWrite(A0,waveout[i]);
     }
-    //start_sram_uart_dma(); // brute force transfers, not good practice but POC
   }
 }
 
@@ -264,11 +586,15 @@ void setup() {
 
   adc_init();
   dma_init(); 
+  uart_init();
+  usb_init();
   
   adc_to_sram_dma();
 
   bufnum = 0;
   start_adc_sram_dma(); 
+
+  delay(5000);
 }
 
 void loop() {
