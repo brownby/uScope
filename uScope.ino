@@ -4,10 +4,7 @@
  * Intended for use with MKR Zero (SAMD21)
  * 
  * J. Evan Smith, Ben Y. Brown
- * Last revised: 10 August 2020
- * 
- * Checkpoint (v1.3): add USB descriptors, add USB_Handler, clean up USB utility
- * 
+ * Last revised: 11 August 2020
  */
 
 #include "Arduino.h"          // required before wiring_private.h, also includes USBDesc.h, USBCore.h, USBAPI.h, and USB_host.h
@@ -16,14 +13,13 @@
 #include "USB/CDC.h"
 #include "USB/SAMD21_USBDevice.h"
 
-#define F_CPU 48000000 // CPU clock frequency
+#define freq_CPU 48000000 // CPU clock frequency
 static uint32_t baud = 115200; // for UART debug of USB
-uint64_t br = (uint64_t)65536 * (F_CPU - 16 * baud) / F_CPU; // to pass to SERCOM0->USART.BAUD.reg
+uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU; // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 2048         // number of beats for adc transfer
+#define NBEATS 64           // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
-#define TX_TIMEOUT_MS 70    // timeout for USB transfer in ms
 #define CONTROL_ENDPOINT 0
 #define CDC_ENDPOINT_OUT 2
 #define CDC_ENDPOINT_IN  3
@@ -32,19 +28,24 @@ uint64_t br = (uint64_t)65536 * (F_CPU - 16 * baud) / F_CPU; // to pass to SERCO
 
 uint8_t adc_buffer0[NBEATS];              // buffer with length set by NBEATS
 uint8_t adc_buffer1[NBEATS];              // alternating buffer
-uint8_t empty_buffer[NBEATS] = {0};       // for testing
-uint8_t usb_string_descriptor_buffer[64];
 uint16_t waveout[NPTS];                   // buffer for waveform
+
+static uint32_t usb_ctrl_in_buf[16];
+static uint32_t usb_ctrl_out_buf[16];
 
 static uint32_t adctobuf0 = 0;  // dma channel for adc to buf0
 static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
+
 static uint8_t ascii = 48;      // offset to interpret single digit uart outputs
 
-static char prevTransmitTimedOut[7] ={0,0,0,0,0,0,0};
 char *usb_strings[] = {"Arduino + Harvard Active Learning","MKR Zero uScope","ALL-0001","Main Configuration","Main Interface"};
+uint8_t usb_string_descriptor_buffer[64];
 
 volatile bool bufnum;  // track which buffer to write to, while USB reads
-volatile bool dmadone; // track sram to usart transfer
+
+extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
+extern UsbDeviceDescriptor usb_endpoints[];
+extern const uint8_t usb_num_endpoints;
 
 enum type {sine, sawtooth}; // supported waveform types
 
@@ -86,6 +87,18 @@ enum{
 };
 
 enum{
+  USB_DEVICE_PCKSIZE_SIZE_8    = 0,
+  USB_DEVICE_PCKSIZE_SIZE_16   = 1,
+  USB_DEVICE_PCKSIZE_SIZE_32   = 2,
+  USB_DEVICE_PCKSIZE_SIZE_64   = 3,
+  USB_DEVICE_PCKSIZE_SIZE_128  = 4,
+  USB_DEVICE_PCKSIZE_SIZE_256  = 5,
+  USB_DEVICE_PCKSIZE_SIZE_512  = 6,
+  USB_DEVICE_PCKSIZE_SIZE_1023 = 7,
+};
+
+
+enum{
   USB_GET_STATUS        = 0,
   USB_CLEAR_FEATURE     = 1,
   USB_SET_FEATURE       = 3,
@@ -115,18 +128,6 @@ enum{
   USB_DEVICE_CAPABILITY_DESCRIPTOR         = 16,
 };
 
-typedef union{
-  UsbDeviceDescBank    bank[2];
-  struct{
-    UsbDeviceDescBank  out;
-    UsbDeviceDescBank  in;
-  };
-} udc_mem_t;
-
-static udc_mem_t udc_mem[USB_EPT_NUM];
-static uint32_t usb_ctrl_in_buf[16];
-static uint32_t usb_ctrl_out_buf[16];
-
 typedef struct {
   uint16_t BTCTRL;   // block transfer control
   uint16_t BTCNT;    // block transfer count
@@ -144,15 +145,15 @@ typedef struct PACK{
 } usb_request_t;
 
 typedef struct configuration{
-    typedef struct interface{
-      typedef struct endpointOut{
+    struct interface{
+      struct endpointOut{
         uint8_t bDescriptorType     = 5; // for endpoint
         uint8_t bEndpointAddress    = 0x00 | 2; // 0x00 = outEP
         uint8_t bmAttributes        = 3 << 0; // 0:1 = transfer type, 2:3 iso_sync_type, 4:5 = iso_usage_type, 6:7 = reserved
         uint8_t wMaxPacketSize      = 64;
         uint8_t bInterval           = 1;  // interval for polling endpoint for data transfers
       }; endpointOut epOutDescriptor;
-      typedef struct endpointIn{
+      struct endpointIn{
         uint8_t bDescriptorType     = 5; // for endpoint
         uint8_t bEndpointAddress    = 0x80 | 1; // 0x80 = inEP
         uint8_t bmAttributes        = 3 << 0; // 0:1 = transfer type, 2:3 iso_sync_type, 4:5 = iso_usage_type, 6:7 = reserved
@@ -209,12 +210,6 @@ __attribute__((__aligned__(4))) deviceDescriptor descriptor_usb;
 __attribute__((__aligned__(4))) confDescriptor confDescriptor_usb;
 __attribute__((__aligned__(4))) stringDescriptor string0Descriptor_usb;
 __attribute__((__aligned__(4))) UsbDeviceDescriptor EP[USB_EPT_NUM];
-
-//__attribute__((__aligned__(4))) uint8_t usbRecv[64];
-
-extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
-extern UsbDeviceDescriptor usb_endpoints[];
-extern const uint8_t usb_num_endpoints;
 
 void uart_init(){
    
@@ -353,6 +348,7 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1) | DMAC_BTCTRL_EVOSEL(0x1); 
 
   memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
+
 }
   
 void start_adc_sram_dma() {
@@ -362,6 +358,7 @@ void start_adc_sram_dma() {
 
   DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select channel
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
+
 }
 
 void dma_init() {
@@ -396,8 +393,6 @@ void DMAC_Handler() { // primary, non-USB DMAC ISR
   usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, NBEATS); // each beat is 8 bits
   usbd.epBank1AckTransferComplete(CDC_ENDPOINT_IN);
   usbd.epBank1SetReady(CDC_ENDPOINT_IN);
-  
-  //SerialUSB.println(bufnum); // will affect DAC performance, used to verify buffer alternation
 
   __enable_irq(); // enable interrupts
 
@@ -430,7 +425,7 @@ void USB_Handler(){
 
   if(USB->DEVICE.INTFLAG.reg & (1 << 3)) { // if EORST interrupt
 
-    uart_puts("\nReset");
+    uart_puts("\n\nReset");
     usb_status();
     
     USB->DEVICE.INTFLAG.reg = (1 << 3); // clear interrupt flag
@@ -445,12 +440,12 @@ void USB_Handler(){
     USB->DEVICE.DeviceEndpoint[0].EPSTATUSCLR.bit.BK1RDY = 1;
 
     EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
-    EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = 64;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
     EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
     EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
 
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].ADDR.reg = (uint32_t)usb_ctrl_out_buf;
-    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.SIZE = 64;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 8;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT = 0;
 
@@ -470,8 +465,6 @@ void USB_Handler(){
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSCLR.bit.BK0RDY = 1;
     
     usb_request_t *request = (usb_request_t*) usb_ctrl_out_buf;
-//    usb_request_t request;
-//    memcpy(&request, &usbRecv, sizeof(usb_request_t));
 
     uart_puts("\nRequestIn");
 
@@ -488,11 +481,11 @@ void USB_Handler(){
           
           uint8_t type = request->wValue >> 8;
           uint8_t index = request->wValue & 0xff;
-          uint16_t leng = request->wLength;
+          uint16_t leng = request->wLength; // unused? see LIMIT from ataradov
       
           if (type == USB_DEVICE_DESCRIPTOR){
             
-            uart_puts("\ndevice");
+            uart_puts("\nDevice");
             
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&descriptor_usb; // tell where to find
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(deviceDescriptor);
@@ -507,7 +500,7 @@ void USB_Handler(){
           
           else if (type == USB_CONFIGURATION_DESCRIPTOR){
             
-            uart_puts("\nconfig");
+            uart_puts("\nConfig");
             
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&confDescriptor_usb; // tell where to find
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(confDescriptor);
@@ -522,7 +515,7 @@ void USB_Handler(){
           
           else if (type == USB_STRING_DESCRIPTOR){
             
-            uart_puts("\nstring0");
+            uart_puts("\nString0");
             
             if(index == 0){
               
@@ -550,7 +543,7 @@ void USB_Handler(){
               for (int i = 0; i < len; i++)
                 usb_string_descriptor_buffer[2 + i*2] = str[i];
 
-              uart_puts("\nstringN");
+              uart_puts("\nStringN");
             
               EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&confDescriptor_usb; // tell where to find
               EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(confDescriptor);
@@ -565,7 +558,7 @@ void USB_Handler(){
            
            else{
 
-              uart_puts("\nstall0");
+              uart_puts("\nStall0");
               USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.STALLRQ1 = 1;
 
             }
@@ -574,7 +567,7 @@ void USB_Handler(){
             
           else{
 
-            uart_puts("\nstall1");
+            uart_puts("\nStall1");
             USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.STALLRQ1 = 1;
             
           } break;
@@ -596,15 +589,13 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
           USB->DEVICE.DeviceEndpoint[i].EPSTATUSSET.bit.BK0RDY = 1;
     
-          //udc_recv_callback(i);
         }
     
         if (flags & USB_DEVICE_EPINTFLAG_TRCPT1){
           
           USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
           USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
-    
-          //udc_send_callback(i);
+  
         }
       }
   __enable_irq();
