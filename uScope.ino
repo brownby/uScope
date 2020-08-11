@@ -475,32 +475,75 @@ void USB_Handler(){
     uart_puts("\nIndex: ");uart_write(index+ascii);
 
     switch ((request->bRequest << 8) | request->bmRequestType){
-        case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):
+      case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):{
 
-          uart_puts("\nInDeviceStandardGetDescriptor");
+        uart_puts("\nInDeviceStandardGetDescriptor");
           
-          uint8_t type = request->wValue >> 8;
-          uint8_t index = request->wValue & 0xff;
-          uint16_t leng = request->wLength; // unused? see LIMIT from ataradov
+        uint8_t type = request->wValue >> 8;
+        uint8_t index = request->wValue & 0xff;
+        uint16_t leng = request->wLength; // unused? see LIMIT from ataradov
       
-          if (type == USB_DEVICE_DESCRIPTOR){
+        if (type == USB_DEVICE_DESCRIPTOR){
             
-            uart_puts("\nDevice");
+          uart_puts("\nDevice");
             
-            EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&descriptor_usb; // tell where to find
-            EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(deviceDescriptor);
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&descriptor_usb; // tell where to find
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(deviceDescriptor);
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+      
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+
+          while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
+          
+        } 
+          
+        else if (type == USB_CONFIGURATION_DESCRIPTOR){
+            
+          uart_puts("\nConfig");
+            
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&confDescriptor_usb; // tell where to find
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(confDescriptor);
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+      
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+
+          while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
+            
+        }
+          
+        else if (type == USB_STRING_DESCRIPTOR){
+            
+          uart_puts("\nString0");
+            
+          if(index == 0){
+              
+            EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&string0Descriptor_usb; // tell where to find
+            EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(stringDescriptor);
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
       
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
 
             while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
-          
-          } 
-          
-          else if (type == USB_CONFIGURATION_DESCRIPTOR){
-            
-            uart_puts("\nConfig");
+              
+          }
+
+          else if (index < USB_STR_COUNT){
+              
+            char *str = usb_strings[index];
+            int len = strlen(str);
+
+            memset(usb_string_descriptor_buffer, 0, sizeof(usb_string_descriptor_buffer));
+
+            usb_string_descriptor_buffer[0] = len*2 + 2;
+            usb_string_descriptor_buffer[1] = USB_STRING_DESCRIPTOR;
+
+            for (int i = 0; i < len; i++)
+              usb_string_descriptor_buffer[2 + i*2] = str[i];
+
+            uart_puts("\nStringN");
             
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&confDescriptor_usb; // tell where to find
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(confDescriptor);
@@ -509,95 +552,60 @@ void USB_Handler(){
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
 
-            while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
-            
-          }
-          
-          else if (type == USB_STRING_DESCRIPTOR){
-            
-            uart_puts("\nString0");
-            
-            if(index == 0){
-              
-              EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&string0Descriptor_usb; // tell where to find
-              EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(stringDescriptor);
-              EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-      
-              USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-              USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-
-              while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
-              
-            }
-
-            else if (index < USB_STR_COUNT){
-              
-              char *str = usb_strings[index];
-              int len = strlen(str);
-
-              memset(usb_string_descriptor_buffer, 0, sizeof(usb_string_descriptor_buffer));
-
-              usb_string_descriptor_buffer[0] = len*2 + 2;
-              usb_string_descriptor_buffer[1] = USB_STRING_DESCRIPTOR;
-
-              for (int i = 0; i < len; i++)
-                usb_string_descriptor_buffer[2 + i*2] = str[i];
-
-              uart_puts("\nStringN");
-            
-              EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&confDescriptor_usb; // tell where to find
-              EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = sizeof(confDescriptor);
-              EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-      
-              USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-              USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-
-              while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);  
+            while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);  
            
-           } 
+          } 
            
-           else{
-
-              uart_puts("\nStall0");
-              USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.STALLRQ1 = 1;
-
-            }
-
-          }
-            
           else{
 
-            uart_puts("\nStall1");
-            USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.STALLRQ1 = 1;
+            uart_puts("\nStall0");
+            USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+
+          }
+
+        }
             
-          } break;
-        }
+        else{
+
+          uart_puts("\nStall1");
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+            
+        } break;
       }
+      
+      default: {
+          uart_puts("\nDefaultStall");
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+      
+      } break;
+    }
 
-      epint = USB->DEVICE.EPINTSMRY.reg;
-
-      for (int i = 0; epint && i < USB_EPT_NUM; i++){
-        if (0 == (epint & (1 << i)))
-          continue;
-    
-        epint &= ~(1 << i);
-    
-        flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
-    
-        if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
-          
-          USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
-          USB->DEVICE.DeviceEndpoint[i].EPSTATUSSET.bit.BK0RDY = 1;
-    
-        }
-    
-        if (flags & USB_DEVICE_EPINTFLAG_TRCPT1){
-          
-          USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
-          USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
+  }  
   
-        }
-      }
+  epint = USB->DEVICE.EPINTSMRY.reg;
+
+  for (int i = 0; epint && i < USB_EPT_NUM; i++){
+    if (0 == (epint & (1 << i)))
+      continue;
+    
+    epint &= ~(1 << i);
+    
+    flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
+    
+    if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
+          
+      USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
+      USB->DEVICE.DeviceEndpoint[i].EPSTATUSSET.bit.BK0RDY = 1;
+    
+    }
+    
+    if (flags & USB_DEVICE_EPINTFLAG_TRCPT1){
+          
+      USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
+      USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
+  
+    }
+  }
   __enable_irq();
 }
 
