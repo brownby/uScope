@@ -429,8 +429,10 @@ void USB_Handler(){
   __disable_irq();
 
   if(USB->DEVICE.INTFLAG.reg & (1 << 3)) { // if EORST interrupt
-  
+
     uart_puts("\nReset");
+    usb_status();
+    
     USB->DEVICE.INTFLAG.reg = (1 << 3); // clear interrupt flag
     USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN;
 
@@ -462,7 +464,6 @@ void USB_Handler(){
   if (USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP){
     
     uart_puts("\nSetup");
-
     usb_status();
     
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP = 1;  // acknowledge interrupt
@@ -613,7 +614,7 @@ void usb_status(){
 
   __disable_irq();
 
-  uart_puts("\n\nStatus...\n");
+  uart_puts("\n\nStatus at this point (see above line)\n");
 
   uart_puts("\nFSMSTATE: "); uart_write(USB->DEVICE.FSMSTATUS.bit.FSMSTATE+ascii);
   uart_puts("\nSPEEDCONF: "); uart_write(USB->DEVICE.CTRLB.bit.SPDCONF+ascii);
@@ -680,7 +681,7 @@ void setup() {
 
   uart_init();
   delay(1000);
-  uart_puts("\nInitializing");
+  uart_puts("\nInitializing...");
   
   analogWriteResolution(10);
 
@@ -693,7 +694,7 @@ void setup() {
   bufnum = 0;
   start_adc_sram_dma(); 
 
-  uart_puts("\nStarting");
+  uart_puts("\nStarting...");
 
   __enable_irq();
   
