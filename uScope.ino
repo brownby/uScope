@@ -208,7 +208,7 @@ dmacdescriptor descriptor __attribute__ ((aligned (16)));
 __attribute__((__aligned__(4))) deviceDescriptor descriptor_usb;
 __attribute__((__aligned__(4))) confDescriptor confDescriptor_usb;
 __attribute__((__aligned__(4))) stringDescriptor string0Descriptor_usb;
-__attribute__((__aligned__(4)))  UsbDeviceDescriptor EP[USB_EPT_NUM];
+__attribute__((__aligned__(4))) UsbDeviceDescriptor EP[USB_EPT_NUM];
 
 //__attribute__((__aligned__(4))) uint8_t usbRecv[64];
 
@@ -462,6 +462,9 @@ void USB_Handler(){
   if (USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP){
     
     uart_puts("\nSetup");
+
+    usb_status();
+    
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP = 1;  // acknowledge interrupt
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSCLR.bit.BK0RDY = 1;
     
@@ -606,6 +609,43 @@ void USB_Handler(){
   __enable_irq();
 }
 
+void usb_status(){
+
+  __disable_irq();
+
+  uart_puts("\n\nStatus...\n");
+
+  uart_puts("\nFSMSTATE: "); uart_write(USB->DEVICE.FSMSTATUS.bit.FSMSTATE+ascii);
+  uart_puts("\nSPEEDCONF: "); uart_write(USB->DEVICE.CTRLB.bit.SPDCONF+ascii);
+
+  uart_puts("\nEORST: "); uart_write(USB->DEVICE.INTFLAG.bit.EORST+ascii);
+  uart_puts("\nSOF: "); uart_write(USB->DEVICE.INTFLAG.bit.SOF+ascii);
+
+  uart_puts("\nEPCFG.EPTYPE0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPCFG.bit.EPTYPE0+ascii);
+  uart_puts("\nEPCFG.EPTYPE1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPCFG.bit.EPTYPE1+ascii);
+
+  uart_puts("\nCURBK: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.CURBK+ascii);
+  uart_puts("\nBK0RDY: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.BK0RDY+ascii);
+  uart_puts("\nBK1RDY: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.BK1RDY+ascii);
+  uart_puts("\nSTALLRQ0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.STALLRQ0+ascii);
+  uart_puts("\nSTALLRQ1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.STALLRQ1+ascii); 
+  uart_puts("\nDTGLIN: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.DTGLIN+ascii);
+  uart_puts("\nDTGLOUT: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.DTGLOUT+ascii);
+  
+  uart_puts("\nRXSTP: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP+ascii);
+  uart_puts("\nSTALL0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.STALL0+ascii);
+  uart_puts("\nSTALL1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.STALL1+ascii);
+  uart_puts("\nTRFAIL0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL0+ascii);
+  uart_puts("\nTRFAIL1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL1+ascii);
+  uart_puts("\nTRCPT0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT0+ascii);
+  uart_puts("\nTRCPT1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1+ascii);
+
+  uart_puts("\n");
+
+  __enable_irq();
+  
+}
+
 void test_dac(type waveform){
 
   int i;
@@ -635,12 +675,17 @@ void test_dac(type waveform){
 }
 
 void setup() {
+
+  __disable_irq();
+
+  uart_init();
+  delay(1000);
+  uart_puts("\nInitializing");
   
   analogWriteResolution(10);
 
   adc_init();
   dma_init(); 
-  uart_init();
   usb_init();
   
   adc_to_sram_dma();
@@ -648,6 +693,10 @@ void setup() {
   bufnum = 0;
   start_adc_sram_dma(); 
 
+  uart_puts("\nStarting");
+
+  __enable_irq();
+  
 }
 
 void loop() {
