@@ -407,7 +407,7 @@ void usb_init()
   USB->DEVICE.CTRLB.bit.DETACH = 0;
   
   USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_EORST;
-  USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1;
+//  USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1;
   
   //USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.reg =  1 << 3; // enable interrupts from resets initiated by host (EORST bit)
   //USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1; // enable interrupts from device setup requests
@@ -423,16 +423,20 @@ void USB_Handler(){
   
   __disable_irq();
 
-  if(USB->DEVICE.INTFLAG.reg & (1 << 3)) { // if EORST interrupt
+  if(USB->DEVICE.INTFLAG.bit.EORST) { // if EORST interrupt
 
     uart_puts("\n\nReset");
     usb_status();
     
-    USB->DEVICE.INTFLAG.reg = (1 << 3); // clear interrupt flag
+    USB->DEVICE.INTFLAG.bit.EORST = 1; // clear interrupt flag
     USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN;
 
-    USB->DEVICE.DeviceEndpoint[0].EPCFG.bit.EPTYPE0 = USB_DEVICE_EPCFG_EPTYPE_DISABLED;
-    USB->DEVICE.DeviceEndpoint[0].EPCFG.bit.EPTYPE1 = USB_DEVICE_EPCFG_EPTYPE_DISABLED;
+    // reset all endpoints
+    for (int i = 0; i < USB_EPT_NUM; i++)
+    {
+      USB->DEVICE.DeviceEndpoint[i].EPCFG.bit.EPTYPE0 = USB_DEVICE_EPCFG_EPTYPE_DISABLED;
+      USB->DEVICE.DeviceEndpoint[i].EPCFG.bit.EPTYPE1 = USB_DEVICE_EPCFG_EPTYPE_DISABLED;
+    }
     
     USB->DEVICE.DeviceEndpoint[0].EPCFG.bit.EPTYPE0 = USB_DEVICE_EPCFG_EPTYPE_CONTROL; // Control SETUP/OUT
     USB->DEVICE.DeviceEndpoint[0].EPCFG.bit.EPTYPE1 = USB_DEVICE_EPCFG_EPTYPE_CONTROL; // Control IN
@@ -446,7 +450,7 @@ void USB_Handler(){
 
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].ADDR.reg = (uint32_t)usb_ctrl_out_buf;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
-    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 8;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 64;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT = 0;
 
     // Here is where configuration for EP2 and 3 would go, possibly as isochronous? they're disabled by default on reset since EPCFG is cleared
@@ -464,24 +468,34 @@ void USB_Handler(){
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP = 1;  // acknowledge interrupt
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSCLR.bit.BK0RDY = 1;
     
-    usb_request_t *request = (usb_request_t*) usb_ctrl_out_buf;
+//    usb_request_t * request = (usb_request_t*) usb_ctrl_out_buf;
+    // use memcpy instead of typecasting and assigning
+    USBSetup request;
+//    usb_request_t request;
+    memcpy(&request, usb_ctrl_out_buf, sizeof(request));
 
     uart_puts("\nRequestIn");
 
-    uint8_t type = request->wValue >> 8;
-    uint8_t index = request->wValue & 0xff;
+//    uint8_t type = request.wValue >> 8;
+    uint8_t type = request.wValueH;
+//    uint8_t index = request.wValue & 0xff;
+    uint8_t index = request.wValueL;
     
     uart_puts("\nType: ");uart_write(type+ascii);
     uart_puts("\nIndex: ");uart_write(index+ascii);
+    uart_puts("\nbRequest: ");uart_write(request.bRequest+ascii);
+    uart_puts("\nbmRequestType: ");uart_write(request.bmRequestType+ascii);
 
-    switch ((request->bRequest << 8) | request->bmRequestType){
+    switch ((request.bRequest << 8) | request.bmRequestType){
       case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):{
 
         uart_puts("\nInDeviceStandardGetDescriptor");
           
-        uint8_t type = request->wValue >> 8;
-        uint8_t index = request->wValue & 0xff;
-        uint16_t leng = request->wLength; // unused? see LIMIT from ataradov
+//        uint8_t type = request.wValue >> 8;
+        uint8_t type = request.wValueH;
+//        uint8_t index = request.wValue & 0xff;
+        uint8_t index = request.wValueL;
+        uint16_t leng = request.wLength; // unused? see LIMIT from ataradov
       
         if (type == USB_DEVICE_DESCRIPTOR){
             
@@ -572,6 +586,14 @@ void USB_Handler(){
             
         } break;
       }
+
+      case USB_CMD(OUT, DEVICE, STANDARD, SET_ADDRESS): {
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+        USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+        USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN | USB_DEVICE_DADD_DADD(request.wValueL | request.wValueH);
+      } break;
       
       default: {
           uart_puts("\nDefaultStall");
@@ -585,15 +607,18 @@ void USB_Handler(){
   epint = USB->DEVICE.EPINTSMRY.reg;
 
   for (int i = 0; epint && i < USB_EPT_NUM; i++){
+    
     if (0 == (epint & (1 << i)))
       continue;
     
     epint &= ~(1 << i);
     
     flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
+
+
     
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
-          
+      
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
       USB->DEVICE.DeviceEndpoint[i].EPSTATUSSET.bit.BK0RDY = 1;
     
