@@ -207,8 +207,39 @@ typedef struct {
 } usb_endpoint_descriptor_t;
 
 typedef struct {
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint16_t bcdHID;
+  uint8_t bCountryCode;
+  uint8_t bNumDescriptors;
+  uint8_t bDescriptorType1;
+  uint16_t wDescriptorLength;
+} usb_hid_descriptor_t;
+
+alignas(4) uint8_t usb_hid_report_descriptor[33] =
+{
+  0x06, 0x00, 0xff,  // Usage Page (Vendor Defined 0xFF00)
+  0x09, 0x01,        // Usage (0x01)
+  0xa1, 0x01,        // Collection (Application)
+  0x15, 0x00,        //   Logical Minimum (0)
+  0x26, 0xff, 0x00,  //   Logical Maximum (255)
+  0x75, 0x08,        //   Report Size (8)
+  0x95, 0x40,        //   Report Count (64)
+  0x09, 0x01,        //   Usage (0x01)
+  0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
+  0x95, 0x40,        //   Report Count (64)
+  0x09, 0x01,        //   Usage (0x01)
+  0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+  0x95, 0x01,        //   Report Count (1)
+  0x09, 0x01,        //   Usage (0x01)
+  0xb1, 0x02,        //   Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
+  0xc0,              // End Collection
+};
+
+typedef struct {
   usb_configuration_descriptor_t  configuration;
   usb_interface_descriptor_t      interface;
+  usb_hid_descriptor_t            hid;
   usb_endpoint_descriptor_t       ep_in;
   usb_endpoint_descriptor_t       ep_out;
 } usb_configuration_hierarchy_t;
@@ -240,6 +271,17 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .iInterface          = USB_STR_INTERFACE,
   },
 
+  .hid =
+  {
+    .bLength             = sizeof(usb_hid_descriptor_t),
+    .bDescriptorType     = 0x21, // HID descriptor
+    .bcdHID              = 0x0111,
+    .bCountryCode        = 0,
+    .bNumDescriptors     = 1,
+    .bDescriptorType1    = 0x22, // HID_REPORT descriptor
+    .wDescriptorLength   = sizeof(usb_hid_report_descriptor),
+  },
+  
   .ep_in =
   {
     .bLength             = sizeof(usb_endpoint_descriptor_t),
@@ -539,6 +581,8 @@ void USB_Handler(){
     uint8_t index = request->wValue & 0xff;
     uint16_t leng = request->wLength;
 
+    uart_puts("\ntype: "); uart_write(type + ascii);
+
     switch ((request->bRequest << 8) | request->bmRequestType){
       case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):{
 
@@ -604,13 +648,13 @@ void USB_Handler(){
 
           while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait
           
-          usb_pipe_status();
+//          usb_pipe_status();
 
         }
           
         else if (type == USB_STRING_DESCRIPTOR){
             
-          uart_puts("\nString0");
+          uart_puts("\nString: "); uart_write(index + ascii);
             
           if(index == 0){
               
@@ -642,8 +686,6 @@ void USB_Handler(){
           }
 
           else if (0 < index < USB_STR_COUNT){
-
-            uart_puts("\nStringN");
               
             char *str = usb_strings[index];
             int len = strlen(str);
@@ -710,12 +752,12 @@ void USB_Handler(){
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
-        uart_puts("\nDADD_L from request: "); uart_write(wValue_L);
-        uart_puts("\nDADD_H from request: "); uart_write(wValue_H);
+//        uart_puts("\nDADD_L from request: "); uart_write(wValue_L);
+//        uart_puts("\nDADD_H from request: "); uart_write(wValue_H);
 
         USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN | USB_DEVICE_DADD_DADD(request->wValue);
 
-        uart_puts("\nDADD in register: "); uart_write(USB->DEVICE.DADD.bit.DADD);
+//        uart_puts("\nDADD in register: "); uart_write(USB->DEVICE.DADD.bit.DADD);
       
       } break;
 
