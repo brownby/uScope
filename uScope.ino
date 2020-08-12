@@ -51,15 +51,15 @@ extern const uint8_t usb_num_endpoints;
 enum type {sine, sawtooth}; // supported waveform types
 
 enum{
+  USB_OUT_TRANSFER         = 0,
+  USB_IN_TRANSFER          = 1,
+};
+
+enum{
   USB_IN_ENDPOINT          = 0x80,
   USB_OUT_ENDPOINT         = 0x00,
   USB_INDEX_MASK           = 0x7f,
   USB_DIRECTION_MASK       = 0x80,
-};
-
-enum{
-  USB_OUT_TRANSFER         = 0,
-  USB_IN_TRANSFER          = 1,
 };
 
 enum{
@@ -73,16 +73,6 @@ enum{
   USB_INTERFACE_RECIPIENT  = 1,
   USB_ENDPOINT_RECIPIENT   = 2,
   USB_OTHER_RECIPIENT      = 3,
-};
-
-enum{
-  USB_STR_ZERO,
-  USB_STR_MANUFACTURER,
-  USB_STR_PRODUCT,
-  USB_STR_SERIAL_NUMBER,
-  USB_STR_CONFIGURATION,
-  USB_STR_INTERFACE,
-  USB_STR_COUNT,
 };
 
 enum{
@@ -118,6 +108,16 @@ enum{
   USB_GET_INTERFACE     = 10,
   USB_SET_INTERFACE     = 11,
   USB_SYNCH_FRAME       = 12,
+};
+
+enum{
+  USB_STR_ZERO,
+  USB_STR_MANUFACTURER,
+  USB_STR_PRODUCT,
+  USB_STR_SERIAL_NUMBER,
+  USB_STR_CONFIGURATION,
+  USB_STR_INTERFACE,
+  USB_STR_COUNT,
 };
 
 enum{
@@ -427,16 +427,11 @@ void usb_init()
 
 }
 
-//int isrCount = 0;
-
 void USB_Handler(){
 
-  int epint, flags;
-
-//  isrCount++;
-//  uart_puts("\nisrCount: "); uart_write(isrCount + ascii);
-
   __disable_irq();
+
+  int epint, flags;
 
   if(USB->DEVICE.INTFLAG.bit.EORST) { // if EORST interrupt
 
@@ -446,8 +441,7 @@ void USB_Handler(){
     USB->DEVICE.INTFLAG.bit.EORST = 1; // clear interrupt flag
     USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN;
 
-    // reset all endpoints
-    for (int i = 0; i < USB_EPT_NUM; i++)
+    for (int i = 0; i < USB_EPT_NUM; i++) // reset all endpoints
     {
       USB->DEVICE.DeviceEndpoint[i].EPCFG.bit.EPTYPE0 = USB_DEVICE_EPCFG_EPTYPE_DISABLED;
       USB->DEVICE.DeviceEndpoint[i].EPCFG.bit.EPTYPE1 = USB_DEVICE_EPCFG_EPTYPE_DISABLED;
@@ -468,8 +462,6 @@ void USB_Handler(){
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 64;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT = 0;
 
-    // Here is where configuration for EP2 and 3 would go, possibly as isochronous? they're disabled by default on reset since EPCFG is cleared
-
     USB->DEVICE.DeviceEndpoint[0].EPSTATUSCLR.bit.BK0RDY = 1;
     USB->DEVICE.DeviceEndpoint[0].EPINTENSET.bit.RXSTP = 1;
     
@@ -484,17 +476,11 @@ void USB_Handler(){
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSCLR.bit.BK0RDY = 1;
     
     usb_request_t * request = (usb_request_t*) usb_ctrl_out_buf;
-    // use memcpy instead of typecasting and assigning
-//    USBSetup request;
-//    usb_request_t request;
-//    memcpy(&request, usb_ctrl_out_buf, sizeof(request));
 
     uart_puts("\nRequestIn");
 
     uint8_t type = request->wValue >> 8;
-//    uint8_t type = request.wValueH;
     uint8_t index = request->wValue & 0xff;
-//    uint8_t index = request.wValueL;
     
     uart_puts("\nType: ");uart_write(type+ascii);
     uart_puts("\nIndex: ");uart_write(index+ascii);
@@ -507,9 +493,7 @@ void USB_Handler(){
         uart_puts("\nInDeviceStandardGetDescriptor");
           
         uint8_t type = request->wValue >> 8;
-//        uint8_t type = request.wValueH;
         uint8_t index = request->wValue & 0xff;
-//        uint8_t index = request.wValueL;
         uint16_t leng = request->wLength; // unused? see LIMIT from ataradov
       
         if (type == USB_DEVICE_DESCRIPTOR){
@@ -603,23 +587,26 @@ void USB_Handler(){
       } break;
 
       case USB_CMD(OUT, DEVICE, STANDARD, SET_ADDRESS): {
+
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
         USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1 = 1;
         USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.BK1RDY = 1;
-        
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+
         USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN | USB_DEVICE_DADD_DADD(request->wValue);
+      
       } break;
 
       case USB_CMD(OUT, DEVICE, STANDARD, SET_CONFIGURATION): {
+
         usb_config = request->wValue;
         
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
 
-        if(usb_config)
-        {
+        if(usb_config){
+
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPCFG.bit.EPTYPE1 = 3; // Bulk IN
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPINTENSET.bit.TRCPT1 = 1;
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPSTATUSCLR.bit.DTGLIN = 1;
@@ -631,11 +618,12 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPSTATUSCLR.bit.DTGLOUT = 1;
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPSTATUSSET.bit.BK0RDY = 1;
           EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
-        }
         
+        }
       } break;
 
       case USB_CMD(IN, DEVICE, STANDARD, GET_CONFIGURATION): {
+
         uint8_t config = usb_config;
 
         memcpy(usb_ctrl_in_buf, &config, sizeof(config));
@@ -646,8 +634,8 @@ void USB_Handler(){
 
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-
         while(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
+
       } break;
 
       // dummy cases from ataradov's code
@@ -655,14 +643,15 @@ void USB_Handler(){
       // USB_CMD(IN, INTERFACE, STANDARD, GET_STATUS)
 
       case USB_CMD(IN, ENDPOINT, STANDARD, GET_STATUS): {
+
         int ep = request->wIndex & USB_INDEX_MASK; // USB_INDEX_MASK = 0x7f
         int dir = request->wIndex & USB_DIRECTION_MASK; // USB_DIRECTION_MASK = 0x80
         uint16_t status = 0;
 
-        if(dir == USB_IN_ENDPOINT)
-        {
-          if(USB->DEVICE.DeviceEndpoint[ep].EPCFG.bit.EPTYPE1 != USB_DEVICE_EPCFG_EPTYPE_DISABLED)
-          {
+        if(dir == USB_IN_ENDPOINT){
+
+          if(USB->DEVICE.DeviceEndpoint[ep].EPCFG.bit.EPTYPE1 != USB_DEVICE_EPCFG_EPTYPE_DISABLED){
+
             status = USB->DEVICE.DeviceEndpoint[ep].EPSTATUS.bit.STALLRQ1;
             
             memcpy(usb_ctrl_in_buf, &status, sizeof(status));
@@ -672,20 +661,22 @@ void USB_Handler(){
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
     
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-            USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-    
+            USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;    
             while(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
+
           }
-          else
-          {
-            // stall
+          
+          else {
+            
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+          
           }
         }
-        else
-        {
-          if(USB->DEVICE.DeviceEndpoint[ep].EPCFG.bit.EPTYPE0 != USB_DEVICE_EPCFG_EPTYPE_DISABLED)
-          {
+        
+        else {
+
+          if(USB->DEVICE.DeviceEndpoint[ep].EPCFG.bit.EPTYPE0 != USB_DEVICE_EPCFG_EPTYPE_DISABLED){
+
             status = USB->DEVICE.DeviceEndpoint[ep].EPSTATUS.bit.STALLRQ0;
             
             memcpy(usb_ctrl_in_buf, &status, sizeof(status));
@@ -696,48 +687,53 @@ void USB_Handler(){
     
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-    
             while(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
+
           }
-          else
-          {
-            // stall
+          
+          else {
+
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+          
           }
         }
       } break;
 
       case USB_CMD(OUT, DEVICE, STANDARD, SET_FEATURE): {
-        // stall
+        
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+
       } break;
 
       case USB_CMD(OUT, INTERFACE, STANDARD, SET_FEATURE): {
-        // stall
+      
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+
       } break;
 
       case USB_CMD(OUT, ENDPOINT, STANDARD, SET_FEATURE): {
+        
         int ep = request->wIndex & USB_INDEX_MASK; // USB_INDEX_MASK = 0x7f
         int dir = request->wIndex & USB_DIRECTION_MASK; // USB_DIRECTION_MASK = 0x80
 
         // TODO
+      
       } break;
 
       // TOD0:
+
       // USB_CMD(OUT, DEVICE, STANDARD, CLEAR_FEATURE) (stall in ataradov)
       // USB_CMD(OUT, INTERFACE, STANDARD, CLEAR_FEATURE) (stall in ataradov)
       // USB_CMD(OUT, ENDPOINT, STANDARD, CLEAR_FEATURE)
-
       // USB_CMD(IN, INTERFACE, STANDARD, GET_DESCRIPTOR) (see line 253 of usb.c in ataradov's)
       
       default: {
+
           uart_puts("\nDefaultStall");
           USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
           
       } break;
     }
-
   }  
   
   epint = USB->DEVICE.EPINTSMRY.reg;
@@ -751,8 +747,6 @@ void USB_Handler(){
     
     flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
 
-
-    
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
       
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
