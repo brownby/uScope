@@ -56,23 +56,33 @@ enum{
 };
 
 enum{
-  USB_IN_ENDPOINT          = 0x80,
-  USB_OUT_ENDPOINT         = 0x00,
-  USB_INDEX_MASK           = 0x7f,
-  USB_DIRECTION_MASK       = 0x80,
-};
-
-enum{
   USB_STANDARD_REQUEST     = 0,
   USB_CLASS_REQUEST        = 1,
   USB_VENDOR_REQUEST       = 2,
 };
 
 enum{
-  USB_DEVICE_RECIPIENT     = 0,
-  USB_INTERFACE_RECIPIENT  = 1,
-  USB_ENDPOINT_RECIPIENT   = 2,
-  USB_OTHER_RECIPIENT      = 3,
+  USB_IN_ENDPOINT          = 0x80,
+  USB_OUT_ENDPOINT         = 0x00,
+  USB_INDEX_MASK           = 0x7f,
+  USB_DIRECTION_MASK       = 0x80,
+};
+
+enum
+{
+  USB_CONTROL_ENDPOINT     = 0 << 0,
+  USB_ISOCHRONOUS_ENDPOINT = 1 << 0,
+  USB_BULK_ENDPOINT        = 2 << 0,
+  USB_INTERRUPT_ENDPOINT   = 3 << 0,
+
+  USB_NO_SYNCHRONIZATION   = 0 << 2,
+  USB_ASYNCHRONOUS         = 1 << 2,
+  USB_ADAPTIVE             = 2 << 2,
+  USB_SYNCHRONOUS          = 3 << 2,
+
+  USB_DATA_ENDPOINT        = 0 << 4,
+  USB_FEEDBACK_ENDPOINT    = 1 << 4,
+  USB_IMP_FB_DATA_ENDPOINT = 2 << 4,
 };
 
 enum{
@@ -82,6 +92,13 @@ enum{
   USB_DEVICE_EPCFG_EPTYPE_BULK        = 3,
   USB_DEVICE_EPCFG_EPTYPE_INTERRUPT   = 4,
   USB_DEVICE_EPCFG_EPTYPE_DUAL_BANK   = 5,
+};
+
+enum{
+  USB_DEVICE_RECIPIENT     = 0,
+  USB_INTERFACE_RECIPIENT  = 1,
+  USB_ENDPOINT_RECIPIENT   = 2,
+  USB_OTHER_RECIPIENT      = 3,
 };
 
 enum{
@@ -155,49 +172,55 @@ typedef struct PACK{
 typedef struct configuration{
     struct interface{
       struct endpointOut{
-        uint8_t bDescriptorType     = 5; // for endpoint
-        uint8_t bEndpointAddress    = 0x00 | 2; // 0x00 = outEP
-        uint8_t bmAttributes        = 3 << 0; // 0:1 = transfer type, 2:3 iso_sync_type, 4:5 = iso_usage_type, 6:7 = reserved
-        uint8_t wMaxPacketSize      = 64;
-        uint8_t bInterval           = 1;  // interval for polling endpoint for data transfers
+        uint8_t  bLength             = 7; // bytes
+        uint8_t  bDescriptorType     = 5; // for endpoint
+        uint8_t  bEndpointAddress    = USB_OUT_ENDPOINT | 2; // 0x00 = outEP
+        uint8_t  bmAttributes        = USB_BULK_ENDPOINT; 
+        uint16_t wMaxPacketSize      = 64;
+        uint8_t  bInterval           = 1;  // interval for polling endpoint for data transfers
       }; endpointOut epOutDescriptor;
       struct endpointIn{
-        uint8_t bDescriptorType     = 5; // for endpoint
-        uint8_t bEndpointAddress    = 0x80 | 1; // 0x80 = inEP
-        uint8_t bmAttributes        = 3 << 0; // 0:1 = transfer type, 2:3 iso_sync_type, 4:5 = iso_usage_type, 6:7 = reserved
-        uint8_t wMaxPacketSize      = 64;
-        uint8_t bInterval           = 1;  // interval for polling endpoint for data transfers
+        uint8_t  bLength             = 7; // bytes
+        uint8_t  bDescriptorType     = 5; // for endpoint
+        uint8_t  bEndpointAddress    = USB_IN_ENDPOINT | 1; // 0x80 = inEP
+        uint8_t  bmAttributes        = USB_BULK_ENDPOINT;
+        uint16_t wMaxPacketSize      = 64;
+        uint8_t  bInterval           = 1;  // interval for polling endpoint for data transfers
       }; endpointIn epInDescriptor;
+      uint8_t bLength             = 9; // bytes
       uint8_t bDescriptorType     = 4; // for interface
       uint8_t bInterfaceNumber    = 0; 
       uint8_t bAlternateSetting   = 0; // see audio10.pdf --> 0 = zero-bandwidth alt, 1 = operational setting
       uint8_t bNumEndpoints       = 2;
-      uint8_t bInterfaceClass     = 0x01; // 0x01 = audio class, others...
+      uint8_t bInterfaceClass     = 0x03; // 0x01 = audio class, 0x3 = communications
       uint8_t bInterfaceSubClass  = 0x00; // 0x00 = undefined, 0x01 = control, 0x02 = streaming, 0x03 = MIDI streaming
       uint8_t bInterfaceProtocol  = 0x00; // none, not applicable to audio
-      uint8_t iInterface          = 0x00; // none, index of a string to describe interface, often unused
+      uint8_t iInterface          = USB_STR_INTERFACE; // index of a string to describe interface, often unused
     }; interface interDescriptor;
-    uint8_t bDescriptorType     = 2; // for configuration
-    uint8_t bNumInterfaces      = 1;
-    uint8_t bConfigurationValue = 1; // ID for configuration
-    uint8_t iConfiguration      = 0x00; // none, index of a string to describe configuration, often unused
-    uint8_t bmAttributes        = 0x80; // bit 5 = remote wakeup, bit 6 = self-powered
-    uint8_t bMaxPower           = 200; // 400 mA  
+    uint8_t  bLength             = 32; // bytes
+    uint8_t  bDescriptorType     = 2; // for configuration
+    uint16_t wTotalLength        = 0; // bytes
+    uint8_t  bNumInterfaces      = 1;
+    uint8_t  bConfigurationValue = 1; // ID for configuration
+    uint8_t  iConfiguration      = USB_STR_CONFIGURATION;
+    uint8_t  bmAttributes        = 0x80; // bit 5 = remote wakeup, bit 6 = self-powered
+    uint8_t  bMaxPower           = 250;  // 500 mA  
 } confDescriptor;
 
 typedef struct device{
-  uint8_t bDescriptorType = 1; // for device
-  uint16_t bcdUSB             = 0x0200; // version of USB spec, here 2.0
+  uint8_t bLength            = 18; // bytes
+  uint8_t bDescriptorType    = 1; // for device
+  uint16_t bcdUSB            = 0x0200; // version of USB spec, here 2.0
   uint8_t bDeviceClass       = 0x00; // 0x00 = none / defined at interface level later, 0x0a = CDC data
   uint8_t bDeviceSubClass    = 0x00; // within audio, ...
   uint8_t bDeviceProtocol    = 0x00; // 0x00 = none
   uint8_t bMaxPacketSize0    = 64;
-  uint16_t idVendor           = 0x2341; // Arduino
-  uint16_t idProduct          = 0x804f; // MKZero
-  uint16_t bcdDevice          = 0x0100; // release number of the device
-  char iManufacturer[50]  = "Arduion + Harvard Active Learning";
-  char iProduct[50]       = "MKR Zero uScope";
-  char iSerialNumber[50]  = "ALL-0001";
+  uint16_t idVendor          = 0x2341; // Arduino
+  uint16_t idProduct         = 0x804f; // MKZero
+  uint16_t bcdDevice         = 0x0100; // release number of the device
+  uint8_t iManufacturer      = USB_STR_MANUFACTURER;
+  uint8_t iProduct           = USB_STR_PRODUCT;
+  uint8_t iSerialNumber      = USB_STR_SERIAL_NUMBER;
   uint8_t bNumConfigurations = 1;
 } deviceDescriptor;
 
@@ -436,7 +459,6 @@ void USB_Handler(){
   if(USB->DEVICE.INTFLAG.bit.EORST) { // if EORST interrupt
 
     uart_puts("\n\nReset");
-    usb_status();
     
     USB->DEVICE.INTFLAG.bit.EORST = 1; // clear interrupt flag
     USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN;
@@ -469,8 +491,8 @@ void USB_Handler(){
 
   if (USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP){
     
-    uart_puts("\nSetup");
-    usb_status();
+    //uart_puts("\nSetup");
+    //usb_status();
     
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP = 1;  // acknowledge interrupt
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSCLR.bit.BK0RDY = 1;
