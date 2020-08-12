@@ -490,29 +490,26 @@ void USB_Handler(){
   }
 
   if (USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP){
-    
-    //uart_puts("\nSetup");
-    //usb_status();
+
+    usb_pipe_status();
     
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP = 1;  // acknowledge interrupt
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSCLR.bit.BK0RDY = 1;
     
     usb_request_t * request = (usb_request_t*) usb_ctrl_out_buf;
 
-    uart_puts("\nRequestIn");
+    uart_puts("\n\nRequestIn");
+    uart_puts("\nbRequest: ");uart_write(request->bRequest+ascii); // key for 0,1,3,5,6,7,8,9,10,11,12
 
     uint8_t type = request->wValue >> 8;
     uint8_t index = request->wValue & 0xff;
-    
-    uart_puts("\nType: ");uart_write(type+ascii);
-    uart_puts("\nIndex: ");uart_write(index+ascii);
-    uart_puts("\nbRequest: ");uart_write(request->bRequest+ascii);
-    uart_puts("\nbmRequestType: ");uart_write(request->bmRequestType+ascii);
+    uint8_t wValue_L = request->wValue & 0xff;
+    uint8_t wValue_H = request->wValue >> 8;
 
     switch ((request->bRequest << 8) | request->bmRequestType){
       case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):{
 
-        uart_puts("\nInDeviceStandardGetDescriptor");
+        uart_puts("\nGetDescriptor");
           
         uint8_t type = request->wValue >> 8;
         uint8_t index = request->wValue & 0xff;
@@ -610,16 +607,25 @@ void USB_Handler(){
 
       case USB_CMD(OUT, DEVICE, STANDARD, SET_ADDRESS): {
 
+        uart_puts("\nSetAddress");
+
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-        USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[0].EPSTATUSSET.bit.BK1RDY = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
+        uart_puts("\nDADD_L from request: "); uart_write(wValue_L);
+        uart_puts("\nDADD_H from request: "); uart_write(wValue_H);
+
         USB->DEVICE.DADD.reg = USB_DEVICE_DADD_ADDEN | USB_DEVICE_DADD_DADD(request->wValue);
+
+        uart_puts("\nDADD in register: "); uart_write(USB->DEVICE.DADD.bit.DADD);
       
       } break;
 
       case USB_CMD(OUT, DEVICE, STANDARD, SET_CONFIGURATION): {
+
+        uart_puts("\nSetConfiguration");
 
         usb_config = request->wValue;
         
@@ -646,6 +652,8 @@ void USB_Handler(){
 
       case USB_CMD(IN, DEVICE, STANDARD, GET_CONFIGURATION): {
 
+        uart_puts("\nGetConfiguration");
+
         uint8_t config = usb_config;
 
         memcpy(usb_ctrl_in_buf, &config, sizeof(config));
@@ -665,6 +673,8 @@ void USB_Handler(){
       // USB_CMD(IN, INTERFACE, STANDARD, GET_STATUS)
 
       case USB_CMD(IN, ENDPOINT, STANDARD, GET_STATUS): {
+
+        uart_puts("\nGetStatus");
 
         int ep = request->wIndex & USB_INDEX_MASK; // USB_INDEX_MASK = 0x7f
         int dir = request->wIndex & USB_DIRECTION_MASK; // USB_DIRECTION_MASK = 0x80
@@ -782,6 +792,12 @@ void USB_Handler(){
       USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
   
     }
+
+    if (flags & USB_DEVICE_EPINTFLAG_TRFAIL1){
+          
+      USB->DEVICE.DeviceEndpoint[i].EPINTENCLR.bit.TRFAIL1 = 1;
+  
+    }
   }
   __enable_irq();
 }
@@ -821,6 +837,23 @@ void usb_status(){
 
   __enable_irq();
   
+}
+
+void usb_pipe_status(){
+
+  __disable_irq();
+
+  uart_puts("\n");
+
+  uart_puts("\nTRFAIL0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL0+ascii);
+  uart_puts("\nTRFAIL1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL1+ascii);
+  uart_puts("\nTRCPT0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT0+ascii);
+  uart_puts("\nTRCPT1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1+ascii);
+
+  uart_puts("\n");
+
+  __enable_irq();
+
 }
 
 void test_dac(type waveform){
