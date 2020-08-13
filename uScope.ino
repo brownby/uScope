@@ -4,7 +4,7 @@
  * Intended for use with MKR Zero (SAMD21)
  * 
  * J. Evan Smith, Ben Y. Brown
- * Last revised: 11 August 2020
+ * Last revised: 13 August 2020
  */
 
 #include "Arduino.h"          // required before wiring_private.h, also includes USBDesc.h, USBCore.h, USBAPI.h, and USB_host.h
@@ -607,8 +607,6 @@ void USB_Handler(){
     uint16_t leng = request->wLength;
 
     uart_puts("\ntype: "); uart_write(type + ascii);
-    uart_puts("\nwValueL: "); uart_write(wValue_L + ascii);
-    uart_puts("\nwValueH: "); uart_write(wValue_H + ascii);
 
     switch ((request->bRequest << 8) | request->bmRequestType){
       case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):{
