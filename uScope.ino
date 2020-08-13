@@ -41,7 +41,7 @@ static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
 static uint8_t ascii = 48;      // offset to interpret single digit uart outputs
 static int usb_config;
 
-char *usb_strings[] = {"", "Arduino + Harvard Active Learning","MKR Zero uScope","ALL-0001","Main Configuration","Main Interface"};
+char *usb_strings[] = {"", "Arduino + Harvard ALL","MKR Zero uScope","ALL-0001","Main Configuration","Main Interface"};
 
 volatile bool bufnum;  // track which buffer to write to, while USB reads
 
@@ -727,7 +727,7 @@ void USB_Handler(){
               usb_string_descriptor_buffer[3 + i*2] = 0;
             }
 
-            leng = LIMIT(leng, string0Descriptor_usb.bLength);
+            leng = LIMIT(leng, usb_string_descriptor_buffer[0]);
 
             uint8_t *descAddr_temp = (uint8_t *)&usb_string_descriptor_buffer; 
 
