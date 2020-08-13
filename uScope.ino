@@ -149,7 +149,7 @@ typedef struct {
   uint32_t DESCADDR; // next descriptor address
 } dmacdescriptor;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t   bmRequestType;
   uint8_t   bRequest;
   uint16_t  wValue;
@@ -157,7 +157,7 @@ typedef struct {
   uint16_t  wLength;
 } usb_request_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t  bLength            = 18; // bytes
   uint8_t  bDescriptorType    = 1; // for device
   uint16_t bcdUSB             = 0x0200; // version of USB spec, here 2.0
@@ -174,7 +174,7 @@ typedef struct {
   uint8_t  bNumConfigurations = 1;
 } deviceDescriptor;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t   bLength;
   uint8_t   bDescriptorType;
   uint16_t  wTotalLength;
@@ -185,7 +185,7 @@ typedef struct {
   uint8_t   bMaxPower;
 } usb_configuration_descriptor_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t   bLength;
   uint8_t   bDescriptorType;
   uint8_t   bInterfaceNumber;
@@ -197,7 +197,7 @@ typedef struct {
   uint8_t   iInterface;
 } usb_interface_descriptor_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t   bLength;
   uint8_t   bDescriptorType;
   uint8_t   bEndpointAddress;
@@ -206,7 +206,7 @@ typedef struct {
   uint8_t   bInterval;
 } usb_endpoint_descriptor_t;
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   uint8_t bLength;
   uint8_t bDescriptorType;
   uint16_t bcdHID;
@@ -236,7 +236,7 @@ alignas(4) uint8_t usb_hid_report_descriptor[33] =
   0xc0,              // End Collection
 };
 
-typedef struct {
+typedef struct __attribute__((packed)) {
   usb_configuration_descriptor_t  configuration;
   usb_interface_descriptor_t      interface;
   usb_hid_descriptor_t            hid;
@@ -607,6 +607,8 @@ void USB_Handler(){
     uint16_t leng = request->wLength;
 
     uart_puts("\ntype: "); uart_write(type + ascii);
+    uart_puts("\nwValueL: "); uart_write(wValue_L + ascii);
+    uart_puts("\nwValueH: "); uart_write(wValue_H + ascii);
 
     switch ((request->bRequest << 8) | request->bmRequestType){
       case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):{
@@ -722,6 +724,7 @@ void USB_Handler(){
 
             for (int i = 0; i < len; i++){
               usb_string_descriptor_buffer[2 + i*2] = str[i]; // place in every other byte of buffer to convert from ASCII to UTF-16
+              usb_string_descriptor_buffer[3 + i*2] = 0;
             }
 
             leng = LIMIT(leng, string0Descriptor_usb.bLength);
@@ -926,12 +929,16 @@ void USB_Handler(){
       
       } break;
 
+      case USB_CMD(IN, INTERFACE, STANDARD, GET_DESCRIPTOR): {
+        uart_puts("\nInterface");
+      } break;
+
       // TOD0:
 
       // USB_CMD(OUT, DEVICE, STANDARD, CLEAR_FEATURE) (stall in ataradov)
       // USB_CMD(OUT, INTERFACE, STANDARD, CLEAR_FEATURE) (stall in ataradov)
       // USB_CMD(OUT, ENDPOINT, STANDARD, CLEAR_FEATURE)
-      // USB_CMD(IN, INTERFACE, STANDARD, GET_DESCRIPTOR) (see line 253 of usb.c in ataradov's)
+
       
       default: {
 
