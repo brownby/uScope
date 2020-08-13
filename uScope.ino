@@ -13,6 +13,7 @@
 #include "USB/CDC.h"
 #include "USB/SAMD21_USBDevice.h"
 #include "usb_descriptors.h"
+#include "usb_enums.h"
 
 #define freq_CPU 48000000 // CPU clock frequency
 static uint32_t baud = 115200; // for UART debug of USB
@@ -50,6 +51,10 @@ extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
 extern UsbDeviceDescriptor usb_endpoints[];
 extern const uint8_t usb_num_endpoints;
 
+deviceDescriptor deviceDescriptor_usb __attribute__ ((aligned (4)));
+stringDescriptor string0Descriptor_usb __attribute__ ((aligned (4)));
+uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
+
 enum type {sine, sawtooth}; // supported waveform types
 
 typedef struct {
@@ -75,10 +80,8 @@ typedef struct {
 volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16))); // write-back descriptor
 dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16))); // channel descriptors
 dmacdescriptor descriptor __attribute__ ((aligned (16)));
-deviceDescriptor deviceDescriptor_usb __attribute__ ((aligned (4)));
-stringDescriptor string0Descriptor_usb __attribute__ ((aligned (4)));
 UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
-uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
+
 
 void uart_init(){
    
