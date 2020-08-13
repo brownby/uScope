@@ -697,13 +697,11 @@ void USB_Handler(){
 
             memset(usb_string_descriptor_buffer, 0, sizeof(usb_string_descriptor_buffer));
 
-//            usb_string_descriptor_buffer[0] = len*2 + 2;
-            usb_string_descriptor_buffer[0] = len + 2; // changed from ataradov doing len*2 + 2, unclear why multiply by 2
+            usb_string_descriptor_buffer[0] = len*2 + 2; // len*2 because USB uses UTF-16
             usb_string_descriptor_buffer[1] = USB_STRING_DESCRIPTOR;
 
             for (int i = 0; i < len; i++){
-//              usb_string_descriptor_buffer[2 + i*2] = str[i];
-              usb_string_descriptor_buffer[2 + i] = str[i]; // also unclear here why ataradov was multiplying by 2 on the index
+              usb_string_descriptor_buffer[2 + i*2] = str[i]; // place in every other byte of buffer to convert from ASCII to UTF-16
             }
 
             leng = LIMIT(leng, string0Descriptor_usb.bLength);
