@@ -511,6 +511,10 @@ void DMAC_Handler() { // primary, non-USB DMAC ISR
 void usb_init() 
 {
 
+  // reset and wait for reset to complete
+  USB->DEVICE.CTRLA.bit.SWRST = 1;
+  while(USB->DEVICE.CTRLA.bit.SWRST);
+
   memset((uint8_t *)EP, 0, sizeof(EP));
   USB->DEVICE.DESCADD.reg = (uint32_t)EP;
   
@@ -532,6 +536,9 @@ void usb_init()
 void USB_Handler(){
 
   int epint, flags;
+
+  uart_puts("\nINTFLAG_H: "); uart_write((uint8_t)(USB->DEVICE.INTFLAG.reg >> 8) + 65);
+  uart_puts("\nINTFLAG_L: "); uart_write((uint8_t)(USB->DEVICE.INTFLAG.reg & 0xff) + 65);
 
   if(USB->DEVICE.INTFLAG.bit.EORST) { // if EORST interrupt
 
@@ -925,11 +932,10 @@ void USB_Handler(){
     
     if (0 == (epint & (1 << i)))
       continue;
-    
+      
     epint &= ~(1 << i);
     
     flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
-
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
       
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
@@ -1021,7 +1027,7 @@ void test_dac(type waveform){
   }
   
   while(1){
-    
+//    uart_puts("\nDAC");
     for (int i = 0; i < NPTS; i++){ 
       analogWrite(A0,waveout[i]);
     }
@@ -1055,6 +1061,7 @@ void setup() {
 
 void loop() {
 
+  uart_puts("\nin loop");
   type waveform = sine;
   test_dac(waveform);
   
