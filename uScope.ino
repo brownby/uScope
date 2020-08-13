@@ -512,6 +512,7 @@ void usb_init()
 {
 
   // reset and wait for reset to complete
+  // Arduino core enables SOF interrupts by default, causing ISR to be entered a lot
   USB->DEVICE.CTRLA.bit.SWRST = 1;
   while(USB->DEVICE.CTRLA.bit.SWRST);
 
@@ -536,9 +537,6 @@ void usb_init()
 void USB_Handler(){
 
   int epint, flags;
-
-  uart_puts("\nINTFLAG_H: "); uart_write((uint8_t)(USB->DEVICE.INTFLAG.reg >> 8) + 65);
-  uart_puts("\nINTFLAG_L: "); uart_write((uint8_t)(USB->DEVICE.INTFLAG.reg & 0xff) + 65);
 
   if(USB->DEVICE.INTFLAG.bit.EORST) { // if EORST interrupt
 
@@ -1061,7 +1059,6 @@ void setup() {
 
 void loop() {
 
-  uart_puts("\nin loop");
   type waveform = sine;
   test_dac(waveform);
   
