@@ -4,16 +4,6 @@
 #include "Arduino.h"
 #include "usb_enums.h"
 
-enum{
-  USB_STR_ZERO,
-  USB_STR_MANUFACTURER,
-  USB_STR_PRODUCT,
-  USB_STR_SERIAL_NUMBER,
-  USB_STR_CONFIGURATION,
-  USB_STR_INTERFACE,
-  USB_STR_COUNT,
-};
-
 typedef struct __attribute__((packed)) {
   uint8_t  bLength            = 18; // bytes
   uint8_t  bDescriptorType    = 1; // for device
@@ -63,17 +53,111 @@ typedef struct __attribute__((packed)) {
   uint8_t   bInterval;
 } usb_endpoint_descriptor_t;
 
+// Class-Specific AudioControl Interface Descriptor
+// pg. 37 of spec
 typedef struct __attribute__((packed)) {
-  
-} usb_audio_control_descriptor_t;
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bDescriptorSubType;
+  uint16_t bcdADC;
+  uint16_t wTotalLength;
+  uint8_t bInCollection;
+  uint8_t baInterfaceNr;
+} usb_audio_header_descriptor_t;
 
+// Input Terminal Descriptor
+// pg. 39 of spec
 typedef struct __attribute__((packed)) {
-  
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bDescriptorySubtype;
+  uint8_t bTerminalID;
+  uint16_t wTerminalType;
+  uint8_t bAssocTerminal;
+  uint8_t bNrChannels;
+  uint16_t wChannelConfig;
+  uint8_t iChannelNames;
+  uint8_t iTerminal;
+} usb_audio_input_descriptor_t;
+
+// Output Terminal Descriptor
+// pg. 40 of spec
+typedef struct __attribute__((packed)) {
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bDescriptorySubtype;
+  uint8_t bTerminalID;
+  uint16_t wTerminalType;
+  uint8_t bAssocTerminal;
+  uint8_t bSourceID;
+  uint8_t iTerminal;
+} usb_audio_output_descriptor_t;
+
+// Feature Unit Descriptor
+// Other units we can add if needed: mixer, selector, processing
+// pg. 41 of spec
+typedef struct __attribute__((packed)) {
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bDescriptorySubtype;
+  uint8_t bUnitID;
+  uint8_t bSourceID;
+  uint8_t bControlSize;
+  uint16_t bmControls0; // Need one of these bitmaps per channel, may need to add more
+  uint8_t iFeature;
+} usb_audio_feature_descriptor_t;
+
+// Class-Specific Audio Stream Interface Descriptor
+// pg. 59 of spec
+typedef struct __attribute__((packed)) {
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bDescriptorySubtype;
+  uint8_t bTerminalLink;
+  uint8_t bDelay;
+  uint16_t wFormatTag;
 } usb_audio_stream_descriptor_t;
 
+// Type 1 Format Descriptor
+// pg. 10 of USB Audio Data Formats 1.0 spec
 typedef struct __attribute__((packed)) {
-  
-} usb_audio_alternate_descriptor_t;
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bDescriptorySubtype;
+  uint8_t bFormatType;
+  uint8_t bNrChannels;
+  uint8_t bSubframeSize;
+  uint8_t bBitResolution;
+  uint8_t bSamFreqType; // 0 for continous, any other number for number of discrete sampling frequencies,
+  uint8_t bSamFreq0_byte0;
+  uint8_t bSamFreq0_byte1;
+  uint8_t bSamFreq0_byte2;
+  // if we want more sample frequencies, need to add to the list here with more options, each specified with 3 bytes
+} usb_audio_format_descriptor_t;
+
+// Standard AudioStream Isochronous Audio Data Endpoint Descriptor
+// pg. 61 of spec
+typedef struct __attribute__((packed)) {
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bEndpointAddress;
+  uint8_t bmAttributes;
+  uint16_t wMaxPacketSize;
+  uint8_t bInterval;
+  uint8_t bRefresh;
+  uint8_t bSynchAddress;
+} usb_audio_iso_ep_std_descriptor_t;
+
+// Class-Specific AudioStream Isochronous Audio Data Endpoint Descriptor
+// pg. 62 of spec
+typedef struct __attribute__((packed)) {
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bDescriptorySubtype;
+  uint8_t bmAttributes;
+  uint8_t bLockDelayUnits;
+  uint16_t wLockDelay;
+} usb_audio_iso_ep_descriptor_t;
 
 typedef struct __attribute__((packed)) {
   uint8_t bLength;
