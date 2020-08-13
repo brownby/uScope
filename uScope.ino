@@ -931,6 +931,32 @@ void USB_Handler(){
 
       case USB_CMD(IN, INTERFACE, STANDARD, GET_DESCRIPTOR): {
         uart_puts("\nInterface");
+
+        leng = LIMIT(leng, sizeof(usb_hid_report_descriptor));
+
+        uint8_t *descAddr_temp = (uint8_t *)&usb_hid_report_descriptor; 
+
+        if (leng <= deviceDescriptor_usb.bMaxPacketSize0){
+      
+          memcpy(usb_ctrl_in_buf, descAddr_temp, leng);
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
+      
+        }
+
+        else {
+
+         EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)descAddr_temp;
+
+        }
+
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = leng; // how big it is
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+  
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1; // clear flag
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1; // start 
+
+        while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait  
+        
       } break;
 
       // TOD0:
