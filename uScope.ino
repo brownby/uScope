@@ -599,6 +599,7 @@ void USB_Handler(){
     usb_request_t * request = (usb_request_t*) usb_ctrl_out_buf;
 
     uart_puts("\n\nbRequest: ");uart_write(request->bRequest+ascii); // key for 0,1,3,5,6,7,8,9,10,11,12
+    uart_puts("\nbmRequestType: "); uart_write(request->bmRequestType + ascii); 
 
     uint8_t wValue_L = request->wValue & 0xff;
     uint8_t wValue_H = request->wValue >> 8;
@@ -606,7 +607,8 @@ void USB_Handler(){
     uint8_t index = request->wValue & 0xff;
     uint16_t leng = request->wLength;
 
-    uart_puts("\ntype: "); uart_write(type + ascii);
+    uart_puts("\nwValueH: "); uart_write(wValue_H + ascii);
+    uart_puts("\nwValueL: "); uart_write(wValue_L + ascii);
 
     switch ((request->bRequest << 8) | request->bmRequestType){
       case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):{
