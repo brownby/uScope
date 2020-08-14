@@ -17,7 +17,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
 
   .standard_AC_interface =
   {
-    .bLength             = sizeof(usb_standard_AC_interface_descriptor_t),
+    .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
     .bInterfaceNumber    = 0x00,
     .bAlternateSetting   = 0x00,
@@ -79,7 +79,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
 
   .stream_interface =
   {
-    .bLength             = sizeof(usb_audio_stream_interface_descriptor_t),
+    .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
     .bInterfaceNumber    = 0x01,
     .bAlternateSetting   = 0x00,
@@ -92,7 +92,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
 
   .alternate_interface =
   {
-    .bLength             = sizeof(usb_alternate_audio_interface_descriptor_t),
+    .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
     .bInterfaceNumber    = 0x01,
     .bAlternateSetting   = 0x01,
