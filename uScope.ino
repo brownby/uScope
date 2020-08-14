@@ -576,7 +576,7 @@ void USB_Handler(){
         }
       } break;
 
-      case USB_CMD(OUT, DEVICE, STANDARD, SET_INTERFACE): {
+      case USB_CMD(OUT, INTERFACE, STANDARD, SET_INTERFACE): {
 
         uart_puts("\nSetInterface");
         
