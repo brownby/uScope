@@ -13,6 +13,7 @@
 #include "USB/CDC.h"
 #include "USB/SAMD21_USBDevice.h"
 #include "usb_descriptors.h"
+#include "usb_enums.h"
 
 #define freq_CPU 48000000 // CPU clock frequency
 static uint32_t baud = 115200; // for UART debug of USB
