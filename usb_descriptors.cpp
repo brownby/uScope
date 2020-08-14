@@ -34,7 +34,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubType  = 0x01, // header
     .bcdADC              = 0x0001, // 1.0
-    .wTotalLength        = sizeof(usb_class_AC_interface_descriptor_t) + sizeof(usb_audio_input_terminal_descriptor_t) + sizeof(usb_audio_output_terminal_descriptor_t),
+    .wTotalLength        = sizeof(usb_class_AC_interface_descriptor_t) + sizeof(usb_audio_input_terminal_descriptor_t) + sizeof(usb_audio_output_terminal_descriptor_t) + sizeof(usb_audio_input_feature_descriptor_t),
     .bInCollection       = 0x01,
     .baInterfaceNr       = 0x01,
   },
@@ -45,10 +45,10 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x02, // input terminal
     .bTerminalID         = 0x01,
-    .wTerminalType       = 0x1007, // radio reciever? --> check options
+    .wTerminalType       = 0x0201, // 0x1007 = radio reciever, 0x0201 = microphone
     .bAssocTerminal      = 0x00,
     .bNrChannels         = 0x02,
-    .wChannelConfig      = 0x0300, // left, right? --> change to mono
+    .wChannelConfig      = 0x0300, // 0x0000 = mono, 0x0300 = left, right
     .iChannelNames       = 0x00,
     .iTerminal           = 0x00,
   },
@@ -61,7 +61,9 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bUnitID             = 0x02,
     .bSourceID           = 0x01, // link to input terminal
     .bControlSize        = 0x02, // bytes
-    .bmControls0         = 0x0000,
+    .bmMasterControls    = 0x0100, // mute enabled
+    .bmControls1         = 0x0000,
+    .bmControls2         = 0x0000,
     .iFeature            = 0,
   },
 
@@ -71,7 +73,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x03,  // output terminal
     .bTerminalID         = 0x03,
-    .wTerminalType       = 0x101, // streaming
+    .wTerminalType       = 0x0101, // streaming
     .bAssocTerminal      = 0x00,
     .bSourceID           = 0x02,  // link to feature unit
     .iTerminal           = 0x00,
@@ -110,7 +112,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorSubtype  = 0x01, // general
     .bTerminalLink       = 0x03,
     .bDelay              = 0x00,
-    .wFormatTag          = 0x100, // PCM
+    .wFormatTag          = 0x0100, // PCM
   },
 
   .format_type =
@@ -118,7 +120,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bLength             = sizeof(usb_audio_format_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x02, // format
-    .bFormatType         = 0x01, // type
+    .bFormatType         = 0x01, // type I
     .bNrChannels         = 0x02, // --> change to 1 for Mono?
     .bSubframeSize       = 0x02, // --> change to 1 for PCM8?
     .bBitResolution      = 0x10, // 16bit --> change to 8bit

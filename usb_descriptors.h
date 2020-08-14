@@ -74,7 +74,9 @@ typedef struct __attribute__((packed)) {
   uint8_t bUnitID;
   uint8_t bSourceID;
   uint8_t bControlSize;
-  uint16_t bmControls0; // need one of these bitmaps per channel, may need to add more
+  uint16_t bmMasterControls; // master channel 0 controls
+  uint16_t bmControls1; // channel 1 controls
+  uint16_t bmControls2; // channel 2 controls
   uint8_t iFeature;
 } usb_audio_input_feature_descriptor_t; // pg. 41 of spec
 
