@@ -15,67 +15,138 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bMaxPower           = 200, // 400 mA
   },
 
-  .interface =
+  .standard_AC_interface =
   {
-    .bLength             = sizeof(usb_interface_descriptor_t),
+    .bLength             = sizeof(usb_standard_AC_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
-    .bInterfaceNumber    = 0,
-    .bAlternateSetting   = 0,
-    .bNumEndpoints       = 2,
-    .bInterfaceClass     = 0x03, // HID
-    .bInterfaceSubClass  = 0x00,
+    .bInterfaceNumber    = 0x00,
+    .bAlternateSetting   = 0x00,
+    .bNumEndpoints       = 0x00,
+    .bInterfaceClass     = 0x01,
+    .bInterfaceSubClass  = 0x01,
+    .bInterfaceProtocol  = 0x00,
+    .iInterface          = 0x00,
+  },
+
+  .class_AC_interface =
+  {
+    .bLength             = sizeof(usb_class_AC_interface_descriptor_t),
+    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorSubType  = 0x01, // header
+    .bcdADC              = 0x0001, // 1.0
+    .wTotalLength        = 0,
+    .bInCollection       = 0x01,
+    .baInterfaceNr       = 0x01,
+  },
+
+  .input_terminal =
+  {
+    .bLength             = sizeof(usb_audio_input_terminal_descriptor_t),
+    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorSubtype  = 0x02, // input terminal
+    .bTerminalID         = 0x01,
+    .wTerminalType       = 0x1007, // radio reciever? --> check options
+    .bAssocTerminal      = 0x00,
+    .bNrChannels         = 0x02,
+    .wChannelConfig      = 0x0300, // left, right? --> change to mono
+    .iChannelNames       = 0x00,
+    .iTerminal           = 0x00,
+  },
+
+  .feature_unit =
+  {
+    .bLength             = sizeof(usb_audio_input_feature_descriptor_t),
+    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorSubtype  = 0x06, // feature unit
+    .bUnitID             = 0x02,
+    .bSourceID           = 0x01, // link to input terminal
+    .bControlSize        = 0x02, // bytes
+    .bmControls0         = 0x0000,
+    .iFeature            = 0,
+  },
+
+  .output_terminal =
+  {
+    .bLength             = sizeof(usb_audio_output_terminal_descriptor_t),
+    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorSubtype  = 0x03,  // output terminal
+    .bTerminalID         = 0x03,
+    .wTerminalType       = 0x101, // streaming
+    .bAssocTerminal      = 0x00,
+    .bSourceID           = 0x02,  // link to feature unit
+    .iTerminal           = 0x00,
+  },
+
+  .stream_interface =
+  {
+    .bLength             = sizeof(usb_audio_stream_interface_descriptor_t),
+    .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
+    .bInterfaceNumber    = 0x01,
+    .bAlternateSetting   = 0x00,
+    .bNumEndpoints       = 0x00,
+    .bInterfaceClass     = 0x01, // audio
+    .bInterfaceSubClass  = 0x02, // streaming
     .bInterfaceProtocol  = 0x00,
     .iInterface          = USB_STR_INTERFACE,
   },
 
-  .hid =
+  .alternate_interface =
   {
-    .bLength             = sizeof(usb_hid_descriptor_t),
-    .bDescriptorType     = 0x21, // HID descriptor
-    .bcdHID              = 0x0111,
-    .bCountryCode        = 0,
-    .bNumDescriptors     = 1,
-    .bDescriptorType1    = 0x22, // HID_REPORT descriptor
-    .wDescriptorLength   = sizeof(usb_hid_report_descriptor),
-  },
-  
-  .ep_in =
-  {
-    .bLength             = sizeof(usb_endpoint_descriptor_t),
-    .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
-    .bEndpointAddress    = USB_IN_ENDPOINT | 1,
-    .bmAttributes        = USB_INTERRUPT_ENDPOINT,
-    .wMaxPacketSize      = 64,
-    .bInterval           = 1,
+    .bLength             = sizeof(usb_alternate_audio_interface_descriptor_t),
+    .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
+    .bInterfaceNumber    = 0x01,
+    .bAlternateSetting   = 0x01,
+    .bNumEndpoints       = 0x01,
+    .bInterfaceClass     = 0x01, // audio
+    .bInterfaceSubClass  = 0x02, // streaming
+    .bInterfaceProtocol  = 0x00,
+    .iInterface          = USB_STR_INTERFACE,
   },
 
-  .ep_out =
+  .stream_class_detail =
   {
-    .bLength             = sizeof(usb_endpoint_descriptor_t),
-    .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
-    .bEndpointAddress    = USB_OUT_ENDPOINT | 2,
-    .bmAttributes        = USB_INTERRUPT_ENDPOINT,
-    .wMaxPacketSize      = 64,
-    .bInterval           = 1,
+    .bLength             = sizeof(usb_audio_stream_class_descriptor_t),
+    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorSubtype  = 0x01, // general
+    .bTerminalLink       = 0x03,
+    .bDelay              = 0x00,
+    .wFormatTag          = 0x100, // PCM
   },
-};
 
-alignas(4) uint8_t usb_hid_report_descriptor[33] =
-{
-  0x06, 0x00, 0xff,  // Usage Page (Vendor Defined 0xFF00)
-  0x09, 0x01,        // Usage (0x01)
-  0xa1, 0x01,        // Collection (Application)
-  0x15, 0x00,        //   Logical Minimum (0)
-  0x26, 0xff, 0x00,  //   Logical Maximum (255)
-  0x75, 0x08,        //   Report Size (8)
-  0x95, 0x40,        //   Report Count (64)
-  0x09, 0x01,        //   Usage (0x01)
-  0x81, 0x02,        //   Input (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position)
-  0x95, 0x40,        //   Report Count (64)
-  0x09, 0x01,        //   Usage (0x01)
-  0x91, 0x02,        //   Output (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-  0x95, 0x01,        //   Report Count (1)
-  0x09, 0x01,        //   Usage (0x01)
-  0xb1, 0x02,        //   Feature (Data,Var,Abs,No Wrap,Linear,Preferred State,No Null Position,Non-volatile)
-  0xc0,              // End Collection
+  .format_type =
+  {
+    .bLength             = sizeof(usb_audio_format_descriptor_t),
+    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorSubtype  = 0x02, // format
+    .bFormatType         = 0x01, // type
+    .bNrChannels         = 0x02, // --> change to 1 for Mono?
+    .bSubframeSize       = 0x02, // --> change to 1 for PCM8?
+    .bBitResolution      = 0x10, // 16bit --> change to 8bit
+    .bSamFreqType        = 0x01, // 1 sampling frequency
+    .bSamFreq0_byte0     = 0x80,
+    .bSamFreq0_byte1     = 0xBB,
+    .bSamFreq0_byte2     = 0x00, // 48 kHz --> needs to match ADC?
+  },
+
+  .iso_ep =
+  {
+    .bLength             = sizeof(usb_iso_ep_descriptor_t),
+    .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
+    .bEndpointAddress    = 0x83, // ep[3].in
+    .bmAttributes        = 0x05, // asynchronous
+    .wMaxPacketSize      = 0x0002, // 512 --> change to 1023
+    .bInterval           = 0x01, // 1 ms
+    .bRefresh            = 0x00,
+    .bSynchAddress       = 0x00, // no sync
+  },
+
+  .iso_ep_class_detail =
+  {
+    .bLength             = sizeof(usb_audio_iso_ep_descriptor_t),
+    .bDescriptorType     = USB_CS_ENDPOINT,
+    .bDescriptorSubtype  = 0x01, //general
+    .bmAttributes        = 0x00,
+    .bLockDelayUnits     = 0x02, // PCM samples
+    .wLockDelay          = 0x0000,
+  }
 };
