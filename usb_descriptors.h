@@ -4,16 +4,6 @@
 #include "Arduino.h"
 #include "usb_enums.h"
 
-enum{
-  USB_STR_ZERO,
-  USB_STR_MANUFACTURER,
-  USB_STR_PRODUCT,
-  USB_STR_SERIAL_NUMBER,
-  USB_STR_CONFIGURATION,
-  USB_STR_INTERFACE,
-  USB_STR_COUNT,
-};
-
 typedef struct __attribute__((packed)) {
   uint8_t  bLength            = 18; // bytes
   uint8_t  bDescriptorType    = 1; // for device

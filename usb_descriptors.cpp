@@ -1,4 +1,5 @@
 #include "usb_descriptors.h"
+#include "usb_enums.h"
 
 alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   
