@@ -12,8 +12,8 @@ typedef struct __attribute__((packed)) {
   uint8_t  bDeviceSubClass    = 0x00; // within audio, ...
   uint8_t  bDeviceProtocol    = 0x00; // 0x00 = none
   uint8_t  bMaxPacketSize0    = 64;
-  uint16_t idVendor           = 0x2341; // Arduino 0x2341
-  uint16_t idProduct          = 0x804f; // MKZero 0x804f
+  uint16_t idVendor           = 0x6666; // Arduino 0x2341
+  uint16_t idProduct          = 0x6666; // MKZero 0x804f
   uint16_t bcdDevice          = 0x0100; // release number of the device
   uint8_t  iManufacturer      = USB_STR_MANUFACTURER;
   uint8_t  iProduct           = USB_STR_PRODUCT;
@@ -97,7 +97,7 @@ typedef struct __attribute__((packed)) {
   uint8_t bDescriptorSubtype;
   uint8_t bTerminalLink;
   uint8_t bDelay;
-  uint8_t wFormatTag;
+  uint16_t wFormatTag;
 } usb_audio_stream_class_descriptor_t; // reference?
 
 typedef struct __attribute__((packed)) {
