@@ -4,7 +4,7 @@
  * Intended for use with MKR Zero (SAMD21)
  * 
  * J. Evan Smith, Ben Y. Brown
- * Last revised: 13 August 2020
+ * Last revised: 14 August 2020
  */
 
 #include "Arduino.h"          // required before wiring_private.h, also includes USBDesc.h, USBCore.h, USBAPI.h, and USB_host.h
@@ -20,7 +20,7 @@ static uint32_t baud = 115200; // for UART debug of USB
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU; // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 64           // number of beats for adc transfer
+#define NBEATS 1023         // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 #define CONTROL_ENDPOINT 0
 #define CDC_ENDPOINT_OUT 2
@@ -30,9 +30,9 @@ uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU; // to pass to
 #define USB_CMD(dir, rcpt, type, cmd) \
     ((USB_##cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 
-uint8_t adc_buffer0[NBEATS];              // buffer with length set by NBEATS
-uint8_t adc_buffer1[NBEATS];              // alternating buffer
-uint16_t waveout[NPTS];                   // buffer for waveform
+uint8_t adc_buffer0[NBEATS];  // buffer with length set by NBEATS
+uint8_t adc_buffer1[NBEATS];  // alternating buffer
+uint16_t waveout[NPTS];       // buffer for waveform
 
 static uint32_t usb_ctrl_in_buf[16];
 static uint32_t usb_ctrl_out_buf[16];
@@ -43,9 +43,9 @@ static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
 static uint8_t ascii = 48;      // offset to interpret single digit uart outputs
 static int usb_config;
 
-char *usb_strings[] = {"", "Arduino + Harvard ALL","MKR Zero uScope","ALL-0001","Main Configuration","Main Interface"};
+char *usb_strings[] = {"", "Arduino + Harvard","μScope by Active Learning","ALL-0001","Main Configuration","Main Interface"};
 
-volatile bool bufnum;  // track which buffer to write to, while USB reads
+volatile bool bufnum = false;  // track which buffer to write to, while USB reads
 
 extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
 extern UsbDeviceDescriptor usb_endpoints[];
@@ -82,8 +82,7 @@ dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16))); // channel
 dmacdescriptor descriptor __attribute__ ((aligned (16)));
 UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
 
-
-void uart_init(){
+void uart_init() {
    
    PORT->Group[0].DIRSET.reg = (1 << 10); // set TX pin direction to output
    PORT->Group[0].PINCFG[10].bit.PMUXEN = 1; 
@@ -104,14 +103,14 @@ void uart_init(){
    SERCOM0->USART.CTRLA.bit.ENABLE=0; // disable USART
    while(SERCOM0->USART.SYNCBUSY.bit.ENABLE == 1);
    
-   SERCOM0->USART.CTRLA.bit.MODE=0x01;     // 0x1: USART with internal clock
-   SERCOM0->USART.CTRLA.bit.CMODE = 0;     // asychronous
-   SERCOM0->USART.CTRLA.bit.RXPO = 3;      // pad to be used for RX, pin 3 in Arduino-land
-   SERCOM0->USART.CTRLA.bit.TXPO = 1;      // pad to be sued for TX, pin 2 in Arduino-land
-   SERCOM0->USART.CTRLA.bit.DORD = 1;      // LSB transmitted first
-   SERCOM0->USART.CTRLA.bit.FORM = 1;      // USART frame with parity
+   SERCOM0->USART.CTRLA.bit.MODE   = 0x01;     // 0x1: USART with internal clock
+   SERCOM0->USART.CTRLA.bit.CMODE  = 0;     // asychronous
+   SERCOM0->USART.CTRLA.bit.RXPO   = 3;      // pad to be used for RX, pin 3 in Arduino-land
+   SERCOM0->USART.CTRLA.bit.TXPO   = 1;      // pad to be sued for TX, pin 2 in Arduino-land
+   SERCOM0->USART.CTRLA.bit.DORD   = 1;      // LSB transmitted first
+   SERCOM0->USART.CTRLA.bit.FORM   = 1;      // USART frame with parity
    SERCOM0->USART.CTRLB.bit.CHSIZE = 0;    // 8 bits
-   SERCOM0->USART.CTRLB.bit.PMODE = 0;     // parity even
+   SERCOM0->USART.CTRLB.bit.PMODE  = 0;     // parity even
    SERCOM0->USART.CTRLB.bit.SBMODE = 0;    // 1 stop bit
 
    SERCOM0->USART.BAUD.reg = (uint16_t)br;
@@ -126,56 +125,56 @@ void uart_init(){
 
 }
 
-void uart_putc(char c){
+void uart_putc(char c) {
 
   while (SERCOM0->USART.INTFLAG.bit.DRE == 0); // wait for DATA.reg to be empty
   SERCOM0->USART.DATA.reg = c;  
 
 }
 
-void uart_write(uint16_t data){
+void uart_write(uint16_t data) {
   
   while (SERCOM0->USART.INTFLAG.bit.DRE == 0); // wait for DATA.reg to be empty
   SERCOM0->USART.DATA.reg = (uint32_t)data;  
 
 }
 
-void uart_puts(char *s){
+void uart_puts(char *s) {
  
    while(*s)
-     uart_putc(*s++);
+    uart_putc(*s++);
    
 }
 
-void adc_init(){
+void adc_init() {
 
   pinPeripheral(ADCPIN, PIO_ANALOG); // for pin, set function
 
   ADC->CTRLA.bit.ENABLE = 0x00; // disable ADC before configuration
   while(ADC->STATUS.bit.SYNCBUSY == 1); // wait
 
-  ADC->INPUTCTRL.bit.GAIN = 0xF; // for DIV2 or 0x0 for 1X
+  ADC->INPUTCTRL.bit.GAIN = 0xF; // 0xF for DIV2 or 0x0 for 1X
   ADC->REFCTRL.bit.REFSEL = 0x2; // reference voltage = 0.5 VDDANA
-  while(ADC->STATUS.bit.SYNCBUSY == 1); // wait
+  while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
   ADC->INPUTCTRL.bit.MUXPOS = g_APinDescription[ADCPIN].ulADCChannelNumber; // select ADC pin, positive node
-  while(ADC->STATUS.bit.SYNCBUSY == 1); // wait
+  while(ADC->STATUS.bit.SYNCBUSY == 1); 
   
   ADC->INPUTCTRL.bit.MUXNEG = 0x18; // negative node, if differential, set to 0x18 = internal GND
-  while(ADC->STATUS.bit.SYNCBUSY == 1); // wait
+  while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0; // 1 sample per conversion, no averaging
   ADC->SAMPCTRL.reg = 0x00; // minimize sample time, given in 1/2 CLK_ADC cycles, p863
-  while(ADC->STATUS.bit.SYNCBUSY == 1); // wait
+  while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
   ADC->CTRLB.bit.PRESCALER = 0x3; // 0x3 = DIV32 or 0x2 = DIV16
   ADC->CTRLB.bit.RESSEL = 0x3;    // result resolution, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;     // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;    // ADC is single-ended, ignore MUXNEG defined above
-  while(ADC->STATUS.bit.SYNCBUSY == 1); // wait
+  while(ADC->STATUS.bit.SYNCBUSY == 1); 
   
   ADC->CTRLA.bit.ENABLE = 0x01; // enable ADC after configuration
-  while(ADC->STATUS.bit.SYNCBUSY == 1); // wait
+  while(ADC->STATUS.bit.SYNCBUSY == 1); 
   
 }
 
@@ -270,18 +269,19 @@ void DMAC_Handler() { // primary, non-USB DMAC ISR
 
 }
 
-void usb_init() 
-{
+void usb_init() {
 
   // reset and wait for reset to complete
   // Arduino core enables SOF interrupts by default, causing ISR to be entered a lot
+
   USB->DEVICE.CTRLA.bit.SWRST = 1;
   while(USB->DEVICE.SYNCBUSY.bit.SWRST);
 
   memset((uint8_t *)EP, 0, sizeof(EP));
   USB->DEVICE.DESCADD.reg = (uint32_t)EP;
 
-  // Pad calibration, copied from SAMD21_USBDevice.h
+  // pad calibration, copied from SAMD21_USBDevice.h
+
   uint32_t *pad_transn_p = (uint32_t *) USB_FUSES_TRANSN_ADDR;
   uint32_t *pad_transp_p = (uint32_t *) USB_FUSES_TRANSP_ADDR;
   uint32_t *pad_trim_p   = (uint32_t *) USB_FUSES_TRIM_ADDR;
@@ -763,43 +763,6 @@ void USB_Handler(){
   }
 }
 
-void usb_status(){
-
-  __disable_irq();
-
-  uart_puts("\n\nStatus at this point (see above line)\n");
-
-  uart_puts("\nFSMSTATE: "); uart_write(USB->DEVICE.FSMSTATUS.bit.FSMSTATE+ascii);
-  uart_puts("\nSPEEDCONF: "); uart_write(USB->DEVICE.CTRLB.bit.SPDCONF+ascii);
-
-  uart_puts("\nEORST: "); uart_write(USB->DEVICE.INTFLAG.bit.EORST+ascii);
-  uart_puts("\nSOF: "); uart_write(USB->DEVICE.INTFLAG.bit.SOF+ascii);
-
-  uart_puts("\nEPCFG.EPTYPE0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPCFG.bit.EPTYPE0+ascii);
-  uart_puts("\nEPCFG.EPTYPE1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPCFG.bit.EPTYPE1+ascii);
-
-  uart_puts("\nCURBK: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.CURBK+ascii);
-  uart_puts("\nBK0RDY: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.BK0RDY+ascii);
-  uart_puts("\nBK1RDY: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.BK1RDY+ascii);
-  uart_puts("\nSTALLRQ0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.STALLRQ0+ascii);
-  uart_puts("\nSTALLRQ1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.STALLRQ1+ascii); 
-  uart_puts("\nDTGLIN: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.DTGLIN+ascii);
-  uart_puts("\nDTGLOUT: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUS.bit.DTGLOUT+ascii);
-  
-  uart_puts("\nRXSTP: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP+ascii);
-  uart_puts("\nSTALL0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.STALL0+ascii);
-  uart_puts("\nSTALL1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.STALL1+ascii);
-  uart_puts("\nTRFAIL0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL0+ascii);
-  uart_puts("\nTRFAIL1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL1+ascii);
-  uart_puts("\nTRCPT0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT0+ascii);
-  uart_puts("\nTRCPT1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1+ascii);
-
-  uart_puts("\n");
-
-  __enable_irq();
-  
-}
-
 void usb_pipe_status(){
 
   __disable_irq();
@@ -817,7 +780,7 @@ void usb_pipe_status(){
 
 }
 
-void test_dac(type waveform){
+void fngenerator(type waveform){
 
   int i;
   float phase = 3.14159*2.0*2./NPTS;
@@ -838,7 +801,6 @@ void test_dac(type waveform){
   }
   
   while(1){
-//    uart_puts("\nDAC");
     for (int i = 0; i < NPTS; i++){ 
       analogWrite(A0,waveout[i]);
     }
@@ -850,7 +812,7 @@ void setup() {
   __disable_irq();
 
   uart_init();
-  delay(1000);
+  delay(100);
   uart_puts("\nInitializing...");
   
   analogWriteResolution(10);
@@ -860,8 +822,6 @@ void setup() {
   usb_init();
   
   adc_to_sram_dma();
-
-  bufnum = 0;
   start_adc_sram_dma(); 
 
   uart_puts("\nStarting...");
@@ -873,6 +833,6 @@ void setup() {
 void loop() {
 
   type waveform = sine;
-  test_dac(waveform);
+  fngenerator(waveform);
   
 }
