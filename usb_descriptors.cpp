@@ -31,10 +31,10 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .class_AC_interface =
   {
     .bLength             = sizeof(usb_class_AC_interface_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubType  = 0x01, // header
     .bcdADC              = 0x0001, // 1.0
-    .wTotalLength        = 0,
+    .wTotalLength        = sizeof(usb_class_AC_interface_descriptor_t) + sizeof(usb_audio_input_terminal_descriptor_t) + sizeof(usb_audio_output_terminal_descriptor_t),
     .bInCollection       = 0x01,
     .baInterfaceNr       = 0x01,
   },
@@ -42,7 +42,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .input_terminal =
   {
     .bLength             = sizeof(usb_audio_input_terminal_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x02, // input terminal
     .bTerminalID         = 0x01,
     .wTerminalType       = 0x1007, // radio reciever? --> check options
@@ -56,7 +56,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .feature_unit =
   {
     .bLength             = sizeof(usb_audio_input_feature_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x06, // feature unit
     .bUnitID             = 0x02,
     .bSourceID           = 0x01, // link to input terminal
@@ -68,7 +68,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .output_terminal =
   {
     .bLength             = sizeof(usb_audio_output_terminal_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x03,  // output terminal
     .bTerminalID         = 0x03,
     .wTerminalType       = 0x101, // streaming
@@ -106,7 +106,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .stream_class_detail =
   {
     .bLength             = sizeof(usb_audio_stream_class_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x01, // general
     .bTerminalLink       = 0x03,
     .bDelay              = 0x00,
@@ -116,7 +116,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .format_type =
   {
     .bLength             = sizeof(usb_audio_format_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x02, // format
     .bFormatType         = 0x01, // type
     .bNrChannels         = 0x02, // --> change to 1 for Mono?
@@ -130,7 +130,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
 
   .iso_ep =
   {
-    .bLength             = sizeof(usb_iso_ep_descriptor_t),
+    .bLength             = sizeof(usb_ep_descriptor_t),
     .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
     .bEndpointAddress    = 0x83, // ep[3].in
     .bmAttributes        = 0x05, // asynchronous
@@ -143,7 +143,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .iso_ep_class_detail =
   {
     .bLength             = sizeof(usb_audio_iso_ep_descriptor_t),
-    .bDescriptorType     = USB_CS_ENDPOINT,
+    .bDescriptorType     = USB_CS_ENDPOINT_DESCRIPTOR,
     .bDescriptorSubtype  = 0x01, //general
     .bmAttributes        = 0x00,
     .bLockDelayUnits     = 0x02, // PCM samples

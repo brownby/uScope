@@ -89,8 +89,8 @@ enum{
   USB_STRING_DESCRIPTOR                    = 3,
   USB_INTERFACE_DESCRIPTOR                 = 4,
   USB_ENDPOINT_DESCRIPTOR                  = 5,
-  USB_CS_DESCRIPTOR                        = 24,
-  USB_CS_ENDPOINT                          = 25,
+  USB_CS_INTERFACE_DESCRIPTOR              = 0x24,
+  USB_CS_ENDPOINT_DESCRIPTOR               = 0x25,
 };
 
 #endif

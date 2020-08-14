@@ -92,30 +92,6 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
   uint8_t bLength;
   uint8_t bDescriptorType;
-  uint8_t bInterfaceNumber;
-  uint8_t bAlternateSetting;
-  uint8_t bNumEndpoints;
-  uint8_t bInterfaceClass;
-  uint8_t bInterfaceSubClass;
-  uint8_t bInterfaceProtocol;
-  uint8_t iInterface;
-} usb_audio_stream_interface_descriptor_t; // pg. 59 of spec
-
-typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint8_t bInterfaceNumber;
-  uint8_t bAlternateSetting;
-  uint8_t bNumEndpoints;
-  uint8_t bInterfaceClass;
-  uint8_t bInterfaceSubClass;
-  uint8_t bInterfaceProtocol;
-  uint8_t iInterface;
-} usb_alternate_audio_interface_descriptor_t; // incomplete?
-
-typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
   uint8_t bDescriptorSubtype;
   uint8_t bTerminalLink;
   uint8_t bDelay;
@@ -145,7 +121,7 @@ typedef struct __attribute__((packed)) {
   uint8_t bInterval;
   uint8_t bRefresh;
   uint8_t bSynchAddress;
-} usb_iso_ep_descriptor_t; // pg. 61 of spec
+} usb_ep_descriptor_t; // pg. 61 of spec
 
 typedef struct __attribute__((packed)) {
   uint8_t bLength;
@@ -167,7 +143,7 @@ typedef struct __attribute__((packed)) {
   usb_interface_descriptor_t                 alternate_interface;
   usb_audio_stream_class_descriptor_t        stream_class_detail;
   usb_audio_format_descriptor_t              format_type;
-  usb_iso_ep_descriptor_t                    iso_ep;
+  usb_ep_descriptor_t                        iso_ep;
   usb_audio_iso_ep_descriptor_t              iso_ep_class_detail;
 } usb_configuration_hierarchy_t;
 
