@@ -1,4 +1,4 @@
-# μScope Project
+# uScope Project
 __Open source instrumentation for Arduino__
 
 Simultaneous use of audio-bandwidth oscilloscope and function generator, with cross-platform support for Windows and macOS.
