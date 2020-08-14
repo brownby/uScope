@@ -125,9 +125,9 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bSubframeSize       = 0x02, // 2 bytes per audio subframe
     .bBitResolution      = 0x10, // 16bit --> change to 8bit
     .bSamFreqType        = 0x01, // 1 sampling frequency
-    .bSamFreq0_byte0     = 0x00,
-    .bSamFreq0_byte1     = 0xBB,
-    .bSamFreq0_byte2     = 0x80, // 48 kHz --> needs to match ADC?
+    .bSamFreq0_byte0     = 0x44,
+    .bSamFreq0_byte1     = 0xAC,
+    .bSamFreq0_byte2     = 0x00, // 44.1 kHz --> needs to match ADC?
   },
 
   .iso_ep =
