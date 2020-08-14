@@ -577,6 +577,14 @@ void USB_Handler(){
       } break;
 
       case USB_CMD(OUT, DEVICE, STANDARD, SET_INTERFACE): {
+
+        uart_puts("\nSetInterface");
+        
+        // send control ZLP
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
         
       } break;
 
