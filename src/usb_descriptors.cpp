@@ -8,7 +8,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bLength             = sizeof(usb_configuration_descriptor_t),
     .bDescriptorType     = USB_CONFIGURATION_DESCRIPTOR,
     .wTotalLength        = sizeof(usb_configuration_hierarchy_t),
-    .bNumInterfaces      = 1,
+    .bNumInterfaces      = 2,
     .bConfigurationValue = 1,
     .iConfiguration      = USB_STR_CONFIGURATION,
     .bmAttributes        = 0x80,
@@ -17,7 +17,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
 
   .standard_AC_interface =
   {
-    .bLength             = sizeof(usb_standard_AC_interface_descriptor_t),
+    .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
     .bInterfaceNumber    = 0x00,
     .bAlternateSetting   = 0x00,
@@ -31,10 +31,10 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .class_AC_interface =
   {
     .bLength             = sizeof(usb_class_AC_interface_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubType  = 0x01, // header
-    .bcdADC              = 0x0001, // 1.0
-    .wTotalLength        = 0,
+    .bcdADC              = 0x0100, // 1.0
+    .wTotalLength        = sizeof(usb_class_AC_interface_descriptor_t) + sizeof(usb_audio_input_terminal_descriptor_t) + sizeof(usb_audio_output_terminal_descriptor_t) + sizeof(usb_audio_input_feature_descriptor_t),
     .bInCollection       = 0x01,
     .baInterfaceNr       = 0x01,
   },
@@ -42,44 +42,46 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .input_terminal =
   {
     .bLength             = sizeof(usb_audio_input_terminal_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x02, // input terminal
     .bTerminalID         = 0x01,
-    .wTerminalType       = 0x1007, // radio reciever? --> check options
+    .wTerminalType       = 0x0201, // 0x1007 = radio reciever, 0x0201 = microphone
     .bAssocTerminal      = 0x00,
-    .bNrChannels         = 0x02,
-    .wChannelConfig      = 0x0300, // left, right? --> change to mono
+    .bNrChannels         = 0x01,
+    .wChannelConfig      = 0x0000, // 0x0000 = mono, 0x0300 = left, right
     .iChannelNames       = 0x00,
     .iTerminal           = 0x00,
   },
 
-  .feature_unit =
-  {
-    .bLength             = sizeof(usb_audio_input_feature_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
-    .bDescriptorSubtype  = 0x06, // feature unit
-    .bUnitID             = 0x02,
-    .bSourceID           = 0x01, // link to input terminal
-    .bControlSize        = 0x02, // bytes
-    .bmControls0         = 0x0000,
-    .iFeature            = 0,
-  },
+//  .feature_unit =
+//  {
+//    .bLength             = sizeof(usb_audio_input_feature_descriptor_t),
+//    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
+//    .bDescriptorSubtype  = 0x06, // feature unit
+//    .bUnitID             = 0x02,
+//    .bSourceID           = 0x01, // link to input terminal
+//    .bControlSize        = 0x02, // bytes
+//    .bmMasterControls    = 0x0001, // mute enabled
+//    .bmControls1         = 0x0000,
+//    .bmControls2         = 0x0000,
+//    .iFeature            = 0,
+//  },
 
   .output_terminal =
   {
     .bLength             = sizeof(usb_audio_output_terminal_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x03,  // output terminal
-    .bTerminalID         = 0x03,
-    .wTerminalType       = 0x101, // streaming
+    .bTerminalID         = 0x02,
+    .wTerminalType       = 0x0101, // streaming
     .bAssocTerminal      = 0x00,
-    .bSourceID           = 0x02,  // link to feature unit
+    .bSourceID           = 0x01,  // link to input terminal
     .iTerminal           = 0x00,
   },
 
-  .stream_interface =
+  .stream0_interface =
   {
-    .bLength             = sizeof(usb_audio_stream_interface_descriptor_t),
+    .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
     .bInterfaceNumber    = 0x01,
     .bAlternateSetting   = 0x00,
@@ -90,9 +92,9 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .iInterface          = USB_STR_INTERFACE,
   },
 
-  .alternate_interface =
+  .stream1_interface =
   {
-    .bLength             = sizeof(usb_alternate_audio_interface_descriptor_t),
+    .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
     .bInterfaceNumber    = 0x01,
     .bAlternateSetting   = 0x01,
@@ -103,38 +105,38 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .iInterface          = USB_STR_INTERFACE,
   },
 
-  .stream_class_detail =
+  .stream1_class_detail =
   {
     .bLength             = sizeof(usb_audio_stream_class_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x01, // general
-    .bTerminalLink       = 0x03,
+    .bTerminalLink       = 0x02, // output terminal
     .bDelay              = 0x00,
-    .wFormatTag          = 0x100, // PCM
+    .wFormatTag          = 0x0001, // PCM
   },
 
   .format_type =
   {
     .bLength             = sizeof(usb_audio_format_descriptor_t),
-    .bDescriptorType     = USB_CS_DESCRIPTOR,
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x02, // format
-    .bFormatType         = 0x01, // type
-    .bNrChannels         = 0x02, // --> change to 1 for Mono?
-    .bSubframeSize       = 0x02, // --> change to 1 for PCM8?
+    .bFormatType         = 0x01, // type I
+    .bNrChannels         = 0x01, // --> change to 1 for Mono?
+    .bSubframeSize       = 0x02, // 2 bytes per audio subframe
     .bBitResolution      = 0x10, // 16bit --> change to 8bit
     .bSamFreqType        = 0x01, // 1 sampling frequency
-    .bSamFreq0_byte0     = 0x80,
-    .bSamFreq0_byte1     = 0xBB,
-    .bSamFreq0_byte2     = 0x00, // 48 kHz --> needs to match ADC?
+    .bSamFreq0_byte0     = 0x44,
+    .bSamFreq0_byte1     = 0xAC,
+    .bSamFreq0_byte2     = 0x00, // 44.1 kHz --> needs to match ADC?
   },
 
   .iso_ep =
   {
-    .bLength             = sizeof(usb_iso_ep_descriptor_t),
+    .bLength             = sizeof(usb_ep_descriptor_t),
     .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
-    .bEndpointAddress    = 0x83, // ep[3].in
-    .bmAttributes        = 0x05, // asynchronous
-    .wMaxPacketSize      = 0x0002, // 512 --> change to 1023
+    .bEndpointAddress    = 0x81, // ep[1].in
+    .bmAttributes        = 0x01, // isochronous, not shared
+    .wMaxPacketSize      = 0x0200, // 512 --> change to 1023
     .bInterval           = 0x01, // 1 ms
     .bRefresh            = 0x00,
     .bSynchAddress       = 0x00, // no sync
@@ -143,10 +145,10 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   .iso_ep_class_detail =
   {
     .bLength             = sizeof(usb_audio_iso_ep_descriptor_t),
-    .bDescriptorType     = USB_CS_ENDPOINT,
+    .bDescriptorType     = USB_CS_ENDPOINT_DESCRIPTOR,
     .bDescriptorSubtype  = 0x01, //general
     .bmAttributes        = 0x00,
-    .bLockDelayUnits     = 0x02, // PCM samples
+    .bLockDelayUnits     = 0x00, // PCM samples
     .wLockDelay          = 0x0000,
   }
 };
