@@ -166,10 +166,10 @@ void adc_init() {
   while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
-  ADC->SAMPCTRL.reg = 0x00;              // minimize sample time, given in 1/2 CLK_ADC cycles, p863
+  ADC->SAMPCTRL.reg = 0x08;              // add 8 half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
-  ADC->CTRLB.bit.PRESCALER = 0x3;        // 0x3 = DIV32 or 0x2 = DIV16
+  ADC->CTRLB.bit.PRESCALER = 0x5;        // 0x5 = DIV128
   ADC->CTRLB.bit.RESSEL = 0x3;           // result resolution, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;            // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;           // ADC is single-ended, ignore MUXNEG defined above
