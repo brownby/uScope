@@ -44,7 +44,7 @@ static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
 static uint8_t ascii = 48;      // offset to interpret single digit uart outputs
 static int usb_config;
 
-char *usb_strings[] = {"", "Arduino + Harvard","uScope by Active Learning","ALL-0002","Main Configuration","uScope Instrumentation"};
+char *usb_strings[] = {"", "Arduino + Harvard","uScope by Active Learning","ALL-0001","Main Configuration","uScope Instrumentation"};
 
 volatile bool bufnum = false;  // track which buffer to write to, while USB reads
 

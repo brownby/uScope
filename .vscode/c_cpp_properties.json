@@ -1,0 +1,101 @@
+{
+    "configurations": [
+        {
+            "name": "!!! WARNING !!! AUTO-GENERATED FILE, PLEASE DO NOT MODIFY IT AND USE https://docs.platformio.org/page/projectconf/section_env_build.html#build-flags"
+        },
+        {
+            "name": "Mac",
+            "macFrameworkPath": [],
+            "includePath": [
+                "/Users/jesmith/Documents/Arduino/libraries/Adafruit_ZeroDMA-master",
+                "/Users/jesmith/Documents/Arduino/libraries/Adafruit_ZeroDMA-master/utility",
+                "/Users/jesmith/Documents/Arduino/libraries/ArduCAM",
+                "/Users/jesmith/Documents/Arduino/libraries/Arduino_TensorFlowLite/src",
+                "/Users/jesmith/Documents/Arduino/libraries/AudioZero/src",
+                "/Users/jesmith/Documents/Arduino/libraries/FlexiTimer2-master",
+                "/Users/jesmith/Documents/Arduino/libraries/JPEGDecoder/src",
+                "/Users/jesmith/Documents/Arduino/libraries/Plotter/src",
+                "/Users/jesmith/Documents/Arduino/libraries/Scheduler/src",
+                "/Users/jesmith/Documents/Arduino/libraries/ZERO-master",
+                "/Users/jesmith/Documents/Arduino/libraries/avdweb_AnalogReadFast",
+                "/Users/jesmith/Documents/Arduino/libraries/avdweb_scope-master",
+                "/Users/jesmith/Documents/Arduino/libraries/usb-master",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/HID",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/I2S/src",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/SAMD_AnalogCorrection/src",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/SAMD_BootloaderUpdater/src",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/SDU/src",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/SPI",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/USBHost/src",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/Wire",
+                "/Users/jesmith/Documents/GitHub/uScope/include",
+                "/Users/jesmith/Documents/GitHub/uScope/src",
+                "/Users/jesmith/.platformio/packages/framework-cmsis/CMSIS/Include",
+                "/Users/jesmith/.platformio/packages/framework-cmsis-atmel/CMSIS/Device/ATMEL",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/cores/arduino",
+                "/Users/jesmith/.platformio/packages/framework-arduino-samd/variants/mkrzero",
+                "/Users/jesmith/.platformio/packages/tool-unity",
+                ""
+            ],
+            "browse": {
+                "limitSymbolsToIncludedHeaders": true,
+                "path": [
+                    "/Users/jesmith/Documents/Arduino/libraries/Adafruit_ZeroDMA-master",
+                    "/Users/jesmith/Documents/Arduino/libraries/Adafruit_ZeroDMA-master/utility",
+                    "/Users/jesmith/Documents/Arduino/libraries/ArduCAM",
+                    "/Users/jesmith/Documents/Arduino/libraries/Arduino_TensorFlowLite/src",
+                    "/Users/jesmith/Documents/Arduino/libraries/AudioZero/src",
+                    "/Users/jesmith/Documents/Arduino/libraries/FlexiTimer2-master",
+                    "/Users/jesmith/Documents/Arduino/libraries/JPEGDecoder/src",
+                    "/Users/jesmith/Documents/Arduino/libraries/Plotter/src",
+                    "/Users/jesmith/Documents/Arduino/libraries/Scheduler/src",
+                    "/Users/jesmith/Documents/Arduino/libraries/ZERO-master",
+                    "/Users/jesmith/Documents/Arduino/libraries/avdweb_AnalogReadFast",
+                    "/Users/jesmith/Documents/Arduino/libraries/avdweb_scope-master",
+                    "/Users/jesmith/Documents/Arduino/libraries/usb-master",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/HID",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/I2S/src",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/SAMD_AnalogCorrection/src",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/SAMD_BootloaderUpdater/src",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/SDU/src",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/SPI",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/USBHost/src",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/libraries/Wire",
+                    "/Users/jesmith/Documents/GitHub/uScope/include",
+                    "/Users/jesmith/Documents/GitHub/uScope/src",
+                    "/Users/jesmith/.platformio/packages/framework-cmsis/CMSIS/Include",
+                    "/Users/jesmith/.platformio/packages/framework-cmsis-atmel/CMSIS/Device/ATMEL",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/cores/arduino",
+                    "/Users/jesmith/.platformio/packages/framework-arduino-samd/variants/mkrzero",
+                    "/Users/jesmith/.platformio/packages/tool-unity",
+                    ""
+                ]
+            },
+            "defines": [
+                "PLATFORMIO=40304",
+                "ARDUINO_SAMD_MKRZERO",
+                "__SAMD21G18A__",
+                "USE_ARDUINO_MKR_PIN_LAYOUT",
+                "ARDUINO=10805",
+                "F_CPU=48000000L",
+                "USBCON",
+                "USB_VID=0x2341",
+                "USB_PID=0x804F",
+                "USB_PRODUCT=\"Arduino MKRZERO\"",
+                "USB_MANUFACTURER=\"Arduino\"",
+                "ARDUINO_ARCH_SAMD",
+                ""
+            ],
+            "intelliSenseMode": "clang-x64",
+            "cStandard": "c11",
+            "cppStandard": "c++11",
+            "compilerPath": "/Users/jesmith/.platformio/packages/toolchain-gccarmnoneeabi@1.70201.0/bin/arm-none-eabi-gcc",
+            "compilerArgs": [
+                "-mcpu=cortex-m0plus",
+                "-mthumb",
+                ""
+            ]
+        }
+    ],
+    "version": 4
+}
