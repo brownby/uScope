@@ -5,13 +5,13 @@
 #include "usb_enums.h"
 
 typedef struct __attribute__((packed)) {
-  uint8_t  bLength            = 18; // bytes
-  uint8_t  bDescriptorType    = 1; // for device
-  uint16_t bcdUSB             = 0x0200; // version of USB spec, here 1.1
-  uint8_t  bDeviceClass       = 0x00; // 0x00 = none / defined at interface level later, 0x0a = CDC data
-  uint8_t  bDeviceSubClass    = 0x00; // within audio, ...
-  uint8_t  bDeviceProtocol    = 0x00; // 0x00 = none
-  uint8_t  bMaxPacketSize0    = 64;
+  uint8_t  bLength            = 18;     // bytes
+  uint8_t  bDescriptorType    = 0x01;   // for device
+  uint16_t bcdUSB             = 0x0200; // version of USB spec
+  uint8_t  bDeviceClass       = 0x00;   // 0x00 = none / defined at interface level
+  uint8_t  bDeviceSubClass    = 0x00;
+  uint8_t  bDeviceProtocol    = 0x00; 
+  uint8_t  bMaxPacketSize0    = 64;     // *flag
   uint16_t idVendor           = 0x6666; // Arduino 0x2341
   uint16_t idProduct          = 0x6666; // MKZero 0x804f
   uint16_t bcdDevice          = 0x0100; // release number of the device
@@ -75,8 +75,8 @@ typedef struct __attribute__((packed)) {
   uint8_t bSourceID;
   uint8_t bControlSize;
   uint16_t bmMasterControls; // master channel 0 controls
-  uint16_t bmControls1; // channel 1 controls
-  uint16_t bmControls2; // channel 2 controls
+  uint16_t bmControls1;      // channel 1 controls
+  uint16_t bmControls2;      // channel 2 controls
   uint8_t iFeature;
 } usb_audio_input_feature_descriptor_t; // pg. 41 of spec
 
@@ -109,28 +109,28 @@ typedef struct __attribute__((packed)) {
   uint8_t bSubframeSize;
   uint8_t bBitResolution;
   uint8_t bSamFreqType; // 0 for continous, any other number for discrete sampling frequencies
-  uint8_t bSamFreq0_byte0; // if we want more sample frequencies,
-  uint8_t bSamFreq0_byte1; // need to add to the list here with more options,
-  uint8_t bSamFreq0_byte2; // each specified with 3 bytes
+  uint8_t bSamFreq0_byte0; 
+  uint8_t bSamFreq0_byte1; 
+  uint8_t bSamFreq0_byte2;      
 } usb_audio_format_descriptor_t; // pg. 10 of USB Audio Data Formats 1.0 spec
 
 typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint8_t bEndpointAddress;
-  uint8_t bmAttributes;
+  uint8_t  bLength;
+  uint8_t  bDescriptorType;
+  uint8_t  bEndpointAddress;
+  uint8_t  bmAttributes;
   uint16_t wMaxPacketSize;
-  uint8_t bInterval;
-  uint8_t bRefresh;
-  uint8_t bSynchAddress;
+  uint8_t  bInterval;
+  uint8_t  bRefresh;
+  uint8_t  bSynchAddress;
 } usb_ep_descriptor_t; // pg. 61 of spec
 
 typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint8_t bDescriptorSubtype;
-  uint8_t bmAttributes;
-  uint8_t bLockDelayUnits;
+  uint8_t  bLength;
+  uint8_t  bDescriptorType;
+  uint8_t  bDescriptorSubtype;
+  uint8_t  bmAttributes;
+  uint8_t  bLockDelayUnits;
   uint16_t wLockDelay;
 } usb_audio_iso_ep_descriptor_t; // pg. 62 of spec
 
