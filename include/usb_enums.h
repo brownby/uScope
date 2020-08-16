@@ -19,6 +19,16 @@ enum{
   USB_DIRECTION_MASK       = 0x80,
 };
 
+enum{
+  USB_STR_ZERO,
+  USB_STR_MANUFACTURER,
+  USB_STR_PRODUCT,
+  USB_STR_SERIAL_NUMBER,
+  USB_STR_CONFIGURATION,
+  USB_STR_INTERFACE,
+  USB_STR_COUNT,
+};
+
 enum
 {
   USB_CONTROL_ENDPOINT     = 0 << 0,
@@ -60,16 +70,6 @@ enum{
 };
 
 enum{
-  USB_STR_ZERO,
-  USB_STR_MANUFACTURER,
-  USB_STR_PRODUCT,
-  USB_STR_SERIAL_NUMBER,
-  USB_STR_CONFIGURATION,
-  USB_STR_INTERFACE,
-  USB_STR_COUNT,
-};
-
-enum{
   USB_GET_STATUS        = 0,
   USB_CLEAR_FEATURE     = 1,
   USB_SET_FEATURE       = 3,
@@ -89,6 +89,8 @@ enum{
   USB_STRING_DESCRIPTOR                    = 3,
   USB_INTERFACE_DESCRIPTOR                 = 4,
   USB_ENDPOINT_DESCRIPTOR                  = 5,
+  USB_CS_INTERFACE_DESCRIPTOR              = 0x24,
+  USB_CS_ENDPOINT_DESCRIPTOR               = 0x25,
 };
 
 #endif
