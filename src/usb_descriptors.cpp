@@ -32,11 +32,11 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   {
     .bLength             = sizeof(usb_class_AC_interface_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
-    .bDescriptorSubType  = 0x01, // header subtype
+    .bDescriptorSubType  = 0x01,   // header subtype
     .bcdADC              = 0x0100, // 1.0
     .wTotalLength        = sizeof(usb_class_AC_interface_descriptor_t) + sizeof(usb_audio_input_terminal_descriptor_t) + sizeof(usb_audio_output_terminal_descriptor_t) + sizeof(usb_audio_input_feature_descriptor_t), // *flag --> include feature?
-    .bInCollection       = 0x01, // number of streaming interfaces
-    .baInterfaceNr       = 0x01, // AudioStreaming interface 1 belongs to this AudioControl interface
+    .bInCollection       = 0x01,   // number of streaming interfaces
+    .baInterfaceNr       = 0x01,   // interface number of the first AudioStreaming interface, possibility for continued list
   },
 
   .input_terminal =
@@ -45,7 +45,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x02,   // input terminal
     .bTerminalID         = 0x01,   // *flag
-    .wTerminalType       = 0x0201, // 0x1007 = radio reciever, 0x0201 = microphone, *flag
+    .wTerminalType       = 0x0101, // 0x0101 = USB streaming, 0x0602 = digital audio interface *flag
     .bAssocTerminal      = 0x00,   // no assocaition
     .bNrChannels         = 0x01,   // one channel
     .wChannelConfig      = 0x0000, // 0x0000 = mono, 0x0300 = left, right
@@ -89,7 +89,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bInterfaceClass     = 0x01, // audio
     .bInterfaceSubClass  = 0x02, // streaming
     .bInterfaceProtocol  = 0x00,
-    .iInterface          = USB_STR_INTERFACE,
+    .iInterface          = 0x00, 
   },
 
   .stream1_interface =
@@ -112,7 +112,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorSubtype  = 0x01,   // general
     .bTerminalLink       = 0x02,   // ID for output terminal
     .bDelay              = 0x00,   // 0x01 in example, interface delay *flag
-    .wFormatTag          = 0x0001, // PCM *flag
+    .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag --> macOS recognizes PCM, but not PCM8? 
   },
 
   .format_type =
@@ -122,12 +122,12 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorSubtype  = 0x02, // format
     .bFormatType         = 0x01, // type I
     .bNrChannels         = 0x01, // 1 channel
-    .bSubframeSize       = 0x02, // 2 bytes per audio subframe
-    .bBitResolution      = 0x10, // 16bit --> change to 8bit? *flag
+    .bSubframeSize       = 0x01, // 1 byte per audio subframe *flag
+    .bBitResolution      = 0x08, // 8bit *flag
     .bSamFreqType        = 0x01, // 1 sampling frequency
     .bSamFreq0_byte0     = 0x44,
     .bSamFreq0_byte1     = 0xAC,
-    .bSamFreq0_byte2     = 0x00, // 44.1 kHz --> needs to match ADC?
+    .bSamFreq0_byte2     = 0x00, // 44.1 kHz
   },
 
   .iso_ep =
