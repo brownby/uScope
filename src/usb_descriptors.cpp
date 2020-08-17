@@ -8,8 +8,8 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bLength             = sizeof(usb_configuration_descriptor_t),
     .bDescriptorType     = USB_CONFIGURATION_DESCRIPTOR,
     .wTotalLength        = sizeof(usb_configuration_hierarchy_t),
-    .bNumInterfaces      = 0x02, // *flag
-    .bConfigurationValue = 0x01, // *flag 
+    .bNumInterfaces      = 0x02, // AC and AudioStreaming with two alternative settings (0 = OFF, 1 = ON)
+    .bConfigurationValue = 0x01, // used to select this configuration, not important given bNumConfigurations = 1
     .iConfiguration      = USB_STR_CONFIGURATION,
     .bmAttributes        = 0x80,
     .bMaxPower           = 200, // 400 mA
@@ -19,13 +19,13 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   {
     .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
-    .bInterfaceNumber    = 0x00, // *flag
-    .bAlternateSetting   = 0x00,
-    .bNumEndpoints       = 0x00,
+    .bInterfaceNumber    = 0x00, // first interface of two
+    .bAlternateSetting   = 0x00, // no alternate for this interface
+    .bNumEndpoints       = 0x00, 
     .bInterfaceClass     = 0x01, // audio
     .bInterfaceSubClass  = 0x01, // audio control
-    .bInterfaceProtocol  = 0x00,
-    .iInterface          = 0x00,
+    .bInterfaceProtocol  = 0x00, // unused
+    .iInterface          = 0x00, // unused
   },
 
   .class_AC_interface =
@@ -34,8 +34,8 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubType  = 0x01,   // header subtype
     .bcdADC              = 0x0100, // 1.0
-    .wTotalLength        = sizeof(usb_class_AC_interface_descriptor_t) + sizeof(usb_audio_input_terminal_descriptor_t) + sizeof(usb_audio_output_terminal_descriptor_t) + sizeof(usb_audio_input_feature_descriptor_t), // *flag --> include feature?
-    .bInCollection       = 0x01,   // number of streaming interfaces
+    .wTotalLength        = sizeof(usb_class_AC_interface_descriptor_t) + sizeof(usb_audio_input_terminal_descriptor_t) + sizeof(usb_audio_output_terminal_descriptor_t), 
+    .bInCollection       = 0x01,   // number of streaming interfaces --> AlternateSetting = 0x01 for bInterfaceNumber = 0x01
     .baInterfaceNr       = 0x01,   // interface number of the first AudioStreaming interface, possibility for continued list
   },
 
@@ -44,64 +44,56 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bLength             = sizeof(usb_audio_input_terminal_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x02,   // input terminal
-    .bTerminalID         = 0x01,   // *flag
-    .wTerminalType       = 0x0101, // 0x0101 = USB streaming, 0x0602 = digital audio interface *flag
-    .bAssocTerminal      = 0x00,   // no assocaition
-    .bNrChannels         = 0x01,   // one channel
+    .bTerminalID         = 0x01,   // unique ID, chosen by developer
+    .wTerminalType       = 0x0200, // 0x0200 = input undefined (oscilloscope)
+    .bAssocTerminal      = 0x00,   // no association
+    .bNrChannels         = 0x01,   // one channel (possibility to extend to x2 channel scope over stereo?)
     .wChannelConfig      = 0x0000, // 0x0000 = mono, 0x0300 = left, right
     .iChannelNames       = 0x00,   // unused
     .iTerminal           = 0x00,   // unused
   },
 
-//  .feature_unit =
-//  {
-//    .bLength             = sizeof(usb_audio_input_feature_descriptor_t),
-//    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
-//    .bDescriptorSubtype  = 0x06, // feature unit
-//    .bUnitID             = 0x02,
-//    .bSourceID           = 0x01, // link to input terminal
-//    .bControlSize        = 0x02, // bytes
-//    .bmMasterControls    = 0x0001, // mute enabled
-//    .bmControls1         = 0x0000,
-//    .bmControls2         = 0x0000,
-//    .iFeature            = 0,
-//  },
-
   .output_terminal =
   {
     .bLength             = sizeof(usb_audio_output_terminal_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
-    .bDescriptorSubtype  = 0x03,   // output terminal
-    .bTerminalID         = 0x02,   // *flag
-    .wTerminalType       = 0x0101, // streaming *flag
+    .bDescriptorSubtype  = 0x03,   // output terminal (from device to host over isochronous endpoint)
+    .bTerminalID         = 0x02,   // unique ID, chosen by developer
+    .wTerminalType       = 0x0101, // 0x0101 = USB streaming
     .bAssocTerminal      = 0x00,   // no association
-    .bSourceID           = 0x01,   // link to input terminal
+    .bSourceID           = 0x01,   // source is from input terminal
     .iTerminal           = 0x00,   // unused
   },
 
   .stream0_interface =
   {
+
+    // this is the default AlternateSetting for the AudioStreaming interface (OFF)
+
     .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
-    .bInterfaceNumber    = 0x01, // *flag
-    .bAlternateSetting   = 0x00, 
-    .bNumEndpoints       = 0x00,
+    .bInterfaceNumber    = 0x01, // the second of two interfaces
+    .bAlternateSetting   = 0x00, // OFF, zero-bandwidth setting
+    .bNumEndpoints       = 0x00, // none 
     .bInterfaceClass     = 0x01, // audio
     .bInterfaceSubClass  = 0x02, // streaming
-    .bInterfaceProtocol  = 0x00,
-    .iInterface          = 0x00, 
+    .bInterfaceProtocol  = 0x00, // unused
+    .iInterface          = 0x00, // unused
   },
 
   .stream1_interface =
   {
+
+    // this is the secondary AlternateSetting for the AudioStreaming interface (ON)
+
     .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
-    .bInterfaceNumber    = 0x01, // *flag
-    .bAlternateSetting   = 0x01, 
+    .bInterfaceNumber    = 0x01, // the second of two interfaces
+    .bAlternateSetting   = 0x01, // ON, operational setting
     .bNumEndpoints       = 0x01, // x1 endpoint
     .bInterfaceClass     = 0x01, // audio
     .bInterfaceSubClass  = 0x02, // streaming
-    .bInterfaceProtocol  = 0x00,
+    .bInterfaceProtocol  = 0x00, // unused
     .iInterface          = USB_STR_INTERFACE,
   },
 
@@ -112,7 +104,8 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorSubtype  = 0x01,   // general
     .bTerminalLink       = 0x02,   // ID for output terminal
     .bDelay              = 0x00,   // 0x01 in example, interface delay *flag
-    .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag --> macOS recognizes PCM, but not PCM8? 
+    .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag 
+                                   // macOS recognizes PCM, but not PCM8 (legacy = unsupported)? 
   },
 
   .format_type =
@@ -122,8 +115,8 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorSubtype  = 0x02, // format
     .bFormatType         = 0x01, // type I
     .bNrChannels         = 0x01, // 1 channel
-    .bSubframeSize       = 0x01, // 1 byte per audio subframe *flag
-    .bBitResolution      = 0x08, // 8bit *flag
+    .bSubframeSize       = 0x01, // 1 byte per audio subframe 
+    .bBitResolution      = 0x08, // 8 bits 
     .bSamFreqType        = 0x01, // 1 sampling frequency
     .bSamFreq0_byte0     = 0x44,
     .bSamFreq0_byte1     = 0xAC,
@@ -136,10 +129,10 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
     .bEndpointAddress    = 0x81,   // ep[1].in
     .bmAttributes        = 0x01,   // isochronous, not shared
-    .wMaxPacketSize      = 0x0200, // 512 --> change to 1023? *flag
+    .wMaxPacketSize      = 0x0200, // 512 --> change to 1023, should match NBEATs for ADC buffer size? *flag
     .bInterval           = 0x01,   // 1 ms, one packet per frame
     .bRefresh            = 0x00,   // unused
-    .bSynchAddress       = 0x00,   // no sync
+    .bSynchAddress       = 0x00,   // unused, no sync
   },
 
   .iso_ep_class_detail =
