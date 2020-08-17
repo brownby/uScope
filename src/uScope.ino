@@ -47,13 +47,13 @@ static int usb_config;
 
 char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","ALL-0001","Isochronous Audio","uScope Instrumentation"};
 
+uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
+
 volatile bool bufnum = false;  // track which buffer to write to, while USB reads
 
 extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
 extern UsbDeviceDescriptor usb_endpoints[];
 extern const uint8_t usb_num_endpoints;
-
-uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
 
 enum type {sine, sawtooth}; // supported waveform types
 
@@ -568,10 +568,43 @@ void USB_Handler(){
         }
       } break;
 
-      case USB_CMD(OUT, INTERFACE, STANDARD, SET_INTERFACE): {
+      case USB_CMD(IN, DEVICE, STANDARD, GET_CONFIGURATION): {
 
-        uart_puts("\nSetInterface");
+        uart_puts("\nGetConfiguration");
+
+        uint8_t config = usb_config;
         
+        if (sizeof(config) <= usb_device_descriptor.bMaxPacketSize0){
+
+          memcpy(usb_ctrl_in_buf, &config, sizeof(config));
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
+
+        }
+        else {
+
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)config;          
+          
+        }
+         
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(config);
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        
+        while(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
+
+      } break;
+
+      case USB_CMD(OUT, INTERFACE, STANDARD, SET_INTERFACE): { 
+        
+        uart_puts("\nSetInterface"); // host sending alternate setting for AudioStreaming interface
+        uart_puts("\nwValueL: "); uart_write(wValue_L + ascii); // wValueL from 0 to 1 when I open sound settings
+        
+        // *flag --> anything we need to do here to switch from one setting to the other?
+
+        uart_puts("\nSending ZLP");
+
         // send control ZLP
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
@@ -580,31 +613,23 @@ void USB_Handler(){
         
       } break;
 
-      case USB_CMD(IN, DEVICE, STANDARD, GET_CONFIGURATION): {
+      case USB_CMD(IN, DEVICE, STANDARD, GET_STATUS):{
 
-        uart_puts("\nGetConfiguration");
+        uart_puts("\nGetStatus: Device");
+        uart_puts("\nEmpty case");
 
-        uint8_t config = usb_config;
+      }
+      
+      case USB_CMD(IN, INTERFACE, STANDARD, GET_STATUS):{
 
-        memcpy(usb_ctrl_in_buf, &config, sizeof(config));
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(config);
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+        uart_puts("\nGetStatus: Interface");
+        uart_puts("\nEmpty case");
 
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-        while(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
-
-      } break;
-
-      // dummy cases from ataradov's code
-      // USB_CMD(IN, DEVICE, STANDARD, GET_STATUS)
-      // USB_CMD(IN, INTERFACE, STANDARD, GET_STATUS)
+      }
 
       case USB_CMD(IN, ENDPOINT, STANDARD, GET_STATUS): {
 
-        uart_puts("\nGetStatus");
+        uart_puts("\nGetStatus: Endpoint");
 
         int ep = request->wIndex & USB_INDEX_MASK; // USB_INDEX_MASK = 0x7f
         int dir = request->wIndex & USB_DIRECTION_MASK; // USB_DIRECTION_MASK = 0x80
@@ -627,7 +652,7 @@ void USB_Handler(){
             while(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
 
           }
-          
+
           else {
 
             uart_puts("\nStall");
@@ -667,6 +692,7 @@ void USB_Handler(){
 
       case USB_CMD(OUT, DEVICE, STANDARD, SET_FEATURE): {
 
+        uart_puts("\nSetFeature: Device");
         uart_puts("\nStall");
         
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
@@ -675,57 +701,59 @@ void USB_Handler(){
 
       case USB_CMD(OUT, INTERFACE, STANDARD, SET_FEATURE): {
 
-        uart_puts("\nStall");
+        uart_puts("\nSetFeature: Interface");
+        uart_puts("\nSending ZLP");
       
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+        // send control ZLP
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
       } break;
 
       case USB_CMD(OUT, ENDPOINT, STANDARD, SET_FEATURE): {
-        
-        //int ep = request->wIndex & USB_INDEX_MASK; // USB_INDEX_MASK = 0x7f
-        //int dir = request->wIndex & USB_DIRECTION_MASK; // USB_DIRECTION_MASK = 0x80
 
-        // TODO
+        uart_puts("\nSetFeature: Interface");
+        uart_puts("\nEmpty case");
+        
+        //TODO
       
       } break;
 
-      case USB_CMD(IN, INTERFACE, STANDARD, GET_DESCRIPTOR): {
-        uart_puts("\nInterface");
-
-//        leng = LIMIT(leng, sizeof(usb_hid_report_descriptor));
-//
-//        uint8_t *descAddr_temp = (uint8_t *)&usb_hid_report_descriptor; 
-//
-//        if (leng <= usb_device_descriptor.bMaxPacketSize0){
-//      
-//          memcpy(usb_ctrl_in_buf, descAddr_temp, leng);
-//          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
-//      
-//        }
-//
-//        else {
-//
-//         EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)descAddr_temp;
-//
-//        }
-//
-//        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = leng; // how big it is
-//        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-//  
-//        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1; // clear flag
-//        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1; // start 
-//
-//        while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait  
-//        
+      case USB_CMD(OUT, DEVICE, STANDARD, CLEAR_FEATURE): {
+      
+        uart_puts("\nClearFeature: Device");
+        uart_puts("\nEmpty case");
+        
+        //TODO
+      
       } break;
 
-      // TOD0:
+      case USB_CMD(OUT, INTERFACE, STANDARD, CLEAR_FEATURE): {
+      
+        uart_puts("\nClearFeature: Interface");
+        uart_puts("\nEmpty case");
+        
+        //TODO
+      
+      } break;
 
-      // USB_CMD(OUT, DEVICE, STANDARD, CLEAR_FEATURE) (stall in ataradov)
-      // USB_CMD(OUT, INTERFACE, STANDARD, CLEAR_FEATURE) (stall in ataradov)
-      // USB_CMD(OUT, ENDPOINT, STANDARD, CLEAR_FEATURE)
+      case USB_CMD(OUT, ENDPOINT, STANDARD, CLEAR_FEATURE): {
 
+        uart_puts("\nClearFeature: Endpoint");
+        uart_puts("\nEmpty case");
+        
+        //TODO
+
+      } break;
+
+      case USB_CMD(IN, INTERFACE, STANDARD, GET_DESCRIPTOR): {
+
+        uart_puts("\nGetDescriptor: Interface");
+        uart_puts("\nEmpty case");
+    
+      } break;
       
       default: {
 
