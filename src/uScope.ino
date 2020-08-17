@@ -45,7 +45,7 @@ static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
 static uint8_t ascii = 48;      // offset to interpret single digit uart outputs
 static int usb_config;
 
-char *usb_strings[] = {"", "Arduino + Harvard","uScope by Active Learning","ALL-0001","Isochronous Audio","uScope Instrumentation"};
+char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","ALL-0001","Isochronous Audio","uScope Instrumentation"};
 
 volatile bool bufnum = false;  // track which buffer to write to, while USB reads
 
@@ -53,8 +53,6 @@ extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
 extern UsbDeviceDescriptor usb_endpoints[];
 extern const uint8_t usb_num_endpoints;
 
-deviceDescriptor deviceDescriptor_usb __attribute__ ((aligned (4)));
-stringDescriptor string0Descriptor_usb __attribute__ ((aligned (4)));
 uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
 
 enum type {sine, sawtooth}; // supported waveform types
@@ -383,11 +381,11 @@ void USB_Handler(){
             
           uart_puts("\nDevice");
 
-          leng = LIMIT(leng, deviceDescriptor_usb.bLength);
+          leng = LIMIT(leng, usb_device_descriptor.bLength);
 
-          uint8_t *descAddr_temp = (uint8_t *)&deviceDescriptor_usb; 
+          uint8_t *descAddr_temp = (uint8_t *)&usb_device_descriptor; 
 
-          if (leng <= deviceDescriptor_usb.bMaxPacketSize0){
+          if (leng <= usb_device_descriptor.bMaxPacketSize0){
           
             memcpy(usb_ctrl_in_buf, descAddr_temp, leng);
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
@@ -418,7 +416,7 @@ void USB_Handler(){
 
           uint8_t *descAddr_temp = (uint8_t *)&usb_configuration_hierarchy; 
 
-          if (leng <= deviceDescriptor_usb.bMaxPacketSize0){
+          if (leng <= usb_device_descriptor.bMaxPacketSize0){
           
             memcpy(usb_ctrl_in_buf, descAddr_temp, leng);
             EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
@@ -447,11 +445,11 @@ void USB_Handler(){
             
           if(index == 0){
               
-            leng = LIMIT(leng, string0Descriptor_usb.bLength);
+            leng = LIMIT(leng, usb_string_descriptor_zero.bLength);
 
-            uint8_t *descAddr_temp = (uint8_t *)&string0Descriptor_usb; 
+            uint8_t *descAddr_temp = (uint8_t *)&usb_string_descriptor_zero; 
 
-            if (leng <= deviceDescriptor_usb.bMaxPacketSize0){
+            if (leng <= usb_device_descriptor.bMaxPacketSize0){
           
               memcpy(usb_ctrl_in_buf, descAddr_temp, leng);
               EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
@@ -474,7 +472,7 @@ void USB_Handler(){
               
           }
 
-          else if (0 < index < USB_STR_COUNT){
+          else if (index < USB_STR_COUNT){
               
             char *str = usb_strings[index];
             int len = strlen(str);
@@ -493,7 +491,7 @@ void USB_Handler(){
 
             uint8_t *descAddr_temp = (uint8_t *)&usb_string_descriptor_buffer; 
 
-            if (leng <= deviceDescriptor_usb.bMaxPacketSize0){
+            if (leng <= usb_device_descriptor.bMaxPacketSize0){
           
               memcpy(usb_ctrl_in_buf, descAddr_temp, leng);
               EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
@@ -685,8 +683,8 @@ void USB_Handler(){
 
       case USB_CMD(OUT, ENDPOINT, STANDARD, SET_FEATURE): {
         
-        int ep = request->wIndex & USB_INDEX_MASK; // USB_INDEX_MASK = 0x7f
-        int dir = request->wIndex & USB_DIRECTION_MASK; // USB_DIRECTION_MASK = 0x80
+        //int ep = request->wIndex & USB_INDEX_MASK; // USB_INDEX_MASK = 0x7f
+        //int dir = request->wIndex & USB_DIRECTION_MASK; // USB_DIRECTION_MASK = 0x80
 
         // TODO
       
@@ -699,7 +697,7 @@ void USB_Handler(){
 //
 //        uint8_t *descAddr_temp = (uint8_t *)&usb_hid_report_descriptor; 
 //
-//        if (leng <= deviceDescriptor_usb.bMaxPacketSize0){
+//        if (leng <= usb_device_descriptor.bMaxPacketSize0){
 //      
 //          memcpy(usb_ctrl_in_buf, descAddr_temp, leng);
 //          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;

@@ -5,21 +5,21 @@
 #include "usb_enums.h"
 
 typedef struct __attribute__((packed)) {
-  uint8_t  bLength            = 18;     // bytes
-  uint8_t  bDescriptorType    = 0x01;   // for device
-  uint16_t bcdUSB             = 0x0200; // version of USB spec
-  uint8_t  bDeviceClass       = 0x00;   // 0x00 = none / defined at interface level
-  uint8_t  bDeviceSubClass    = 0x00;
-  uint8_t  bDeviceProtocol    = 0x00; 
-  uint8_t  bMaxPacketSize0    = 64;     // *flag --> relation to iso_ep.wMaxPacketSize?
-  uint16_t idVendor           = 0x6666; // Arduino 0x2341
-  uint16_t idProduct          = 0x6666; // MKZero 0x804f
-  uint16_t bcdDevice          = 0x0100; // release number of the device
-  uint8_t  iManufacturer      = USB_STR_MANUFACTURER;
-  uint8_t  iProduct           = USB_STR_PRODUCT;
-  uint8_t  iSerialNumber      = USB_STR_SERIAL_NUMBER;
-  uint8_t  bNumConfigurations = 1;
-} deviceDescriptor;
+  uint8_t  bLength;  
+  uint8_t  bDescriptorType; 
+  uint16_t bcdUSB; 
+  uint8_t  bDeviceClass;
+  uint8_t  bDeviceSubClass;
+  uint8_t  bDeviceProtocol;
+  uint8_t  bMaxPacketSize0;
+  uint16_t idVendor;
+  uint16_t idProduct;
+  uint16_t bcdDevice;
+  uint8_t  iManufacturer;
+  uint8_t  iProduct;
+  uint8_t  iSerialNumber;
+  uint8_t  bNumConfigurations;
+} usb_device_descriptor_t;
 
 typedef struct __attribute__((packed)) {
   uint8_t   bLength;
@@ -85,7 +85,7 @@ typedef struct __attribute__((packed)) {
   uint8_t bTerminalLink;
   uint8_t bDelay;
   uint16_t wFormatTag;
-} usb_audio_stream_class_descriptor_t; // reference?
+} usb_audio_stream_class_descriptor_t; 
 
 typedef struct __attribute__((packed)) {
   uint8_t bLength;
@@ -122,6 +122,12 @@ typedef struct __attribute__((packed)) {
 } usb_audio_iso_ep_descriptor_t; // pg. 62 of spec
 
 typedef struct __attribute__((packed)) {
+  uint8_t bLength;
+  uint8_t bDescriptorType; 
+  uint16_t wLANGID;  
+} usb_string_descriptor_zero_t;
+
+typedef struct __attribute__((packed)) {
   usb_configuration_descriptor_t             configuration;
   usb_interface_descriptor_t                 standard_AC_interface;
   usb_class_AC_interface_descriptor_t        class_AC_interface;
@@ -135,12 +141,8 @@ typedef struct __attribute__((packed)) {
   usb_audio_iso_ep_descriptor_t              iso_ep_class_detail;
 } usb_configuration_hierarchy_t;
 
-typedef struct  {
-  uint8_t bLength         = 4;
-  uint8_t bDescriptorType = USB_STRING_DESCRIPTOR; 
-  uint16_t wLANGID        = 0x0409;   // US English
-} stringDescriptor;
-
-extern alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy;
+extern usb_configuration_hierarchy_t usb_configuration_hierarchy;
+extern usb_device_descriptor_t usb_device_descriptor;
+extern usb_string_descriptor_zero_t usb_string_descriptor_zero;
 
 #endif
