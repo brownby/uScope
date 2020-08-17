@@ -11,7 +11,7 @@ typedef struct __attribute__((packed)) {
   uint8_t  bDeviceClass       = 0x00;   // 0x00 = none / defined at interface level
   uint8_t  bDeviceSubClass    = 0x00;
   uint8_t  bDeviceProtocol    = 0x00; 
-  uint8_t  bMaxPacketSize0    = 64;     // *flag
+  uint8_t  bMaxPacketSize0    = 64;     // *flag --> relation to iso_ep.wMaxPacketSize?
   uint16_t idVendor           = 0x6666; // Arduino 0x2341
   uint16_t idProduct          = 0x6666; // MKZero 0x804f
   uint16_t bcdDevice          = 0x0100; // release number of the device
@@ -66,19 +66,6 @@ typedef struct __attribute__((packed)) {
   uint8_t iChannelNames;
   uint8_t iTerminal;
 } usb_audio_input_terminal_descriptor_t; // pg. 39 of spec
-
-typedef struct __attribute__((packed)) {
-  uint8_t bLength;
-  uint8_t bDescriptorType;
-  uint8_t bDescriptorSubtype;
-  uint8_t bUnitID;
-  uint8_t bSourceID;
-  uint8_t bControlSize;
-  uint16_t bmMasterControls; // master channel 0 controls
-  uint16_t bmControls1;      // channel 1 controls
-  uint16_t bmControls2;      // channel 2 controls
-  uint8_t iFeature;
-} usb_audio_input_feature_descriptor_t; // pg. 41 of spec
 
 typedef struct __attribute__((packed)) {
   uint8_t bLength;
@@ -139,7 +126,6 @@ typedef struct __attribute__((packed)) {
   usb_interface_descriptor_t                 standard_AC_interface;
   usb_class_AC_interface_descriptor_t        class_AC_interface;
   usb_audio_input_terminal_descriptor_t      input_terminal;
-//  usb_audio_input_feature_descriptor_t       feature_unit;  
   usb_audio_output_terminal_descriptor_t     output_terminal;
   usb_interface_descriptor_t                 stream0_interface;
   usb_interface_descriptor_t                 stream1_interface;
@@ -156,6 +142,5 @@ typedef struct  {
 } stringDescriptor;
 
 extern alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy;
-extern alignas(4) uint8_t usb_hid_report_descriptor[33];
 
 #endif
