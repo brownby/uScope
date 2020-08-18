@@ -81,6 +81,7 @@ volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16)));        // write-
 dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
 dmacdescriptor descriptor __attribute__ ((aligned (16)));
 UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
+uint8_t interface_num = 0; // Current interface selected by host
 
 void uart_init() {
    
@@ -601,7 +602,7 @@ void USB_Handler(){
         uart_puts("\nSetInterface"); // host sending alternate setting for AudioStreaming interface
         uart_puts("\nwValueL: "); uart_write(wValue_L + ascii); // wValueL from 0 to 1 when I open sound settings
         
-        // *flag --> anything we need to do here to switch from one setting to the other?
+        interface_num = wValue_L;
 
         uart_puts("\nSending ZLP");
 
