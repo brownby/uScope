@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 1023         // number of beats for adc transfer
+#define NBEATS 32           // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT 0
@@ -564,7 +564,7 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTENSET.bit.TRCPT1 = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.DTGLIN = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
-          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_512;
+          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_32;
         
         }
       } break;

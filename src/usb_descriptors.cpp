@@ -122,7 +122,8 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorSubtype  = 0x01,   // general
     .bTerminalLink       = 0x02,   // ID for output terminal
     .bDelay              = 0x00,   // 0x01 in example, interface delay *flag
-    .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag 
+    .wFormatTag          = 0x0002, // 0x0002 for Windows, 0x0001 for Mac
+    // .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag 
                                    // macOS recognizes PCM, but not PCM8 (legacy = unsupported)? 
   },
 
@@ -147,7 +148,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
     .bEndpointAddress    = 0x81,   // ep[1].in
     .bmAttributes        = 0x01,   // isochronous, not shared
-    .wMaxPacketSize      = 0x0200, // 512 --> change to 1023, should match NBEATs for ADC buffer size? *flag
+    .wMaxPacketSize      = 0x0020, // 512 --> change to 1023, should match NBEATs for ADC buffer size? *flag
     .bInterval           = 0x01,   // 1 ms, one packet per frame
     .bRefresh            = 0x00,   // unused
     .bSynchAddress       = 0x00,   // unused, no sync
