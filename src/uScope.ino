@@ -255,26 +255,26 @@ void DMAC_Handler() {
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL; // clear transfer complete flag
 
-  // if interface 1 is enabled
-  // if(interface_num == 1)
-  // {
-  //   if(bufnum == 0)
-  //   {
-  //     EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
-  //   }
-  //   else
-  //   {
-  //     EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
-  //   }
+  if interface 1 is enabled
+  if(interface_num == 1)
+  {
+    if(bufnum == 0)
+    {
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
+    }
+    else
+    {
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
+    }
 
-  //   EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = NBEATS; // size of ADC buffer in SRAM
-  //   EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+    EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = NBEATS; // size of ADC buffer in SRAM
+    EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
 
-  //   USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
-  //   USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer
+    USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
+    USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer
 
-  //   while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait
-  // }
+    while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait
+  }
 
   __enable_irq(); // enable interrupts
 
@@ -619,17 +619,6 @@ void USB_Handler(){
 
         uart_puts("\nSending ZLP");
 
-        // turn on SOF interrupts after interface turned on
-        if(interface_num == 1)
-        {
-          USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_SOF;
-        }
-        else
-        {
-          USB->DEVICE.INTENCLR.reg = USB_DEVICE_INTENCLR_SOF;
-        }
-        
-
         // send control ZLP
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
@@ -789,32 +778,6 @@ void USB_Handler(){
     }
   }  
   
-  if(USB->DEVICE.INTFLAG.bit.SOF && USB->DEVICE.INTENSET.bit.SOF)
-  {
-    USB->DEVICE.INTFLAG.bit.SOF = 1; // acknowledge interrupt
-
-    if(interface_num == 1)
-    {
-      if(bufnum == 0)
-      {
-        EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
-      }
-      else
-      {
-        EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
-      }
-
-      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = NBEATS; // size of ADC buffer in SRAM
-      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-
-      USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
-      USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer
-
-      while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait
-    }
-  }
-
-
   // Endpoint interrupts
   epint = USB->DEVICE.EPINTSMRY.reg;
 
