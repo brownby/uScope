@@ -63,7 +63,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x02,   // input terminal
     .bTerminalID         = 0x01,   // unique ID, chosen by developer
-    .wTerminalType       = 0x0200, // 0x0200 = input undefined (oscilloscope)
+    .wTerminalType       = 0x0201, // 0x0200 = input undefined (oscilloscope), 0x0201 is microphone
     .bAssocTerminal      = 0x00,   // no association
     .bNrChannels         = 0x01,   // one channel (possibility to extend to x2 channel scope over stereo?)
     .wChannelConfig      = 0x0000, // 0x0000 = mono, 0x0300 = left, right
