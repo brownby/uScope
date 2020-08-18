@@ -780,7 +780,10 @@ void USB_Handler(){
   for (int i = 0; epint && i < USB_EPT_NUM; i++){
     
     if (0 == (epint & (1 << i)))
+    {
+      uart_puts("\nNo EP "); uart_write(i + ascii); uart_puts("interrupts");
       continue;
+    }
       
     epint &= ~(1 << i);
 
