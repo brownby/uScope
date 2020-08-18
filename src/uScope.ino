@@ -318,6 +318,7 @@ void usb_init() {
   USB->DEVICE.CTRLB.bit.DETACH = 0;
   
   USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_EORST;  
+  USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_SOF;
   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1;
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
@@ -775,19 +776,25 @@ void USB_Handler(){
     }
   }  
   
+  if(USB->DEVICE.INTFLAG.bit.SOF)
+  {
+    USB->DEVICE.INTFLAG.bit.SOF = 1; // acknowledge interrupt
+    
+    uart_puts("\nSOF");
+    uart_puts("\nFNUM: "); uart_write(USB->DEVICE.FNUM.bit.FNUM + ascii);
+  }
+
+
   epint = USB->DEVICE.EPINTSMRY.reg;
 
   for (int i = 0; epint && i < USB_EPT_NUM; i++){
     
     if (0 == (epint & (1 << i)))
     {
-      uart_puts("\nNo EP "); uart_write(i + ascii); uart_puts("interrupts");
       continue;
     }
       
     epint &= ~(1 << i);
-
-    uart_puts("\nEP interrupt");
     
     flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
