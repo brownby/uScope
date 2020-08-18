@@ -330,6 +330,7 @@ void usb_init() {
 
 void USB_Handler(){
 
+  __disable_irq();
   int epint, flags;
 
   // Reset
@@ -805,6 +806,8 @@ void USB_Handler(){
   
     }
   }
+
+  __enable_irq();
 }
 
 void usb_pipe_status(){
