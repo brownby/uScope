@@ -256,8 +256,12 @@ void DMAC_Handler() {
   DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL; // clear transfer complete flag
 
   // if interface 1 is enabled
-  if(interface_num == 1 && USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 == 1)
+  if(interface_num == 1)
   {
+    if(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1)
+    {
+      uart_puts("\nPrev transfer complete");
+    }
     if(bufnum == 0)
     {
       EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
