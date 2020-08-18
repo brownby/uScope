@@ -783,6 +783,8 @@ void USB_Handler(){
       continue;
       
     epint &= ~(1 << i);
+
+    uart_puts("\nEP interrupt");
     
     flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
