@@ -4,7 +4,7 @@
  * Intended for use with MKR Zero (SAMD21)
  * 
  * J. Evan Smith, Ben Y. Brown
- * Last revised: 17 August 2020
+ * Last revised: 16 August 2020
  */
 
 #include "Arduino.h"          // required before wiring_private.h, also includes USBDesc.h, USBCore.h, USBAPI.h, and USB_host.h
@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 1023         // number of beats for adc transfer
+#define NBEATS 32           // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT 0
@@ -81,6 +81,7 @@ volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16)));        // write-
 dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
 dmacdescriptor descriptor __attribute__ ((aligned (16)));
 UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
+uint8_t interface_num = 0; // Current interface selected by host
 
 void uart_init() {
    
@@ -254,16 +255,26 @@ void DMAC_Handler() {
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL; // clear transfer complete flag
 
-  if(bufnum == 0){
-    usbd.epBank1SetAddress(CDC_ENDPOINT_IN, &adc_buffer0);
+  // if interface 1 is enabled
+  if(interface_num == 1)
+  {
+    if(bufnum == 0)
+    {
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
+    }
+    else
+    {
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
+    }
+
+    EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = NBEATS; // size of ADC buffer in SRAM
+    EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+
+    USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
+    USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer
+
+    while (0 == USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1); // wait
   }
-  else{
-    usbd.epBank1SetAddress(CDC_ENDPOINT_IN, &adc_buffer1);
-  }
- 
-  usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, NBEATS); // each beat is 8 bits
-  usbd.epBank1AckTransferComplete(CDC_ENDPOINT_IN);
-  usbd.epBank1SetReady(CDC_ENDPOINT_IN);
 
   __enable_irq(); // enable interrupts
 
@@ -307,6 +318,7 @@ void usb_init() {
   USB->DEVICE.CTRLB.bit.DETACH = 0;
   
   USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_EORST;  
+  // USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_SOF;
   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1;
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
@@ -318,8 +330,10 @@ void usb_init() {
 
 void USB_Handler(){
 
+  __disable_irq();
   int epint, flags;
 
+  // Reset
   if(USB->DEVICE.INTFLAG.bit.EORST) { // if EORST interrupt
 
     uart_puts("\n\nReset");
@@ -353,6 +367,7 @@ void USB_Handler(){
     
   }
 
+  // Requests
   if (USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP){
 
     USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.RXSTP = 1; // acknowledge interrupt
@@ -563,7 +578,7 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTENSET.bit.TRCPT1 = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.DTGLIN = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
-          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_512;
+          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_32;
         
         }
       } break;
@@ -599,9 +614,9 @@ void USB_Handler(){
       case USB_CMD(OUT, INTERFACE, STANDARD, SET_INTERFACE): { 
         
         uart_puts("\nSetInterface"); // host sending alternate setting for AudioStreaming interface
+        uart_puts("\nwValueL: "); uart_write(wValue_L + ascii); // wValueL from 0 to 1 when I open sound settings
         
-        // wValueL from 0 to 1 when I open sound settings
-        // *flag --> anything we need to do here to switch from one setting to the other?
+        interface_num = wValue_L;
 
         uart_puts("\nSending ZLP");
 
@@ -714,7 +729,7 @@ void USB_Handler(){
 
       case USB_CMD(OUT, ENDPOINT, STANDARD, SET_FEATURE): {
 
-        uart_puts("\nSetFeature: Endpoint");
+        uart_puts("\nSetFeature: Interface");
         uart_puts("\nEmpty case");
         
         //TODO
@@ -724,21 +739,18 @@ void USB_Handler(){
       case USB_CMD(OUT, DEVICE, STANDARD, CLEAR_FEATURE): {
       
         uart_puts("\nClearFeature: Device");
-        uart_puts("\nStall");
+        uart_puts("\nEmpty case");
         
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+        //TODO
       
       } break;
 
       case USB_CMD(OUT, INTERFACE, STANDARD, CLEAR_FEATURE): {
       
         uart_puts("\nClearFeature: Interface");
+        uart_puts("\nEmpty case");
         
-        // send control ZLP
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+        //TODO
       
       } break;
 
@@ -767,12 +779,15 @@ void USB_Handler(){
     }
   }  
   
+  // Endpoint interrupts
   epint = USB->DEVICE.EPINTSMRY.reg;
 
   for (int i = 0; epint && i < USB_EPT_NUM; i++){
     
     if (0 == (epint & (1 << i)))
+    {
       continue;
+    }
       
     epint &= ~(1 << i);
     
@@ -791,6 +806,8 @@ void USB_Handler(){
   
     }
   }
+
+  __enable_irq();
 }
 
 void usb_pipe_status(){
