@@ -255,7 +255,7 @@ void DMAC_Handler() {
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL; // clear transfer complete flag
 
-  if interface 1 is enabled
+  // if interface 1 is enabled
   if(interface_num == 1)
   {
     if(bufnum == 0)
