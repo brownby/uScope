@@ -273,7 +273,9 @@ void DMAC_Handler() {
     USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
     USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer
 
-    while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait
+    int cur_time = micros();
+    while (0 == USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1); // wait
+    uart_puts("\ntranfser time (us): "); uart_write((uint8_t)(micros() - cur_time));
   }
 
   __enable_irq(); // enable interrupts
