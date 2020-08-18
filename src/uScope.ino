@@ -256,7 +256,7 @@ void DMAC_Handler() {
   DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL; // clear transfer complete flag
 
   // if interface 1 is enabled
-  if(interface_num == 1)
+  if(interface_num == 1 && USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 == 1)
   {
     if(bufnum == 0)
     {
