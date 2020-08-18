@@ -789,12 +789,29 @@ void USB_Handler(){
     }
   }  
   
-  if(USB->DEVICE.INTFLAG.bit.SOF)
+  if(USB->DEVICE.INTFLAG.bit.SOF && USB->DEVICE.INTENSET.bit.SOF)
   {
     USB->DEVICE.INTFLAG.bit.SOF = 1; // acknowledge interrupt
 
-    uart_puts("\nSOF");
-    uart_puts("\nFNUM: "); uart_write(USB->DEVICE.FNUM.bit.FNUM + ascii);
+    if(interface_num == 1)
+    {
+      if(bufnum == 0)
+      {
+        EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
+      }
+      else
+      {
+        EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
+      }
+
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = NBEATS; // size of ADC buffer in SRAM
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+
+      USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
+      USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer
+
+      while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait
+    }
   }
 
 
