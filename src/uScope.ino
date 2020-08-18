@@ -4,7 +4,7 @@
  * Intended for use with MKR Zero (SAMD21)
  * 
  * J. Evan Smith, Ben Y. Brown
- * Last revised: 16 August 2020
+ * Last revised: 17 August 2020
  */
 
 #include "Arduino.h"          // required before wiring_private.h, also includes USBDesc.h, USBCore.h, USBAPI.h, and USB_host.h
@@ -599,8 +599,8 @@ void USB_Handler(){
       case USB_CMD(OUT, INTERFACE, STANDARD, SET_INTERFACE): { 
         
         uart_puts("\nSetInterface"); // host sending alternate setting for AudioStreaming interface
-        uart_puts("\nwValueL: "); uart_write(wValue_L + ascii); // wValueL from 0 to 1 when I open sound settings
         
+        // wValueL from 0 to 1 when I open sound settings
         // *flag --> anything we need to do here to switch from one setting to the other?
 
         uart_puts("\nSending ZLP");
@@ -714,7 +714,7 @@ void USB_Handler(){
 
       case USB_CMD(OUT, ENDPOINT, STANDARD, SET_FEATURE): {
 
-        uart_puts("\nSetFeature: Interface");
+        uart_puts("\nSetFeature: Endpoint");
         uart_puts("\nEmpty case");
         
         //TODO
@@ -724,18 +724,21 @@ void USB_Handler(){
       case USB_CMD(OUT, DEVICE, STANDARD, CLEAR_FEATURE): {
       
         uart_puts("\nClearFeature: Device");
-        uart_puts("\nEmpty case");
+        uart_puts("\nStall");
         
-        //TODO
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
       
       } break;
 
       case USB_CMD(OUT, INTERFACE, STANDARD, CLEAR_FEATURE): {
       
         uart_puts("\nClearFeature: Interface");
-        uart_puts("\nEmpty case");
         
-        //TODO
+        // send control ZLP
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
       
       } break;
 
