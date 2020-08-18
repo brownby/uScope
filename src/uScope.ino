@@ -255,16 +255,26 @@ void DMAC_Handler() {
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTENCLR_TCMPL; // clear transfer complete flag
 
-  if(bufnum == 0){
-    usbd.epBank1SetAddress(CDC_ENDPOINT_IN, &adc_buffer0);
+  // if interface 1 is enabled
+  if(interface_num == 1)
+  {
+    if(bufnum == 0)
+    {
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
+    }
+    else
+    {
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
+    }
+
+    EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = NBEATS; // size of ADC buffer in SRAM
+    EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+
+    USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
+    USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer
+
+    while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait
   }
-  else{
-    usbd.epBank1SetAddress(CDC_ENDPOINT_IN, &adc_buffer1);
-  }
- 
-  usbd.epBank1SetByteCount(CDC_ENDPOINT_IN, NBEATS); // each beat is 8 bits
-  usbd.epBank1AckTransferComplete(CDC_ENDPOINT_IN);
-  usbd.epBank1SetReady(CDC_ENDPOINT_IN);
 
   __enable_irq(); // enable interrupts
 
