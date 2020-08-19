@@ -16,7 +16,7 @@
 #include "usb_enums.h"
 
 #define freq_CPU 48000000                                           // CPU clock frequency
-static uint32_t baud = 115200;                                      // for UART debug of USB
+static uint32_t baud = 230400;                                      // for UART debug of USB
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
@@ -803,7 +803,8 @@ void USB_Handler(){
 
           if(bufnum != prevBuf || prevBuf == 2)
           {
-            
+            uart_puts("\n-----");
+
             prevBuf = bufnum;
 
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
@@ -826,6 +827,8 @@ void USB_Handler(){
           }
         
           else if (bufnum == prevBuf){
+
+            uart_puts("\nZLP");
             
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
