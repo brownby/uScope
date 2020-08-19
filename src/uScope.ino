@@ -197,7 +197,7 @@ void adc_to_sram_dma() {
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID; // beat size is a byte
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x0);; // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
 
@@ -255,12 +255,6 @@ void DMAC_Handler() {
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR; // clear transfer complete flag
 
   uart_puts("\nd"); uart_write(bufnum + ascii);
-  
-  if(bufnum == 0){
-
-    uart_puts("\nTRCPT"); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1+ascii);
-
-  }
   
   __enable_irq(); // enable interrupts
 
