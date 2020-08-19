@@ -49,8 +49,8 @@ char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","A
 
 uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
 
-volatile bool bufnum = false;  // track which buffer to write to, while USB reads
-volatile bool prevBuf = false;
+volatile u_int8_t bufnum = 0;  // track which buffer to write to, while USB reads
+volatile u_int8_t prevBuf = 1;
 
 extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
 extern UsbDeviceDescriptor usb_endpoints[];
@@ -256,35 +256,7 @@ void DMAC_Handler() {
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR; // clear transfer complete flag
 
-  // uart_puts("\nd"); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 + ascii);
   uart_puts("\nd"); uart_write(bufnum + ascii);
-  // if interface 1 is enabled
-  // if(interface_num == 1)
-  // {
-    // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-    // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
-
-    // uart_putc('\n'); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 + ascii);
-    // uart_putc('\n'); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUS.bit.BK1RDY + ascii);
-    // if(bufnum == 0)
-    // {
-    //   EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
-    //   // uart_puts("\nh0");
-    // }
-    // else if(bufnum == 1)
-    // {
-    //   EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
-    //   // uart_puts("\nh1");
-    // }
-
-    // EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS; // size of ADC buffer in SRAM
-    // EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-
-    // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
-    // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer when host sends IN token
-
-    // while (0 == USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1); // wait
-  // }
 
   __enable_irq(); // enable interrupts
 
@@ -328,7 +300,7 @@ void usb_init() {
   USB->DEVICE.CTRLB.bit.DETACH = 0;
   
   USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_EORST;  
-  // USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_SOF;
+  // USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_SOF; //*flag 
   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1;
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
@@ -800,8 +772,6 @@ void USB_Handler(){
   // Endpoint interrupts
   epint = USB->DEVICE.EPINTSMRY.reg;
 
-  uart_puts("\nu"); uart_write(bufnum + ascii);
-  // uart_puts("\nu"); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 + ascii);
   for (int i = 0; epint && i < USB_EPT_NUM; i++){
     
     if (0 == (epint & (1 << i)))
@@ -825,15 +795,16 @@ void USB_Handler(){
       {
         if(interface_num == 1)
         {
-          // if(prevBuf != bufnum)
-          // {
-            // prevBuf = bufnum;
+
+          uart_puts("\nu"); uart_write(bufnum + ascii);
+          
+          //if(bufnum != prevBuf)
+          //{
+            prevBuf = bufnum;
+
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
-            // uart_putc('\n'); uart_write(bufnum + ascii);
-
-            // uart_putc('\n'); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 + ascii);
-            // uart_putc('\n'); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUS.bit.BK1RDY + ascii);
+          
             if(bufnum == 0)
             {
               EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
@@ -845,28 +816,15 @@ void USB_Handler(){
               // uart_puts("\nh1");
             }
 
-            EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS; // size of ADC buffer in SRAM
+            EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS;    // size of ADC buffer in SRAM
             EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
 
-            USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer when host sends IN token
-
-            // while (0 == USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1); // wait
-          // }
-          // else if(prevBuf == bufnum)
-          // {
-          //   // send ZLP
-          //   USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-          //   USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
-
-          //   EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0; // size of ADC buffer in SRAM
-          //   EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-
-          //   USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;        // start transfer when host sends IN token
-          // }
+            USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;   // start transfer when host sends IN token
+          //}
         }
         continue;
       }
-      // uart_puts("\nhere!");
+
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
       USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
   
