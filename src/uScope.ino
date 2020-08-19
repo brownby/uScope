@@ -20,7 +20,7 @@ static uint32_t baud = 230400;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 512          // number of beats for adc transfer
+#define NBEATS 512        // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT 0
@@ -197,7 +197,7 @@ void adc_to_sram_dma() {
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID; // beat size is a byte
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x0); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
 
@@ -254,13 +254,13 @@ void DMAC_Handler() {
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR; // clear transfer complete flag
 
-  uart_puts("\nd"); uart_write(bufnum + ascii);
+  // uart_puts("\nd"); uart_write(bufnum + ascii);
   
-  if(bufnum == 0){
+  // if(bufnum == 0){
 
-    uart_puts("\nTRCPT"); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1+ascii);
+  //   uart_puts("\nTRCPT"); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1+ascii);
 
-  }
+  // }
   
   __enable_irq(); // enable interrupts
 
@@ -800,12 +800,12 @@ void USB_Handler(){
         if(interface_num == 1)
         {  
 
-          uart_puts("\nub"); uart_write(bufnum + ascii);
-          uart_puts("\nupb"); uart_write(prevBuf + ascii);
+          // uart_puts("\nub"); uart_write(bufnum + ascii);
+          // uart_puts("\nupb"); uart_write(prevBuf + ascii);
 
           if(bufnum != prevBuf || prevBuf == 2)
           {
-            uart_puts("\n-----");
+            // uart_puts("\n-----");
 
             prevBuf = bufnum;
 
@@ -831,7 +831,7 @@ void USB_Handler(){
           else if (bufnum == prevBuf)
           {
 
-            uart_puts("\nZLP");
+            // uart_puts("\nZLP");
             
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
