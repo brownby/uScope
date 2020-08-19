@@ -188,7 +188,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
   while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
   
-  DMAC->CHCTRLB.bit.LVL = 0x01; // priority for the channel
+  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
   DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
@@ -207,7 +207,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
   while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
   
-  DMAC->CHCTRLB.bit.LVL = 0x01; // priority for the channel
+  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
   DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
@@ -254,9 +254,13 @@ void DMAC_Handler() {
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR; // clear transfer complete flag
 
- // if (bufnum != prevBuf){
-    uart_puts("\nd"); uart_write(bufnum + ascii);
- // }
+  uart_puts("\nd"); uart_write(bufnum + ascii);
+  
+  if(bufnum == 0){
+
+    uart_puts("\nTRCPT"); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1+ascii);
+
+  }
   
   __enable_irq(); // enable interrupts
 
