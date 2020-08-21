@@ -16,11 +16,11 @@
 #include "usb_enums.h"
 
 #define freq_CPU 48000000                                           // CPU clock frequency
-static uint32_t baud = 230400;                                      // for UART debug of USB
+static uint32_t baud = 115200;                                      // for UART debug of USB
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 512        // number of beats for adc transfer
+#define NBEATS 512       // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT 0
@@ -197,7 +197,7 @@ void adc_to_sram_dma() {
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x0); // beat size is a byte
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
 
@@ -249,12 +249,14 @@ void dma_init() {
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
+
+  uart_puts("\nINT: "); uart_write(DMAC->INTSTATUS.reg + ascii);
   
-  bufnum =  (bool)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
+  bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR; // clear transfer complete flag
 
-  // uart_puts("\nd"); uart_write(bufnum + ascii);
+  uart_puts("\nd"); uart_write(bufnum + ascii);
   
   // if(bufnum == 0){
 
@@ -564,7 +566,7 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTENSET.bit.TRCPT1 = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.DTGLIN = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
-          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_512;
+          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
 
         }
       } break;
@@ -800,12 +802,12 @@ void USB_Handler(){
         if(interface_num == 1)
         {  
 
-          // uart_puts("\nub"); uart_write(bufnum + ascii);
-          // uart_puts("\nupb"); uart_write(prevBuf + ascii);
+          uart_puts("\n\nub"); uart_write(bufnum + ascii);
+          uart_puts("\nupb"); uart_write(prevBuf + ascii);
 
           if(bufnum != prevBuf || prevBuf == 2)
           {
-            // uart_puts("\n-----");
+            uart_puts("\n-----");
 
             prevBuf = bufnum;
 
@@ -831,7 +833,7 @@ void USB_Handler(){
           else if (bufnum == prevBuf)
           {
 
-            // uart_puts("\nZLP");
+            uart_puts("\nZLP");
             
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
