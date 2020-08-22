@@ -256,14 +256,13 @@ void DMAC_Handler() {
   uart_puts("\nI0: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
   uart_puts("\nI1: "); uart_write(DMAC->INTSTATUS.bit.CHINT1 + ascii);
 
-  DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
+  DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
-  DMAC->CHID.reg = DMAC_CHID_ID(1); // select active channel
-  DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR; // clear transfer complete flag
 
   uart_puts("\nI0a: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
   uart_puts("\nI1a: "); uart_write(DMAC->INTSTATUS.bit.CHINT1 + ascii);
-  
+  uart_putc('\n');
+
   __enable_irq(); // enable interrupts
 
 }
