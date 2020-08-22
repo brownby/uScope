@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 512       // number of beats for adc transfer
+#define NBEATS 1000       // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT 0
@@ -250,19 +250,19 @@ void DMAC_Handler() {
 
   __disable_irq(); // disable interrupts
 
-  uart_puts("\nINT: "); uart_write(DMAC->INTSTATUS.reg + ascii);
-  
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
-  DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
+  uart_puts("\n\nd"); uart_write(bufnum + ascii);
+
+  uart_puts("\nI0: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
+  uart_puts("\nI1: "); uart_write(DMAC->INTSTATUS.bit.CHINT1 + ascii);
+
+  DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
+  DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
+  DMAC->CHID.reg = DMAC_CHID_ID(1); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR; // clear transfer complete flag
 
-  uart_puts("\nd"); uart_write(bufnum + ascii);
-  
-  // if(bufnum == 0){
-
-  //   uart_puts("\nTRCPT"); uart_write(USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1+ascii);
-
-  // }
+  uart_puts("\nI0a: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
+  uart_puts("\nI1a: "); uart_write(DMAC->INTSTATUS.bit.CHINT1 + ascii);
   
   __enable_irq(); // enable interrupts
 
@@ -801,9 +801,6 @@ void USB_Handler(){
       {
         if(interface_num == 1)
         {  
-
-          uart_puts("\n\nub"); uart_write(bufnum + ascii);
-          uart_puts("\nupb"); uart_write(prevBuf + ascii);
 
           if(bufnum != prevBuf || prevBuf == 2)
           {
