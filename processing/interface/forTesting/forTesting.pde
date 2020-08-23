@@ -7,9 +7,9 @@ void setup() {
   
   surface.setResizable(true);
   surface.setSize(1000,250);
+  
   minim = new Minim(this);
-
-  in = minim.getLineIn(Minim.MONO,1023,44100, 8);
+  in = minim.getLineIn(Minim.MONO, 1023, 44100, 8);
 
 }
 
