@@ -1,4 +1,4 @@
-class Display{ 
+class Display { 
 
    int x;  // position
    int y;  // position 

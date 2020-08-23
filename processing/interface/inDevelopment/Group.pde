@@ -1,4 +1,4 @@
-class Group{
+class Group {
   
   float v     = 0;
   int   qtd   = 0;

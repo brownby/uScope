@@ -5,18 +5,15 @@ class Channel{
  int x,y,w,h;
  Dial fm;  // fator de escala para a voltagem (vertical)
  Dial ft; // fator de escala para o tempo (horizontal)
- //CheckBox inv; // inverter o sinal
+ 
  CheckBox trigger; // trigger
  CheckBox curva; // suavizar as curvas com curveVertex() / vertex()
  CheckBox medir; // medir tempo e tensão
 
  int qMax=1000;
  
- 
- //float buffer[] = new float[qMax];
- 
  int v[]      = new int[qMax];
- int buffer[]=new int[qMax];
+ int buffer[] = new int[qMax];
  
  boolean updated = false;
 

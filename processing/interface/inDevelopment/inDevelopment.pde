@@ -13,14 +13,11 @@
  * ☑ object instantiation
  * ☑ setup 
  * ☑ draw
- * ☐ mouseClicked --> move all mouse functions to class?
+ * ☐ mouseClicked 
  * ☐ mousePressed
  * ☐ mouseReleased
  * ☐ mouseMoved
  * ☐ mouseDragged
- * ☐ sendCmd
- * ☐ sendDt 
- * ☐ sendQ
  * ☐ adjustFt
  * 
  * =========== CLASSES ===========
@@ -31,8 +28,8 @@
  * ☐ Dial
  * ☑ Display 
  * ☐ FmtNum
- * ☐ Group
- * ☐ Panel
+ * ☑ Group
+ * ☑ Panel
  *
  * https://github.com/brownby/uScope/tree/usb-dev/processing/interface
  */
@@ -41,10 +38,6 @@
 // *** import libraries *** //
 
 import ddf.minim.*;  // used to connect to device over USB audio
-
-//import processing.serial.*; // DELETE
-//Serial port;                // DELETE
-//COM com;                    // DELETE
 
 
 // *** variable initialization *** //
@@ -69,7 +62,6 @@ color rgb[]={color(255, 255, 0), color(0, 0, 255)};  // for 2 channels: yellow (
 
 float Q=45.0;     // division unit size
 int marg1, marg2; // to adjust the position of objects
-
 
 // *** object instantiation *** //
 
@@ -115,6 +107,7 @@ void setup() {
   
   minim = new Minim(this);
   in = minim.getLineIn(Minim.MONO, 1000, 44100, 8);
+  in.disableMonitoring();
 
   for (byte k=0; k<numCh+1; k++){ // must be completed before channels
     group[k] = new Group(); 
@@ -132,9 +125,9 @@ void setup() {
   calcFreq         = new CheckBox("detect frequency", showSamples.x, showSamples.y+showSamples.h+5, 15);
 
   pnlSamples       = new Panel("sampling", display.x+785, display.y+display.h-85, 200, 85);
-  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 1e-3f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
+  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 24e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
   dtReal           = new FmtNum(0,nInt,fmt);
-  q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", 100, 1, 100, dt.x+dt.w+5, dt.y, 60, 20);
+  q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", 1000-1, 1, 100, dt.x+dt.w+5, dt.y, 60, 20);
   tTotal           = new FmtNum(dt.v.getV()*q.v.getV(), !nInt);
   tTotalReal       = new FmtNum(0,!nInt);
   oneSample        = new Button("one", dt.x, dt.y+dt.h+5, 50, 20);
@@ -146,7 +139,7 @@ void setup() {
 
 void draw() {
 
-  background(110);     // was 98
+  background(110); 
   fill(244, 244, 244); 
   
   display.display();
@@ -221,11 +214,11 @@ void mouseClicked() {
 
   //se clicou em dt ou q então send comando para garagino e ajustar display
   if (dt.mouseClicked()) { // se true alterou dt, então ajustarFt() (escala de t na display)
-    sendDt();
+
     adjustFt();
   }
   if (q.mouseClicked()) { // se true alterou q, então ajustarFt()
-    sendQ();
+
     adjustFt();
   }
 
@@ -247,11 +240,11 @@ void mouseClicked() {
     println("k2=",k2);
     
     if (k2>=0 && k2<=3){
-       pnlSamples.piscar=true;
-       channel[k2].trigger.piscar=true;
+       pnlSamples.blink=true;
+       channel[k2].trigger.blink=true;
        waitforTrigger=true;
     } else {
-       pnlSamples.piscar=false;
+       pnlSamples.blink=false;
        waitforTrigger=false;
      }
   }
@@ -306,30 +299,14 @@ void mouseReleased() {
 
   //se Releaser o mouse no dt ou q, então send os dados para o Garagino
   if (dt.mouseSoltou()) {
-    sendDt();
+
     adjustFt();
   }
   if (q.mouseSoltou()) {
-    sendQ(); 
+
     // acertar as escalas ft de cada channel
     adjustFt();
   }
-
-
-  //ruido.mouseSoltou();
-
-  //if (fWave.mouseSoltou()) {
-  //  tWave.setV(1/fWave.v.v);
-  //  sendCmd("tWave");
-  //}
-  //if (tWave.mouseSoltou()) {
-  //  fWave.setV(1/tWave.v.v);
-  //  sendCmd("tWave");
-  //}
-  //if (dutyWave.mouseSoltou()){
-  //  sendCmd("dutyWave");
-  //}
- 
 }
 
 void mouseMoved() {
@@ -353,23 +330,6 @@ void mouseDragged() {
   
 }
 
-
-/* ==========================================
-     COMando enviados para o Garagino 
-   ========================================== */
-
-//=== Ger.Sinal - Se alterou f/T/Ton - send comando para Garagino ==
-void sendCmd(String cmd){
- 
-}
-
-//==Se alterou dt ou q send comando para Garagino e ajustar a escala da display ==
-void sendDt() {
-  adjustFt();
-}
-void sendQ() {
-}
-
 void adjustFt() {
   float ftNew=dt.v.getV()*q.v.getV()/10.0;
   //println("ftNew=",ftNew," dt=",dt.v.getV()," q=",q.v.getV());
@@ -377,12 +337,8 @@ void adjustFt() {
     channel[k].ft.setV(ftNew);
   }
 }
-
-/*=====================================
-      Entrada do Evento Porta Serial 
-  =====================================*/
   
-void serFn() {
+void dummy() {
   //if (p.available()>0) {}
   
   String cmd="", val="";
@@ -398,16 +354,19 @@ void serFn() {
       if (cmd.equals("f")) { // entra fluxo de dados - deslocar dados e armazenar no final
         String tex2[]=splitTokens(val); //val = "0(t)dtReal(t)ch0(t)ch1(t)ch2"
         //int vc[]=int(splitTokens(val));
-        //deslocar os dados para baixo, para incluir o novo dado no final
+        
+        //move the data down to include the new data at the end
         for (int j=0; j<4; j++) {
           for (int k=1; k<q.v.v; k++) {
             channel[j].v[k-1]=channel[j].v[k];
           }
         }
+        
         channel[0].v[int(q.v.v-1)]=int(tex2[2]);
         channel[1].v[int(q.v.v-1)]=int(tex2[3]);
         channel[2].v[int(q.v.v-1)]=int(tex2[4]);
         channel[3].v[int(q.v.v-1)]=int(tex2[5]);
+        
         dtReal.setV(float(tex2[1]));
         if (dtReal.v-dt.v.v>1.1*dt.v.v){ dtError=true;} else {dtError=false;}
         println("cmd=",cmd," val=",val," dtReal=",dtReal.printV());
@@ -436,9 +395,9 @@ void serFn() {
         channel[3].updated=true;
         if (waitforTrigger){
            waitforTrigger=false;
-           pnlSamples.piscar=false;
+           pnlSamples.blink=false;
            for (int k=0; k<4;k++){
-             channel[k].trigger.piscar=false;
+             channel[k].trigger.blink=false;
            }
            
         }

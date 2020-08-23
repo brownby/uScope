@@ -1,10 +1,17 @@
-class CheckBox{
-   int x,y,w,h;
+class CheckBox {
+   
+   int x;  // position
+   int y;  // position 
+   int w;  // width
+   int h;  // height
+   
    int tSize;  // textSize
    //color cor; // cor do fundo
    //color corBack; // cor do fundo do texto
-   boolean clicked=false;
-   boolean piscar=false;
+   
+   boolean clicked = false;
+   boolean blink = false;
+   
    String tex, tex2="";
    //constructor
    CheckBox(String tex_, int x_, int y_, int tSize_){
@@ -16,7 +23,7 @@ class CheckBox{
    }
    void display(){
       //noFill(); stroke(255); strokeWeight(1);  (x,y,w,h);
-      if (piscar){
+      if (blink){
         fill(map(millis()%1000,0,1000,0,125));
       }else{
         fill(0);
