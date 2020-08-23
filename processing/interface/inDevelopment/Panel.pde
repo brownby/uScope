@@ -5,12 +5,12 @@ class Panel {
    int w;  // width
    int h;  // height
    
-   String  tex   = "";
-   String  tex2  = "";
+   String  txt   = "";
+   String  txt2  = "";
    Boolean blink = false;
    
-   Panel(String tex_, int x_, int y_, int w_, int h_) {  // constructor
-     tex=tex_;
+   Panel(String txt_, int x_, int y_, int w_, int h_) {  // constructor
+     txt=txt_;
      x=x_; y=y_; w=w_; h=h_;
    }
    
@@ -28,7 +28,7 @@ class Panel {
         fill(0);
       } 
       
-      textAlign(LEFT); text(tex+" "+tex2,x+5,y+textAscent());
+      textAlign(LEFT); text(txt+" "+txt2,x+5,y+textAscent());
       
    } 
 }

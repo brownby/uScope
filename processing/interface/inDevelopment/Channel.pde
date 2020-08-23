@@ -498,9 +498,9 @@ class Channel{
      return ret;
   }
   
-  void mousePressionou(){
-    fm.mousePressionou();
-    ft.mousePressionou();
+  void mousePressed(){
+    fm.mousePressed();
+    ft.mousePressed();
     p0MousePressionou(); //se pegar o triangulo de p0
     displayMousePressionou();
   }
@@ -512,9 +512,9 @@ class Channel{
     displayMouseArrastou();
   }
   
-  void mouseSoltou(){
-    fm.mouseSoltou();
-    ft.mouseSoltou();
+  void mouseReleased(){
+    fm.mouseReleased();
+    ft.mouseReleased();
     if (pegouP0) {
        pegouP0=false; 
     }

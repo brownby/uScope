@@ -22,9 +22,9 @@
  * 
  * =========== CLASSES ===========
  *
- * ☐ Button
+ * ☑ Button
  * ☐ Channel
- * ☐ CheckBox
+ * ☑ CheckBox
  * ☐ Dial
  * ☑ Display 
  * ☐ FmtNum
@@ -170,7 +170,7 @@ void draw() {
   calcFreq.display();
 
   tTotal.setV(dt.v.getV()*q.v.getV());
-  pnlSamples.tex2="("+tTotal.printV()+"s)";
+  pnlSamples.txt2="("+tTotal.printV()+"s)";
   
   pnlSamples.display();
   dt.display();
@@ -181,11 +181,11 @@ void draw() {
   
   textAlign(LEFT);
   if (dtError){ fill(255,0,0); } else { fill(0,20,0); }  
-  String tex="Real: dt"+dtReal.printV()+"s";
+  String txt="Real: dt"+dtReal.printV()+"s";
   if (streamContinuous.clicked==false){
-     tex+="  total"+tTotalReal.printV()+"s"; 
+     txt+="  total"+tTotalReal.printV()+"s"; 
   }
-  text(tex,pnlSamples.x+5,pnlSamples.y+pnlSamples.h-2);
+  text(txt,pnlSamples.x+5,pnlSamples.y+pnlSamples.h-2);
   fill(0);
 
 }
@@ -260,49 +260,49 @@ void mouseClicked() {
 }
 
 void mousePressed() {
-  //d.mousePressionou(); 
+  //d.mousePressed(); 
   for (int k=0; k<numCh; k++) {
-    channel[k].mousePressionou();
+    channel[k].mousePressed();
   }
-  dt.mousePressionou();
-  q.mousePressionou();
-  //ruido.mousePressionou();
+  dt.mousePressed();
+  q.mousePressed();
+  //ruido.mousePressed();
 
   // só para aparecer o verde do pressionado
-  oneSample.mousePressionou();
-  severalSamples.mousePressionou();
-  streamContinuous.mousePressionou();
+  oneSample.mousePressed();
+  severalSamples.mousePressed();
+  streamContinuous.mousePressed();
 
- // fWave.mousePressionou();
- // tWave.mousePressionou();
- // dutyWave.mousePressionou();
+ // fWave.mousePressed();
+ // tWave.mousePressed();
+ // dutyWave.mousePressed();
   
-  resetAxes.mousePressionou();
-  resetMedir.mousePressionou();
+  resetAxes.mousePressed();
+  resetMedir.mousePressed();
 
 }
 
 void mouseReleased() {
-  // d.mouseSoltou();
+  // d.mouseReleased();
   for (int k=0; k<numCh; k++) {
-    channel[k].mouseSoltou();
+    channel[k].mouseReleased();
   }
 
 
-  resetAxes.mouseSoltou();
-  resetMedir.mouseSoltou();
+  resetAxes.mouseReleased();
+  resetMedir.mouseReleased();
   // só para aparecer o verde do pressionado
-  oneSample.mouseSoltou();
-  severalSamples.mouseSoltou();
-  streamContinuous.mouseSoltou();
+  oneSample.mouseReleased();
+  severalSamples.mouseReleased();
+  streamContinuous.mouseReleased();
 
 
   //se Releaser o mouse no dt ou q, então send os dados para o Garagino
-  if (dt.mouseSoltou()) {
+  if (dt.mouseReleased()) {
 
     adjustFt();
   }
-  if (q.mouseSoltou()) {
+  if (q.mouseReleased()) {
 
     // acertar as escalas ft de cada channel
     adjustFt();
@@ -339,20 +339,18 @@ void adjustFt() {
 }
   
 void dummy() {
-  //if (p.available()>0) {}
   
   String cmd="", val="";
-  String tex="";//p.readStringUntil(10);
+  String txt="";
   
-  //print(">>>> ",tex);
-  if (tex.charAt(0)=='>') { //comando: >cmd=v1(tab)v2(tab)v3(tab)
-    int i=tex.indexOf("=");
+  if (txt.charAt(0)=='>') { //comando: >cmd=v1(tab)v2(tab)v3(tab)
+    int i=txt.indexOf("=");
     if (i>=0) { // encontrou wave "=" (igual)  obs: i=-1 => não encontrou o wave '='
-      cmd=tex.substring(1, i); // pegar o comando obs: substring(inclusive,exclusive)
-      val=tex.substring(i+1); // pegar o valor
+      cmd=txt.substring(1, i); // pegar o comando obs: substring(inclusive,exclusive)
+      val=txt.substring(i+1); // pegar o valor
       //println("cmd=",cmd," val=",val);
       if (cmd.equals("f")) { // entra fluxo de dados - deslocar dados e armazenar no final
-        String tex2[]=splitTokens(val); //val = "0(t)dtReal(t)ch0(t)ch1(t)ch2"
+        String txt2[]=splitTokens(val); //val = "0(t)dtReal(t)ch0(t)ch1(t)ch2"
         //int vc[]=int(splitTokens(val));
         
         //move the data down to include the new data at the end
@@ -362,12 +360,12 @@ void dummy() {
           }
         }
         
-        channel[0].v[int(q.v.v-1)]=int(tex2[2]);
-        channel[1].v[int(q.v.v-1)]=int(tex2[3]);
-        channel[2].v[int(q.v.v-1)]=int(tex2[4]);
-        channel[3].v[int(q.v.v-1)]=int(tex2[5]);
+        channel[0].v[int(q.v.v-1)]=int(txt2[2]);
+        channel[1].v[int(q.v.v-1)]=int(txt2[3]);
+        channel[2].v[int(q.v.v-1)]=int(txt2[4]);
+        channel[3].v[int(q.v.v-1)]=int(txt2[5]);
         
-        dtReal.setV(float(tex2[1]));
+        dtReal.setV(float(txt2[1]));
         if (dtReal.v-dt.v.v>1.1*dt.v.v){ dtError=true;} else {dtError=false;}
         println("cmd=",cmd," val=",val," dtReal=",dtReal.printV());
       } else if (cmd.equals("v")) { // entrada de Varias Amostra
@@ -396,7 +394,7 @@ void dummy() {
         if (waitforTrigger){
            waitforTrigger=false;
            pnlSamples.blink=false;
-           for (int k=0; k<4;k++){
+           for (int k=0; k<numCh;k++){
              channel[k].trigger.blink=false;
            }
            
@@ -408,7 +406,7 @@ void dummy() {
         println("cmd=",cmd," val=",val," dtReal=",dtReal.printV());
         
       } else if (cmd.equals("r") || cmd.equals("c") || cmd.equals("rc")) { // valor do resistor
-        String tex2[]=splitTokens(val, "\t\r");
+        String txt2[]=splitTokens(val, "\t\r");
         
       } else if (cmd.charAt(0)=='?') {  // carregando as configurações do Garagino (ao conectar) 
         cmd=cmd.substring(2); // eliminar 2 caracteres iniciais "? comando"
@@ -430,7 +428,7 @@ void dummy() {
           adjustFt();
           
         }else if (cmd.equals("channelTrigger")){ // val= 0,1,2,x
-           for (int k=0;k<4;k++){channel[k].trigger.clicked=false;}
+           for (int k=0;k<numCh;k++){channel[k].trigger.clicked=false;}
            if (!val.equals("x")){
               channel[int(val)].trigger.clicked=true;   
            }

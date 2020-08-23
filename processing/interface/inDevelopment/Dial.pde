@@ -29,7 +29,7 @@ class Dial {
    
    //boolean linear=true;  // true=linear,  false=log10
    //boolean imediato=false; // true=alterar o valor do v quando mouseArrastou
-                           // false=alterar o valor do v quando mouseSoltou
+                           // false=alterar o valor do v quando mouseReleased
    String tex;
    boolean clicou=false;
    int cx, mouseOffSet;
@@ -237,7 +237,7 @@ class Dial {
       }   
    }
    
-   void mousePressionou(){
+   void mousePressed(){
      if (mouseButton==LEFT){
       if (mouseY>y && mouseY<y+h) {
         if (mouseX>cx-10 && mouseX<cx+10){
@@ -268,7 +268,7 @@ class Dial {
      return enviar; 
    }
    
-   boolean mouseSoltou(){ // retorna true se é para enviar o comando para o Garagino
+   boolean mouseReleased(){ // retorna true se é para enviar o comando para o Garagino
      boolean enviar=false;
       if (clicou) {
         clicou=false;
