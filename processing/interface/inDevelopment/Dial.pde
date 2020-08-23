@@ -172,7 +172,7 @@ class Dial {
    }
    
    
-   boolean mouseClicado(){ // Soma/Subtrai 1,10 ou 100 do valor => true se alterou o valor
+   boolean mouseClicked(){ // Soma/Subtrai 1,10 ou 100 do valor => true se alterou o valor
      boolean alterou=false;
      float v2=0;
      if (mouseX>x && mouseX<x+w && mouseY>y && mouseY<y+h){

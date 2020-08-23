@@ -38,7 +38,7 @@ class CheckBox{
       }
    }
    
-  boolean mouseClicado(){
+  boolean mouseClicked(){
      boolean r=false;
      if (mouseX>x && mouseX<x+w & mouseY>y && mouseY<y+h){
         clicked=!clicked;

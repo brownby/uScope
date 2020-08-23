@@ -26,7 +26,6 @@
  * =========== CLASSES ===========
  *
  * ☐ Button
- * ☐ COM
  * ☐ Channel
  * ☐ CheckBox
  * ☐ Dial
@@ -43,9 +42,9 @@
 
 import ddf.minim.*;  // used to connect to device over USB audio
 
-import processing.serial.*; // DELETE
-Serial port;                // DELETE
-COM com;                    // DELETE
+//import processing.serial.*; // DELETE
+//Serial port;                // DELETE
+//COM com;                    // DELETE
 
 
 // *** variable initialization *** //
@@ -116,8 +115,6 @@ void setup() {
   
   minim = new Minim(this);
   in = minim.getLineIn(Minim.MONO, 1000, 44100, 8);
-  
-  com = new COM(port, display.x+display.w-380, display.y-30, 600, 20); // DELETE
 
   for (byte k=0; k<numCh+1; k++){ // must be completed before channels
     group[k] = new Group(); 
@@ -161,14 +158,13 @@ void draw() {
   textAlign(RIGHT, CENTER); 
   textSize(15);  
   text("RESET",resetAxes.x-10,resetAxes.y+resetAxes.h/2);
-
-
-  stroke(rgb[0]);
-  for(int i = 0; i < in.bufferSize() - 240; i++) { // was i < in.bufferSize() - 1;
-    line(i+40, 70 + in.left.get(i)*100, i+41, 70 + in.left.get(i+1)*100 ); 
-    //channel[0].buffer[i]= in.left.get(i);
+  
+  for(int i = 0; i < in.bufferSize()-1; i++) { 
+    
+    channel[0].buffer[i]= int(in.left.get(i)*300)+40;
+  
   }
-  //channel[0].updated=true;
+  channel[0].updated=true;
 
   for (byte k=0; k<numCh; k++) {
     channel[k].display();
@@ -203,76 +199,41 @@ void draw() {
 
 
 void mouseClicked() {
-  //-- verificar se é para abrir Serial --
-  int r=com.mouseClicado();
-  if (r==1) { // retornou 1 então abrir serial
-    try {
-      //port=new Serial(this,com.[com.indPort],int(com.speeds[com.indSpeed]));
-      port=new Serial(this, com.ports[com.indPort], int(com.speeds[com.indSpeed]));
-      port.bufferUntil(10); //configurado para pegar linhas inteiras
-      com.connected=true;
-      com.erro=false;
-  
-    } 
-    catch(Exception e) {
-      println("erro abrindo Serial:", e);
-      com.connected=false;
-      com.erro=true;
-    }
-  } else if (r==-1) { //retornou -1 então fechar serial
-    port.stop();
-    com.connected=false;
-    com.erro=false;
-  }
+ 
 
-  if (resetAxes.mouseClicado()){
+  if (resetAxes.mouseClicked()){
     for (int k=0; k<numCh;k++){
      channel[k].p0=display.y+3*Q*(k+1);//posição da tensão zero
     }
     resetAxes.clicked=false;
   }
   
-  if (resetMedir.mouseClicado()){
+  if (resetMedir.mouseClicked()){
      for (int k=0; k<numCh;k++){
         channel[k].telaClicou=false; 
      }
      resetMedir.clicked=false;
   }
   
-  
-  for (int k=0; k<numCh; k++) {
-    if (channel[k].mouseClicado()){ // se alterou o Chn para visível ou não visível
-       if (com.connected){                           // send comando para o Garagino não ler esse channel
-         if (channel[k].chN.clicked){
-            port.write("c"+str(k)+"o");
-         } else {
-            port.write("c"+str(k)+"x");
-         }
-       }
-    }
-  }
-  
-  showSamples.mouseClicado();
-  calcFreq.mouseClicado();
-  //showDif.mouseClicado();
+  showSamples.mouseClicked();
+  calcFreq.mouseClicked();
+  //showDif.mouseClicked();
 
   //se clicou em dt ou q então send comando para garagino e ajustar display
-  if (dt.mouseClicado()) { // se true alterou dt, então ajustarFt() (escala de t na display)
+  if (dt.mouseClicked()) { // se true alterou dt, então ajustarFt() (escala de t na display)
     sendDt();
     adjustFt();
   }
-  if (q.mouseClicado()) { // se true alterou q, então ajustarFt()
+  if (q.mouseClicked()) { // se true alterou q, então ajustarFt()
     sendQ();
     adjustFt();
   }
 
 
-  if (oneSample.mouseClicado()) { // receber apenas Uma Amostra
+  if (oneSample.mouseClicked()) { // receber apenas Uma Amostra
     severalSamples.clicked=false;
     streamContinuous.clicked=false;
-    if (com.connected) {
-      port.write("1"); 
-    }
+
     oneSample.clicked=false;
     // verificar se tem algum trigger acionado para que ele fique waitfor o disparo
     // vai ficar piscando para indicar que está aguardando o disparo.
@@ -294,32 +255,13 @@ void mouseClicked() {
        waitforTrigger=false;
      }
   }
-  if (severalSamples.mouseClicado()) {
+  if (severalSamples.mouseClicked()) {
     oneSample.clicked=false;
     streamContinuous.clicked=false;
-    if (com.connected) {
-      if (severalSamples.clicked) {
-        port.write("vo");
-      } else {
-        port.write("vx");
-      }
-    } else {
-      severalSamples.clicked=false;
-    }
   }
-  if (streamContinuous.mouseClicado()) {
+  if (streamContinuous.mouseClicked()) {
     oneSample.clicked=false;
     severalSamples.clicked=false;
-    if (com.connected) {
-      if (streamContinuous.clicked) {
-        port.write("fo");
-        
-      } else {
-        port.write("fx");
-      }
-    } else {
-      streamContinuous.clicked=false;
-    }
   }
 
 }
@@ -391,8 +333,6 @@ void mouseReleased() {
 }
 
 void mouseMoved() {
-
-  com.mouseMoveu();
   
   for (int k=0; k<numCh; k++) {
     channel[k].mouseMoveu();
@@ -420,31 +360,14 @@ void mouseDragged() {
 
 //=== Ger.Sinal - Se alterou f/T/Ton - send comando para Garagino ==
 void sendCmd(String cmd){
-  if (cmd.equals("tWave")){
-    if (com.connected){
-         port.write("p"+tWave.v.printV());
-         println("p"+tWave.v.printV());
-     }
-  } else if (cmd.equals("dutyWave")){
-    if (com.connected){
-         port.write("o"+dutyWave.v.printV()+"%");
-         println("o"+dutyWave.v.printV()+"%");
-      }
-  }
+ 
 }
 
 //==Se alterou dt ou q send comando para Garagino e ajustar a escala da display ==
 void sendDt() {
-  if (com.connected) {
-    port.write("d"+dt.v.printV());
-  } 
-  // acertar as escalas ft de cada channel
   adjustFt();
 }
 void sendQ() {
-  if (com.connected) {
-    port.write("q"+q.v.printV()+".");
-  }
 }
 
 void adjustFt() {
@@ -459,11 +382,11 @@ void adjustFt() {
       Entrada do Evento Porta Serial 
   =====================================*/
   
-void serialEvent(Serial p) {
+void serFn() {
   //if (p.available()>0) {}
   
   String cmd="", val="";
-  String tex=p.readStringUntil(10);
+  String tex="";//p.readStringUntil(10);
   
   //print(">>>> ",tex);
   if (tex.charAt(0)=='>') { //comando: >cmd=v1(tab)v2(tab)v3(tab)

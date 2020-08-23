@@ -46,7 +46,7 @@ class Button{
       if (mPressionou) mPressionou=false;
    }
    
-   boolean mouseClicado(){ // retorna se foi clicked ou não
+   boolean mouseClicked(){ // retorna se foi clicked ou não
      boolean ret=false;
      if (mouseButton==LEFT){
        if (mouseX>x && mouseX<x+w && mouseY>y && mouseY<y+h){

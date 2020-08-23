@@ -10,7 +10,7 @@ class Channel{
  CheckBox curva; // suavizar as curvas com curveVertex() / vertex()
  CheckBox medir; // medir tempo e tensão
 
- int qMax=1023;
+ int qMax=1000;
  
  
  //float buffer[] = new float[qMax];
@@ -474,28 +474,22 @@ class Channel{
 
   
   //=== controle dos eventos do mouse ===  
-  boolean mouseClicado(){
+  boolean mouseClicked(){
      boolean ret=false;
-     ret=chN.mouseClicado(); 
-     //inv.mouseClicado();
-     if (trigger.mouseClicado()){
+     ret=chN.mouseClicked(); 
+     //inv.mouseClicked();
+     if (trigger.mouseClicked()){
         if (trigger.clicked){
            for (int k=0;k<numCh;k++){
               channel[k].trigger.clicked=false;
            }
            trigger.clicked=true;
-           if (com.connected){
-              port.write("t"+str(n)); 
-           }
-        } else {
-          if (com.connected){
-             port.write("tx"); 
-          }
+         
         }
      }
-     fm.mouseClicado();
-     ft.mouseClicado();
-     if (medir.mouseClicado()){
+     fm.mouseClicked();
+     ft.mouseClicked();
+     if (medir.mouseClicked()){
         if (medir.clicked){
            for (int k=0;k<numCh;k++){
               channel[k].medir.clicked=false; 
@@ -503,7 +497,7 @@ class Channel{
            medir.clicked=true;
         }
      };
-     curva.mouseClicado();
+     curva.mouseClicked();
      return ret;
   }
   
@@ -530,10 +524,6 @@ class Channel{
     if (pegouTrigger){
       vTrigger=constrain(int((p0-p0Trigger)/(fa/fm.v.v*Q)),0,1024);
       println("tv"+str(vTrigger)+".");
-      if (com.connected) {
-        port.write("tv"+str(vTrigger)+".");
-        
-      }
       pegouTrigger=false;
     }
     displayMouseSoltou();
