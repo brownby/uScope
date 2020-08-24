@@ -10,8 +10,10 @@ class Panel {
    Boolean blink = false;
    
    Panel(String txt_, int x_, int y_, int w_, int h_) {  // constructor
+   
      txt=txt_;
      x=x_; y=y_; w=w_; h=h_;
+   
    }
    
    void display(){

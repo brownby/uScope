@@ -27,7 +27,7 @@
  * ☑ CheckBox
  * ☐ Dial
  * ☑ Display 
- * ☐ FmtNum
+ * ☑ FmtNum
  * ☑ Group
  * ☑ Panel
  *

@@ -20,6 +20,7 @@ class CheckBox {
      w = (int)textWidth(txt)+h+5; 
      
    }
+   
    void display() {
      
       if (blink) { fill(map(millis()%1000,0,1000,0,125)); }

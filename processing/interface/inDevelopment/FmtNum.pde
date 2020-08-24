@@ -1,89 +1,111 @@
 class FmtNum{
-   float v; // valor em float
-   float n;  // parte numerica do valor formatado
-   boolean nInt=false; // true=n arredondar n para inteiro
-   boolean formatar=true; // formatar o texto no formato Engenharia (nu=numero-escala)
-   char u; // parte unidade do valor formatado
-   int i; // indice da unidade
-   char unid[]={'f','p','n','u','m',' ','k','M','G','T','P'}; //pico(-12),nano(-9),micro(-6),mili(-3), (-0),kilo(3),mega(6),giga(9),tera(12)
-     // femto, pico, nano, micro, mili, ., kilo, mega, giga, tera, peta
+  
+   float v;  // value as float
+   float n;  // numeric part of formatted expression
+   char  u;  // unit part of formatted expression
+   
+   int i; // index for units
+   char unid[]={'f','p','n','u','m',' ','k','M','G','T','P'};  // pico(-12), nano(-9), micro(-6), milli(-3), (0), kilo(3), mega(6), giga(9), tera(12)
+   
+   boolean nInt     = false;  // true --> round n to integer value
+   boolean format   = true;   // formatted as nu = numeric + unit
 
-   //constructor
-   FmtNum(float v_,boolean nInt_,boolean fmt_){
+   FmtNum(float v_,boolean nInt_,boolean fmt_) {  //constructor
+   
      v=v_;
      nInt=nInt_;
      v2nu(v);
-     formatar=fmt_;
+     format=fmt_;
+   
    }
-   FmtNum(float v_,boolean nInt_){
+   
+   FmtNum(float v_,boolean nInt_) {
+     
      v=v_;
      nInt=nInt_;
      v2nu(v);
-     formatar=true;
+     format=true;
+   
    } 
    
-   String printV(){
-     if (nInt){            // inteiro
-       if (formatar){      //   inteiro formatado (nu)
-         return nf(n,0,0)+u;
-       } else {            //  inteiro não formatado (nu)
+   String printV() {
+     
+     if (nInt) {               // is integer?
+       if (format) {           // is formatted?
+         return nf(n,0,0)+u;  
+       } 
+       else {                  // needs to be formatted
          return str(int(v));
        }
-     } else{                // decimal (não inteiro)
-       if (formatar){        //  decimal formatado (nu)
+     } 
+     else{                     // is decimal
+       if (format){            // is formatted?
          return str(n)+u;
-       } else {              // decimal não formatado (nu)
-          return str(v); 
+       } else {                // needs to be formatted
+         return str(v); 
        }
-     }  
+     }
+     
    }
    
-   void setV(float v_){
+   void setV(float v_) {
+     
      v=v_;
      v2nu(v);  
+   
    }
    
-   float getV(){
-     if (nInt){            // inteiro
-         return int(n)*pow(10,(i-5)*3);
-     } else{                // decimal (não inteiro)
-         return v; 
-     }  
+   float getV() {
+     
+     if (nInt){ return int(n)*pow(10,(i-5)*3); } 
+     else{ return v; }
+     
    }
 
    void setNInt(){
+     
        n=round(n);
        nu2v();
    }
    
-   // somar/subtrair valores em n
-   float addN(float k){ // adicionar/subtrair n (se u=' ' descer casa decimal)
-                     // pequeno 1, grande 10 (se u=' ' pequeno=0.1, grande 1)
+   float addN(float k) { // add / substract n (if u = ' ' go to decimal place
+
       float n2=int(n);
-      int i2=i;      
-      if (n2+k>0){
+      int i2=i;    
+      
+      if (n2+k>0) {
         n2+=k;
-      } else {
-        if (i2>0){
+      } 
+      else {
+        if (i2>0) {
            i2--;
            n2=1000+k; 
         }
-      }      
+      }
+      
       return n2*pow(10,(i2-5)*3);
+      
    } 
    
-   void v2nu(float v_){
-    i=constrain(int((log(v_)/log(10)+15)/3),0,unid.length-1); // calcular o indice do expoente do numero (v_) na base 10
-    if (nInt){
-      n=round(v_/pow(10,(i-5)*3));
-    } else {
-      n=round((v_/pow(10,(i-5)*3))*10.0)/10.0;
+   void v2nu(float v_) { // value to formatted numeric + unit?
+   
+    i = constrain(int((log(v_)/log(10)+15)/3),0,unid.length-1); // calculate the index of the exponent of the number (v_) in base 10
+    
+    if (nInt) {
+      n = round(v_/pow(10,(i-5)*3));
+    } 
+    else {
+      n = round((v_/pow(10,(i-5)*3))*10.0)/10.0;
     }
-    u=unid[i];
+    
+    u = unid[i];
+    
    }
    
-   void nu2v(){
-      v=n*pow(10,(i-5)*3);
+   void nu2v() { // formatted numeric + unit to value?
+   
+      v = n*pow(10,(i-5)*3);
       v2nu(v); 
+      
    }
 }
