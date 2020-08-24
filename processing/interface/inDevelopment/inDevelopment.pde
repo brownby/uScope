@@ -18,7 +18,7 @@
  * ☑ mouseReleased()
  * ☑ mouseMoved()
  * ☑ mouseDragged()
- * ☐ adjustFt()
+ * ☑ adjustFt()
  * ☐ SerialEvent() --> legacy
  * 
  * =========== CLASSES ===========
@@ -50,24 +50,24 @@ import ddf.minim.*;  // used to connect to device over USB audio
 
 String version="alpha";
 
-boolean nInt = true;  // n is an integer (round) or decimal !nInt 
-boolean fmt = true;   // fmt = true = "format", !fmt = false = "no format"
+boolean nInt = true;             // n is an integer (round) or decimal !nInt 
+boolean fmt = true;              // fmt = true = "format", !fmt = false = "no format"
+boolean dtError = false;         // check for sampling time error
+boolean waitforTrigger = false;   
 
+byte numCh = 2;
 byte scaleLinear = 0;   
 byte scaleLog = 1;     
-boolean dtError = false; // check for sampling time error
-
 byte changeMove = 2;     // value changed by "MouseDragged"
 byte changeRelease = 3;  // value changed by "MouseReleased"
 
-boolean waitforTrigger = false;   
-int vTrigger = 0;                // value of trigger 0-1024 (0-5V), if 10 bit ADC 
-
-byte numCh = 2;
-color rgb[]={color(255, 255, 0), color(0, 0, 255)};  // for 2 channels: yellow (CH0) and blue (CH1)
+int vTrigger = 0;  // value of trigger 0-1024 (0-5V), if 10 bit ADC 
+int marg1, marg2;  // to adjust the position of objects
 
 float Q=45.0;     // division unit size
-int marg1, marg2; // to adjust the position of objects
+
+color rgb[]={color(255, 255, 0), color(0, 0, 255)};  // for 2 channels: yellow (CH0) and blue (CH1)
+
 
 // *** object instantiation *** //
 
@@ -86,6 +86,8 @@ Button    resetMedir;  // measure vs size? *flag
 CheckBox  showSamples; 
 CheckBox  calcFreq;    // detect frequency
 
+// ---- sampling controls ---- //
+
 Panel     pnlSamples;          // panel for sampling controls
 Button    oneSample;           // request a sample
 Button    severalSamples;      // request several samples
@@ -95,11 +97,16 @@ Dial      q;                   // number of readings
 FmtNum    tTotal;              // total sampling time dt*q
 FmtNum    tTotalReal, dtReal;  // check if the real sample time is the same as desired
 
+// ---- waveform --- //
+
 Panel     pnlWave;   // panel for the waveform generator
 CheckBox  wave;      // f and t are dependent: f = 1/t, t = 1/f
 Dial      fWave;     // frequency of waveform (0.125Hz-10kHz) 
 Dial      tWave;     // period of waveform (100us-8s)
 Dial      dutyWave;  // duty cycle (0-100%)
+
+
+// *** setup function *** //
 
 void setup() {
   
@@ -115,13 +122,8 @@ void setup() {
   in = minim.getLineIn(Minim.MONO, 1000, 44100, 8);
   in.disableMonitoring();
 
-  for (byte k=0; k<numCh+1; k++){ // must be completed before channels
-    group[k] = new Group(); 
-  }
-   
-  for (byte k=0; k<numCh; k++) {
-    channel[k] = new Channel(k, rgb[k], marg1+20, display.y+90+k*130, 185, 100); //h115
-  }
+  for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
+  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+20, display.y+90+k*130, 185, 100); }
   
   startStop        = new Button("start / stop",marg1+20,channel[0].y-70,185,40);
   resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+30,45,20);
@@ -129,6 +131,8 @@ void setup() {
   
   showSamples      = new CheckBox("show samples", marg1+20, channel[1].y+channel[1].h+70, 15);
   calcFreq         = new CheckBox("detect frequency", showSamples.x, showSamples.y+showSamples.h+5, 15);
+  
+// ---- sampling controls ---- //
 
   pnlSamples       = new Panel("sampling", display.x+785, display.y+display.h-85, 200, 85);
   dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 24e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
@@ -143,6 +147,8 @@ void setup() {
 }
 
 
+// *** draw function *** //
+
 void draw() {
 
   background(110); 
@@ -150,24 +156,16 @@ void draw() {
   
   display.display();
   
-  textAlign(LEFT, TOP);
-  textSize(24); 
+  textSize(24); textAlign(LEFT, TOP);
   text("μScope "+version, display.x, 20);
 
-  textAlign(RIGHT, CENTER); 
-  textSize(15);  
+  textSize(15); textAlign(RIGHT, CENTER);  
   text("RESET",resetAxes.x-10,resetAxes.y+resetAxes.h/2);
   
-  for(int i = 0; i < in.bufferSize()-1; i++) { 
-    
-    channel[0].buffer[i]= int(in.left.get(i)*300)+40;
-  
-  }
+  for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*300)+40; } 
   channel[0].updated=true;
 
-  for (byte k=0; k<numCh; k++) {
-    channel[k].display();
-  }
+  for (byte k=0; k<numCh; k++) { channel[k].display(); }
 
   startStop.display();
   resetAxes.display();
@@ -185,17 +183,19 @@ void draw() {
   severalSamples.display();
   streamContinuous.display();
   
-  textAlign(LEFT);
-  if (dtError){ fill(255,0,0); } else { fill(0,20,0); }  
+  if (dtError){ fill(255,0,0); } else { fill(0,20,0); }
+  
   String txt="Real: dt"+dtReal.printV()+"s";
-  if (streamContinuous.clicked==false){
-     txt+="  total"+tTotalReal.printV()+"s"; 
-  }
+  if (streamContinuous.clicked==false){ txt+="  total"+tTotalReal.printV()+"s"; }
+  
+  textSize(15); textAlign(LEFT);
   text(txt,pnlSamples.x+5,pnlSamples.y+pnlSamples.h-2);
   fill(0);
 
 }
 
+
+// *** mouseClicked function *** //
 
 void mouseClicked() {
  
@@ -279,6 +279,9 @@ void mouseClicked() {
   }
 }
 
+
+// *** mousePressed function *** //
+
 void mousePressed() {
   
   for (int k=0; k<numCh; k++) { channel[k].mousePressed(); }
@@ -294,6 +297,9 @@ void mousePressed() {
   streamContinuous.mousePressed();
   
 }
+
+
+// *** mouseReleased function *** //
 
 void mouseReleased() {
 
@@ -311,6 +317,9 @@ void mouseReleased() {
   
 }
 
+
+// *** mouseReleased function *** //
+
 void mouseMoved() {
   
   for (int k=0; k<numCh; k++) { channel[k].mouseMoveu(); } 
@@ -319,6 +328,9 @@ void mouseMoved() {
   q.mouseMoveu();
 
 }
+
+
+// *** mouseDragged function *** //
 
 void mouseDragged() {
 
@@ -329,13 +341,18 @@ void mouseDragged() {
 
 }
 
+
+// *** adjustFt function *** //
+
 void adjustFt() {
+  
   float ftNew=dt.v.getV()*q.v.getV()/10.0;
-  //println("ftNew=",ftNew," dt=",dt.v.getV()," q=",q.v.getV());
-  for (int k=0; k<numCh; k++) {
-    channel[k].ft.setV(ftNew);
-  }
+  for (int k=0; k<numCh; k++) { channel[k].ft.setV(ftNew); }
+  
 }
+
+
+// *** dummy function *** //
   
 void dummy() {
   

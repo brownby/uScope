@@ -5,26 +5,26 @@ class FmtNum{
    char  u;  // unit part of formatted expression
    
    int i; // index for units
-   char unid[]={'f','p','n','u','m',' ','k','M','G','T','P'};  // pico(-12), nano(-9), micro(-6), milli(-3), (0), kilo(3), mega(6), giga(9), tera(12)
+   char unid[] = {'f','p','n','u','m',' ','k','M','G','T','P'};  // pico(-12), nano(-9), micro(-6), milli(-3), (0), kilo(3), mega(6), giga(9), tera(12)
    
    boolean nInt     = false;  // true --> round n to integer value
    boolean format   = true;   // formatted as nu = numeric + unit
 
    FmtNum(float v_,boolean nInt_,boolean fmt_) {  //constructor
    
-     v=v_;
-     nInt=nInt_;
+     v = v_;
+     nInt = nInt_;
      v2nu(v);
-     format=fmt_;
+     format = fmt_;
    
    }
    
    FmtNum(float v_,boolean nInt_) {
      
-     v=v_;
-     nInt=nInt_;
+     v = v_;
+     nInt = nInt_;
      v2nu(v);
-     format=true;
+     format = true;
    
    } 
    
