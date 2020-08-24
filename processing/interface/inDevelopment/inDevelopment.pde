@@ -4,7 +4,7 @@
  * Code for graphical interface
  * 
  * J. Evan Smith, Ben Y. Brown, modified from work by Rogerio Bego
- * Last revised: 23 August 2020
+ * Last revised: 24 August 2020
  *
  * =========== OUTLINE ===========
  *
@@ -19,6 +19,7 @@
  * ☐ mouseMoved
  * ☐ mouseDragged
  * ☐ adjustFt
+ * ☐ SerialEvent (legacy)
  * 
  * =========== CLASSES ===========
  *
@@ -30,6 +31,11 @@
  * ☑ FmtNum
  * ☑ Group
  * ☑ Panel
+ *
+ * =========== LEGEND ===========
+ *
+ * ☐ in development
+ * ☑ clean & 'complete'
  *
  * https://github.com/brownby/uScope/tree/usb-dev/processing/interface
  */
