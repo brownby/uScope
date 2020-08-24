@@ -48,7 +48,7 @@ class Channel{
      chN.clicked=true;
      fm=new Dial(scaleLog,changeMove,!nInt,fmt,"","v/div",2f,10e-3f,20f,x+10,y+21,w-20,20,1);
      ft=new Dial(scaleLog,changeMove,!nInt,fmt,"","s/div",10e-3f,20e-6f,20f,x+10,fm.y+fm.h+3,w-20,20,2);
-     p0=display.y+3*Q*(n+1);//posição da tensão zero
+     p0=display.y+3*DIV*(n+1);//posição da tensão zero
      p0Trigger=p0;
      medir=new CheckBox("measure",ft.x,ft.y+ft.h+5,15);
      curva=new CheckBox("smooth",ft.x+ft.w/2,ft.y+ft.h+5,15);
@@ -199,11 +199,11 @@ class Channel{
   }
   
   float fx(int x){
-    return display.x+Q*dt.v.v/ft.v.v*x;
+    return display.x+DIV*dt.v.v/ft.v.v*x;
   }
 
   float fy(int y){
-    return p0-y*fa/fm.v.v*Q;
+    return p0-y*fa/fm.v.v*DIV;
   }
   
   
@@ -394,11 +394,11 @@ class Channel{
          fill(nCor,50); stroke(nCor,255); strokeWeight(1);
          tracejado(xi,yi,xi+dx,yi+dy,3);
          fill(255);
-         float vTemp=abs(dx)/(Q)*ft.v.v*1000.0;
+         float vTemp=abs(dx)/(DIV)*ft.v.v*1000.0;
          //println("Q=",Q);
          String vh=nf(vTemp,0,1)+" ms";
          String fh=nf(1000/vTemp,0,1)+ " Hz";
-         String vv=nf(abs(dy)/(Q)*fm.v.v,0,2)+" V";
+         String vv=nf(abs(dy)/(DIV)*fm.v.v,0,2)+" V";
          textAlign(RIGHT); text(vh+" "+fh,xi+dx-10,yi+dy/2);
          textAlign(LEFT); text(vv,xi+dx,yi+dy/2);
        }       
@@ -519,7 +519,7 @@ class Channel{
        pegouP0=false; 
     }
     if (pegouTrigger){
-      vTrigger=constrain(int((p0-p0Trigger)/(fa/fm.v.v*Q)),0,1024);
+      vTrigger=constrain(int((p0-p0Trigger)/(fa/fm.v.v*DIV)),0,1024);
       println("tv"+str(vTrigger)+".");
       pegouTrigger=false;
     }
