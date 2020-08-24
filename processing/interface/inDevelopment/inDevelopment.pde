@@ -123,11 +123,11 @@ void setup() {
   in.disableMonitoring();
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
-  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+20, display.y+90+k*130, 185, 100); }
+  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+20, display.y+25+k*130, 185, 100); }
   
-  startStop        = new Button("start / stop",marg1+20,channel[0].y-70,185,40);
+  startStop        = new Button("start / stop",marg1+20,15,185,40);
   resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+30,45,20);
-  resetMeasure       = new Button("size",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,45,20);
+  resetMeasure     = new Button("size",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,45,20);
   
   showSamples      = new CheckBox("show samples", marg1+20, channel[1].y+channel[1].h+70, 15);
   calcFreq         = new CheckBox("detect frequency", showSamples.x, showSamples.y+showSamples.h+5, 15);
@@ -156,8 +156,11 @@ void draw() {
   
   display.display();
   
-  textSize(24); textAlign(LEFT, TOP);
-  text("μScope "+version, display.x, 20);
+  textSize(24); textAlign(LEFT, CENTER);
+  text("μScope "+version, display.x, 30);
+  
+  textSize(15); textAlign(LEFT, CENTER);
+  text("open source instrumentation for Arduino", display.x+465, 30);
 
   textSize(15); textAlign(RIGHT, CENTER);  
   text("RESET",resetAxes.x-10,resetAxes.y+resetAxes.h/2);

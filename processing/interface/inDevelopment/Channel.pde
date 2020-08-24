@@ -55,10 +55,10 @@ class Channel {
      
      chN.clicked = true;
      
-     vertScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","v/div",2f,10e-3f,20f,x+10,y+21,w-20,20,1);
-     horiScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","s/div",10e-3f,20e-6f,20f,x+10,vertScale.y+vertScale.h+3,w-20,20,2);
+     vertScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","v/div",1f,10e-3f,20f,x+10,y+21,w-20,20,1);
+     horiScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","s/div",1e-3f,20e-6f,20f,x+10,vertScale.y+vertScale.h+3,w-20,20,2);
      
-     p0 = display.y+3*DIV*(n+1);
+     p0 = display.y+4*DIV*(n+1);
      p0Trigger = p0;
      
      measure = new CheckBox("measure",horiScale.x,horiScale.y+horiScale.h+5,15);
