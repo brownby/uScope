@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 1000       // number of beats for adc transfer
+#define NBEATS 1000      // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT 0
@@ -169,7 +169,7 @@ void adc_init() {
   ADC->SAMPCTRL.reg = 0x08;              // add 8 half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
-  ADC->CTRLB.bit.PRESCALER = 0x5;        // 0x5 = DIV128
+  ADC->CTRLB.bit.PRESCALER = 0x4;        // 0x5 = DIV128
   ADC->CTRLB.bit.RESSEL = 0x3;           // result resolution, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;            // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;           // ADC is single-ended, ignore MUXNEG defined above
@@ -239,18 +239,27 @@ void DMAC_Handler() {
 
   __disable_irq(); // disable interrupts
 
-  bufnum = !bufnum;
+  // bufnum = !bufnum;
+
+  if(wrb[0].DESCADDR == (uint32_t)&descriptor_section[adctobuf0])
+  {
+    bufnum = 0;
+  }
+  else if(wrb[0].DESCADDR == (uint32_t)&descriptor_section[adctobuf1])
+  {
+    bufnum = 1;
+  }
 
   uint8_t ch =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
-  uart_puts("\n\nd"); uart_write(bufnum + ascii);
+  // uart_puts("\n\nd"); uart_write(bufnum + ascii);
 
-  uart_puts("\nI0: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
+  // uart_puts("\nI0: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
 
   DMAC->CHID.reg = DMAC_CHID_ID(ch); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
 
-  uart_puts("\nI0a: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
-  uart_putc('\n');
+  // uart_puts("\nI0a: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
+  // uart_putc('\n');
 
   __enable_irq(); // enable interrupts
 
@@ -819,6 +828,7 @@ void USB_Handler(){
           {
 
             uart_puts("\nZLP");
+            // uart_puts("\nDESC: "); uart_write((uint16_t)(wrb[0].DESCADDR & 0xffff));
             
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
