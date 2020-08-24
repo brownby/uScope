@@ -141,135 +141,141 @@ class Dial {
    void groupUpdate() {
      
      if (g>0) {
-       if (group[g].conta>0) {
+       if (group[g].count>0) {
           
-         group[g].conta--;
+         group[g].count--;
          setV(group[g].v);
-         if (group[g].conta<=0) { group[g].v=0; }
+         if (group[g].count<=0) { group[g].v=0; }
            
        }
      }
    }
    
    
-   boolean mouseClicked(){ // Soma/Subtrai 1,10 ou 100 do valor => true se alterou o valor
-     boolean alterou=false;
-     float v2=0;
+   boolean mouseClicked(){
+     
+     boolean changed = false;
+     float v2 = 0;
+     
      if (mouseX>x && mouseX<x+w && mouseY>y && mouseY<y+h){
-       alterou=true;
+       
+       changed=true;
        int p=(int)map(mouseX,x,x+w,1,7);
-       //int p=round(map(mouseX,x,x+w,1,5));
-       //println("p=",p);
-       //println("fmtV=",fmtV(v));
+
        switch (p) {
-          case 1: // subtrair 100
-            v2=v.addN(-100);
-            break;
-          case 2: // subtrair 10 em 10
-             //println("-10");
-             v2=v.addN(-10);
+         case 1: 
+           v2=v.addN(-100);
            break;
-          case 3: // subtrair de 1 em 1
-            //println("-1");
-            v2=v.addN(-1);
+         case 2: 
+           v2=v.addN(-10);
            break;
-          case 4: // somar de 1 em 1
-            //println("+1");
-            v2=v.addN(+1);
+         case 3: 
+           v2=v.addN(-1);
            break;
-          case 5: // somar de 10 em 10
-            //println("+10");
-            v2=v.addN(+10);
+         case 4: 
+           v2=v.addN(+1);
+           break;
+         case 5: 
+           v2=v.addN(+10);
            break; 
-          case 6: //somar
-            v2=v.addN(+100);
-            break;
+         case 6:
+           v2=v.addN(+100);
+           break;
        }
-       if (v2<vMin) {
-          v.setV(vMin); 
-       } else if (v2>vMax){
-          v.setV(vMax); 
-       } else {
-          v.setV(v2); 
-       }
+       
+       if (v2<vMin){ v.setV(vMin); } 
+       else if (v2>vMax){ v.setV(vMax); }
+       else { v.setV(v2); }
+       
        updateCx();
-       ifShiftAlterarGrupo();       
+       ifShiftChangeGroup();       
      } 
-     return alterou;
+     return changed;
    }
 
-   void mouseMoveu(){
-      if (mouseY>y && mouseY<y+h) {
-        if (mouseX>cx-10 && mouseX<cx+10){
-         // println("mouseMoveu Dial");
-          showTriangles=true;
-        } else {
-          showTriangles=false;
-        }
-        if (mouseX>x && mouseX<x+w && keyPressed && keyCode==CONTROL){
-          println("showIncrements=" + showIncrements);
-           showIncrements=true; 
-        } else {
-           showIncrements=false;
-        }
-      }  else {
-        showTriangles=false;
-      }   
+
+   void mouseMoveu() {
+     
+     if (mouseY>y && mouseY<y+h) {
+        
+       if (mouseX>cx-10 && mouseX<cx+10){ showTriangles = true; } 
+       else { showTriangles = false; }
+        
+       if (mouseX>x && mouseX<x+w && keyPressed && keyCode==CONTROL){
+          
+         println("showIncrements=" + showIncrements);
+         showIncrements=true; 
+        
+       } 
+       else { showIncrements=false; } 
+     }  
+     else { showTriangles=false; }   
    }
    
-   void mousePressed(){
+   
+   void mousePressed() {
+     
      if (mouseButton==LEFT){
-      if (mouseY>y && mouseY<y+h) {
-        if (mouseX>cx-10 && mouseX<cx+10){
-          //println("mousePressionado"); 
+      if (mouseY>y && mouseY<y + h) {
+        if (mouseX>cx - 10 && mouseX<cx + 10){
+          
           clicked=true; 
-           vTemp.setV(v.v);
-           mouseOffSet=mouseX-cx;
-           //println("cx=",cx);
+          vTemp.setV(v.v);
+          mouseOffSet=mouseX-cx;
+
         }
       }
      }
    }
    
-   boolean mouseDragged(){ // retorna true se é para enviar o comando para Garagino
-      //println("Dial.mouseDragged");
-      boolean enviar=false;
+   
+   boolean mouseDragged() { 
+
+      boolean send = false; // legacy --> cmd to uC, TODO: delete
       if (clicked){
+        
          cx=constrain(mouseX-mouseOffSet,x,x+w);
-         if (change==changeMove){ // é para change Imediatamente enquanto Mover o Mouse
-            vTemp.setV(x2v(cx)); // converte o x para v
-              v.setV(vTemp.v); 
-              enviar=true;   // enviar o comando de change para o Garagino!
-              ifShiftAlterarGrupo(); // se tiver SHIFT então change Grupo
-         }else{
-            vTemp.setV(x2v(cx));
+         if (change==changeMove) { // change immediately while moving mouse
+           
+           vTemp.setV(x2v(cx)); 
+           v.setV(vTemp.v); 
+           send = true;   
+           ifShiftChangeGroup(); 
+         
          }
+         else{ vTemp.setV(x2v(cx)); }
       }
-     return enviar; 
+     return send; 
    }
    
-   boolean mouseReleased(){ // retorna true se é para enviar o comando para o Garagino
-     boolean enviar=false;
-      if (clicked) {
-        clicked=false;
-        if (change==changeRelease){
-           if (mouseY>y-10 && mouseY<y+h+10) { // && mouseX>x-15 && mouseX<x+w+15){
-               v.setV(vTemp.v); // é para change quando Soltar o Mouse
-               enviar=true;  // enviar comando de change para o Garagino!
-               ifShiftAlterarGrupo(); // se tiver SHIFT então change Grupo
-            } else{
-               cx=v2x(v.v);
-           }
-        }
-    } 
-    return enviar;
+   
+   boolean mouseReleased() { 
+     
+     boolean send = false; // legacy --> cmd to uC, TODO: delete
+     if (clicked) { 
+       clicked=false;
+       if (change == changeRelease) {
+         if (mouseY>y-10 && mouseY<y+h+10) { 
+            
+           v.setV(vTemp.v); // change when releasing the mouse
+           send=true; 
+           ifShiftChangeGroup(); 
+               
+         } 
+         else{ cx=v2x(v.v); }
+       }
+     } 
+     return send;
    }
    
-   void ifShiftAlterarGrupo(){
-     if (keyPressed && key==CODED && keyCode==SHIFT){
+   
+   void ifShiftChangeGroup() {
+     
+     if (keyPressed && key==CODED && keyCode==SHIFT) {
+       
         group[g].v=v.v;
-        group[g].conta=group[g].qtd; //quantidade de controles que irão sincronizar o valor
+        group[g].count=group[g].qtd; // number of controls that synchronize
+     
      }
    }
-   
 }

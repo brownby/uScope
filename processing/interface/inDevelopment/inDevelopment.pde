@@ -26,7 +26,7 @@
  * ☑ Button
  * ☑ Channel
  * ☑ CheckBox
- * ☐ Dial
+ * ☑ Dial
  * ☑ Display 
  * ☑ FmtNum
  * ☑ Group
