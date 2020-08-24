@@ -132,6 +132,12 @@ void setup() {
   showSamples      = new CheckBox("show samples", marg1+20, channel[1].y+channel[1].h+70, 15);
   calcFreq         = new CheckBox("detect frequency", showSamples.x, showSamples.y+showSamples.h+5, 15);
   
+  pnlWave          = new Panel("Waveform Generator", display.x+785, display.y+display.h-150, 200, 150);   
+  //wave;      
+  //fWave;   
+  //tWave;     
+  //dutyWave;  
+  
 // ---- sampling controls ---- //
 
   pnlSamples       = new Panel("sampling", display.x+785, display.y+display.h-85, 200, 85);
@@ -170,6 +176,7 @@ void draw() {
   resetMeasure.display();
   showSamples.display();
   calcFreq.display();
+  pnlWave.display();
   
   for (byte k=0; k<numCh; k++) { channel[k].display(); }
   
@@ -351,12 +358,4 @@ void handleIncoming() {
     for (int k=0; k<numCh; k++){ channel[k].trigger.blink=false; }
     
   }
-    
-  // move data and store at the end?
-  
-  //for (int k=1; k<q.v.v; k++) {
-  //  channel[0].v[k-1]=channel[0].v[k];
-  //} 
-  //channel[0].v[int(q.v.v-1)] = int(in.left.get(1)*300)+40;
-  
 }
