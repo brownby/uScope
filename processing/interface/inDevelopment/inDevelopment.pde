@@ -126,21 +126,21 @@ void setup() {
   in.disableMonitoring();
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
-  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+20, display.y+25+k*130, 185, 100); }
+  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+25+k*130, 185, 100); }
   
-  startStop        = new Button("start / stop",marg1+20,15,185,40);
+  startStop        = new Button("start / stop",marg1+15,15,185,40);
   resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+30,45,20);
   resetMeasure     = new Button("size",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,45,20);
   
-  showSamples      = new CheckBox("show samples", marg1+20, channel[1].y+channel[1].h+70, 15);
+  showSamples      = new CheckBox("show samples", marg1+25, channel[1].y+channel[1].h+70, 15);
   calcFreq         = new CheckBox("detect frequency", showSamples.x, showSamples.y+showSamples.h+5, 15);
   
-  pnlWave          = new Panel("Waveform Generator", color(168,52,235), display.x+785, display.y+display.h-150, 200, 150);   
+  pnlWave          = new Panel("Waveform Generator", color(168,52,235), marg1+15, display.y+display.h-150, 185, 150);   //display.x+785
   wave             = new CheckBox("output status", showSamples.x, pnlWave.y+25, 15);
   fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 1e3f, 1e-3f, 10e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
   aWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 1f, 10e-3f, 3f, pnlWave.x+10, fWave.y+fWave.h+3, pnlWave.w-20, 20);
   sineWave         = new CheckBox("sine", pnlWave.x+10, aWave.y+aWave.h+10, 15);  
-  pulseWave        = new CheckBox("pulse", pnlWave.x+100, aWave.y+aWave.h+10, 15);  
+  pulseWave        = new CheckBox("pulse", pnlWave.x+90, aWave.y+aWave.h+10, 15);  
   squareWave       = new CheckBox("square", sineWave.x, sineWave.y+20, 15);    
   sawtoothWave     = new CheckBox("sawtooth", pulseWave.x, pulseWave.y+20, 15);    
 

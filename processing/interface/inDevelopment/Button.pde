@@ -32,7 +32,7 @@ class Button{
      else if (clicked){ fill(rgb_active); } 
      else{ fill(200); }
      
-     stroke(rgb_outline); strokeWeight(1); 
+     stroke(rgb_outline); strokeWeight(2); 
      rect(x,y,w,h); 
      
      if (rgb_active==color(0,0,255) && clicked){ fill(255); } else{ fill(0); } // use white for text on blue background color

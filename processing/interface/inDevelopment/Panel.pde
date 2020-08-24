@@ -28,7 +28,7 @@ class Panel {
       rect(x,y,w,h);
       
       fill(RGB);
-      rect(x,y,w/2+w/4,15);
+      rect(x,y,w-w/5,15);
       
       if (blink){
         fill(map(millis()%1000,0,1000,0,255));
