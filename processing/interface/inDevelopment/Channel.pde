@@ -241,8 +241,8 @@ class Channel {
       }
     }
 
-   // procurar todos os pontos que estão entre vMin e 2/3*vMin-vNoise
-    vMin=(int)(2.0/3.0*(float)vMin);
+   
+    vMin=(int)(2.0/3.0*(float)vMin);  // search for peaks between between vMin and 2/3*vMin-vNoise
     qPeaks=0;
     
     if (vMin<0) {
@@ -307,152 +307,159 @@ class Channel {
   
   // *** Control of measuring rectangle *** //
     
-    void displayRect(){ // show the selection rectangle and time, voltage levels
-      if (displayClicked){
+  void displayRect() {     // show the selection rectangle and time, voltage levels
+    if (displayClicked) {
         
-         fill(nRGB,50); stroke(nRGB,255); strokeWeight(1);
-         dashed(xi,yi,xi+dx,yi+dy,3);
+      fill(nRGB,50); stroke(nRGB,255); strokeWeight(1);
+      dashed(xi,yi,xi+dx,yi+dy,3);
          
-         fill(255);
+      fill(255);
          
-         float vTemp=abs(dx)/(DIV)*horiScale.v.v*1000.0;
-         String vh=nf(vTemp,0,1)+" ms";
-         String fh=nf(1000/vTemp,0,1)+ " Hz";
-         String vv=nf(abs(dy)/(DIV)*vertScale.v.v,0,2)+" V";
+      float vTemp=abs(dx)/(DIV)*horiScale.v.v*1000.0;
+      String vh=nf(vTemp,0,1)+" ms";
+      String fh=nf(1000/vTemp,0,1)+ " Hz";
+      String vv=nf(abs(dy)/(DIV)*vertScale.v.v,0,2)+" V";
+      
+      textAlign(RIGHT); text(vh+" "+fh,xi+dx-10,yi+dy/2);
+      textAlign(LEFT); text(vv,xi+dx,yi+dy/2);
          
-         textAlign(RIGHT); text(vh+" "+fh,xi+dx-10,yi+dy/2);
-         textAlign(LEFT); text(vv,xi+dx,yi+dy/2);
-         
-       }       
-     }
+    }       
+  }
      
-     void dashed(float xi, float yi, float xf, float yf, float step){
+  void dashed(float xi, float yi, float xf, float yf, float step) {
        
-       float temp;
-       boolean faz=true;
-        
-       if (xi>xf){ temp=xf; xf=xi; xi=temp; } 
-       if (yi>yf){ temp=yf; yf=yi; yi=temp; }
-        
-       for (float x=xi; x<xf; x+=step){
-          if (faz){
-             
-              line(x,yi,x+step,yi);
-              line(x,yf,x+step,yf);
-              
-          } 
-          faz=!faz;
-        }
-        for (float y=yi; y<yf; y+=step){
-           if (faz){
-             
-              line(xi,y,xi,y+step);
-              line(xf,y,xf,y+step);
-              
-           } 
-           faz=!faz;
-        }
-     }
-
-      // -- rotinas para fazer a medição na "display"
-     void displayMousePressed(){
-      // println("displayMousePressed");
-      // println("cor=",get(mouseX,mouseY));
-       if (measure.clicked){ // acertar procurar qual cor de channel mais próximo ao mouse
-         if (mouseX>display.x && mouseX<display.x+display.w && mouseY>display.y && mouseY<display.y+display.h){
-            displayClicked=true;
-            //println("displayClicou=",displayClicou);
-            xi=mouseX;
-            yi=mouseY;    
-            dx=0; dy=0;   
-         }
-       }
-     }
-     void displayMouseDragged(){
-       //println("displayMouseDragged");
-       if (measure.clicked){
-         if (displayClicked){
-           
-           if (mouseX>display.x && mouseX<display.x+display.w && mouseY>display.y && mouseY<display.y+display.h){
-            dx=mouseX-xi;
-            dy=mouseY-yi;
-             //println("arrastando dx=",dx," dy=",dy);
-           }
-         }
-       }
-     }
-     void displayMouseSoltou(){
-       //println("displayMouseSoltou displayClicou=",displayClicou);
-       if (measure.clicked){
-          if (displayClicked) {
-            // println("dx=",dx," dy=",dy);
-            if (abs(dx)<10 && abs(dy)<10){
-               displayClicked=false;
-          //     println("displayClicou= ",displayClicou);
-            }
-          } 
-       }
-     }
-
-  
-  //=== controle dos eventos do mouse ===  
-  boolean mouseClicked(){
-     boolean ret=false;
-     ret=chN.mouseClicked(); 
-     //inv.mouseClicked();
-     if (trigger.mouseClicked()){
-        if (trigger.clicked){
-           for (int k=0;k<numCh;k++){
-              channel[k].trigger.clicked=false;
-           }
-           trigger.clicked=true;
+    float temp;
+    boolean faz=true;
+    
+    if (xi>xf){ temp=xf; xf=xi; xi=temp; } 
+    if (yi>yf){ temp=yf; yf=yi; yi=temp; }
+    
+    for (float x=xi; x<xf; x+=step) {
+      if (faz) {
          
-        }
-     }
-     vertScale.mouseClicked();
-     horiScale.mouseClicked();
-     if (measure.mouseClicked()){
-        if (measure.clicked){
-           for (int k=0;k<numCh;k++){
-              channel[k].measure.clicked=false; 
+        line(x,yi,x+step,yi);
+        line(x,yf,x+step,yf);
+          
+      } 
+      faz=!faz;
+    }
+    for (float y=yi; y<yf; y+=step) {
+      if (faz) {
+         
+        line(xi,y,xi,y+step);
+        line(xf,y,xf,y+step);
+          
+      } 
+      faz=!faz;
+    }
+  }
+
+  void displayMousePressed() {
+
+    if (measure.clicked) { // set to search for which channel color is closest to mouse
+      if (mouseX>display.x && mouseX<display.x+display.w && mouseY>display.y && mouseY<display.y+display.h){
+        
+        displayClicked = true;
+        xi = mouseX;
+        yi = mouseY;    
+        dx=0; dy=0;   
+        
+      }
+    }
+  }
+     
+  void displayMouseDragged() {
+    
+    if (measure.clicked){
+      if (displayClicked){  
+        if (mouseX>display.x && mouseX<display.x+display.w && mouseY>display.y && mouseY<display.y+display.h){
+          
+            dx = mouseX - xi;
+            dy = mouseY - yi;
+        
            }
-           measure.clicked=true;
+         }
+       }
+     }
+  
+  void displayMouseRelease() {
+
+    if (measure.clicked){
+      if (displayClicked) {
+        if (abs(dx)<10 && abs(dy)<10){
+          
+               displayClicked=false;
+
         }
-     };
-     smooth.mouseClicked();
-     return ret;
+      } 
+    }
+  }
+
+   
+  boolean mouseClicked() {
+    
+    boolean ret=false;
+    ret=chN.mouseClicked(); 
+
+    if (trigger.mouseClicked()) {
+      if (trigger.clicked){
+        for (int k=0;k<numCh;k++){
+             
+          channel[k].trigger.clicked=false;
+              
+        }
+        trigger.clicked=true;
+      }
+    }
+    
+    vertScale.mouseClicked();
+    horiScale.mouseClicked();
+    
+    if (measure.mouseClicked()) {
+      if (measure.clicked) {
+        for (int k=0;k<numCh;k++) { channel[k].measure.clicked=false; }
+        measure.clicked=true;
+      }
+    }
+    smooth.mouseClicked();
+    return ret;
   }
   
-  void mousePressed(){
+  void mousePressed() {
+    
     vertScale.mousePressed();
     horiScale.mousePressed();
-    p0MousePressed(); //se pegar o triangulo de p0
+    
+    p0MousePressed(); 
     displayMousePressed();
+    
   }
   
-  void mouseDragged(){
+  void mouseDragged() {
+    
     vertScale.mouseDragged();
     horiScale.mouseDragged();
-    p0MouseDragged(); // se arrastou o p0
+    
+    p0MouseDragged();
     displayMouseDragged();
+    
   }
   
-  void mouseReleased(){
+  void mouseReleased() {
+    
     vertScale.mouseReleased();
     horiScale.mouseReleased();
-    if (holdP0) {
-       holdP0=false; 
-    }
+    
+    if (holdP0){ holdP0 = false; }
     if (holdTrigger){
+      
       vTrigger=constrain(int((p0-p0Trigger)/(fa/vertScale.v.v*DIV)),0,1024);
       println("tv"+str(vTrigger)+".");
       holdTrigger=false;
+      
     }
-    displayMouseSoltou();
+    displayMouseRelease();
   }
   
-  void mouseMoveu(){
-     vertScale.mouseMoveu();
-     horiScale.mouseMoveu(); 
-  }
+  void mouseMoveu() { vertScale.mouseMoveu(); horiScale.mouseMoveu(); }
 }

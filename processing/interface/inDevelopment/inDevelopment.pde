@@ -24,7 +24,7 @@
  * =========== CLASSES ===========
  *
  * ☑ Button
- * ☐ Channel
+ * ☑ Channel
  * ☑ CheckBox
  * ☐ Dial
  * ☑ Display 
@@ -81,7 +81,7 @@ Display display;
 
 Button    startStop;
 Button    resetAxes;
-Button    resetMedir;  // measure vs size? *flag
+Button    resetMeasure;  // measure vs size? *flag
 
 CheckBox  showSamples; 
 CheckBox  calcFreq;    // detect frequency
@@ -127,7 +127,7 @@ void setup() {
   
   startStop        = new Button("start / stop",marg1+20,channel[0].y-70,185,40);
   resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+30,45,20);
-  resetMedir       = new Button("size",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,45,20);
+  resetMeasure       = new Button("size",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,45,20);
   
   showSamples      = new CheckBox("show samples", marg1+20, channel[1].y+channel[1].h+70, 15);
   calcFreq         = new CheckBox("detect frequency", showSamples.x, showSamples.y+showSamples.h+5, 15);
@@ -164,7 +164,7 @@ void draw() {
 
   startStop.display();
   resetAxes.display();
-  resetMedir.display();
+  resetMeasure.display();
   showSamples.display();
   calcFreq.display();
   
@@ -192,14 +192,14 @@ void mouseClicked() {
     resetAxes.clicked = false;
   }
   
-  if (resetMedir.mouseClicked()) {
+  if (resetMeasure.mouseClicked()) {
     
      for (int k=0; k<numCh;k++) {
        
         channel[k].displayClicked = false; 
      
      }
-     resetMedir.clicked = false;
+     resetMeasure.clicked = false;
   }
   
   showSamples.mouseClicked();
@@ -270,7 +270,7 @@ void mousePressed() {
   dt.mousePressed();
   
   resetAxes.mousePressed();
-  resetMedir.mousePressed();
+  resetMeasure.mousePressed();
  
   oneSample.mousePressed();
   severalSamples.mousePressed();
@@ -286,7 +286,7 @@ void mouseReleased() {
   for (int k=0; k<numCh; k++) { channel[k].mouseReleased(); }
   
   resetAxes.mouseReleased();
-  resetMedir.mouseReleased();
+  resetMeasure.mouseReleased();
 
   oneSample.mouseReleased();
   severalSamples.mouseReleased();
