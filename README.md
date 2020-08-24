@@ -5,5 +5,3 @@ Simultaneous use of audio-bandwidth oscilloscope and function generator, with cr
 Intended for use with the MKRZero or other SAMD21 boards. 
 
 usb-dev branch is dedicated to developing communications using native USB.
-
-![interface](img/screenshot.png)
