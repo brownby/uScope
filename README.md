@@ -6,4 +6,8 @@ Intended for use with the MKRZero or other SAMD21 boards.
 
 usb-dev branch is dedicated to developing communications using native USB.
 
+__Supported boards__
+
+1. MKR Zero
+
 ![interface](img/screenshot.png)
