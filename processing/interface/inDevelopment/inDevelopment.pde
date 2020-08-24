@@ -19,7 +19,7 @@
  * ☑ mouseMoved()
  * ☑ mouseDragged()
  * ☑ adjustFt()
- * ☑ handleIncoming() --> buffer vs. stream
+ * ☑ handleIncoming() --> buffer vs. stream?
  * 
  * =========== CLASSES ===========
  *
@@ -66,7 +66,7 @@ int marg1, marg2;  // to adjust the position of objects
 
 float DIV = 45.0;     // division unit size
 
-color rgb[]={color(255, 255, 0), color(0, 0, 255)};  // for 2 channels: yellow (CH0) and blue (CH1)
+color rgb[]={color(255, 255, 0), color(0, 204, 255)};  // for 2 channels: yellow (CH0) and blue (CH1)
 
 
 // *** object instantiation *** //
@@ -327,7 +327,7 @@ void mouseDragged() {
 void adjustFt() {
   
   float ftNew=dt.v.getV()*q.v.getV()/10.0;
-  for (int k=0; k<numCh; k++) { channel[k].ft.setV(ftNew); }
+  for (int k=0; k<numCh; k++) { channel[k].horiScale.setV(ftNew); }
   
 }
 
@@ -337,8 +337,10 @@ void adjustFt() {
 void handleIncoming() {
   
   for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*300)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
- 
+  for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.left.get(i)*300)+40; } 
+  
   channel[0].updated=true;
+  channel[1].updated=true;
   
   if (waitforTrigger) {
     
