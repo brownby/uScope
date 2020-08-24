@@ -33,7 +33,7 @@ class Channel{
  float fa=5.0/(1023.0); // (dividi por 4 pois tive falta de memoria no garagino) 16/09/2015 
                        // fator garagino (entrada analogica = 10bits) fa=5/1023unidades
  //retangulo de medição da display
- boolean telaClicou=false;
+ boolean displayClicked=false;
  float xi,yi,dx,dy; // retangulo de medir tempo e tensão na display
 
  
@@ -140,7 +140,7 @@ class Channel{
     }
   }
   
-  void p0MouseArrastou(){
+  void p0MouseDragged(){
    if (pegouP0){
       p0=constrain(mouseY,display.y,display.y+display.h)-mouseOffSet; 
       p0Trigger=p0+dP0Trigger;
@@ -390,7 +390,7 @@ class Channel{
   =============================================================== */
     // mostrar o retangulo de seleção e os valores tempo x volts
     void displayRect(){ 
-      if (telaClicou){
+      if (displayClicked){
          fill(nCor,50); stroke(nCor,255); strokeWeight(1);
          tracejado(xi,yi,xi+dx,yi+dy,3);
          fill(255);
@@ -435,7 +435,7 @@ class Channel{
       // println("cor=",get(mouseX,mouseY));
        if (medir.clicked){ // acertar procurar qual cor de channel mais próximo ao mouse
          if (mouseX>display.x && mouseX<display.x+display.w && mouseY>display.y && mouseY<display.y+display.h){
-            telaClicou=true;
+            displayClicked=true;
             //println("displayClicou=",displayClicou);
             xi=mouseX;
             yi=mouseY;    
@@ -443,10 +443,10 @@ class Channel{
          }
        }
      }
-     void displayMouseArrastou(){
-       //println("displayMouseArrastou");
+     void displayMouseDragged(){
+       //println("displayMouseDragged");
        if (medir.clicked){
-         if (telaClicou){
+         if (displayClicked){
            
            if (mouseX>display.x && mouseX<display.x+display.w && mouseY>display.y && mouseY<display.y+display.h){
             dx=mouseX-xi;
@@ -459,10 +459,10 @@ class Channel{
      void displayMouseSoltou(){
        //println("displayMouseSoltou displayClicou=",displayClicou);
        if (medir.clicked){
-          if (telaClicou) {
+          if (displayClicked) {
             // println("dx=",dx," dy=",dy);
             if (abs(dx)<10 && abs(dy)<10){
-               telaClicou=false;
+               displayClicked=false;
           //     println("displayClicou= ",displayClicou);
             }
           } 
@@ -505,11 +505,11 @@ class Channel{
     displayMousePressionou();
   }
   
-  void mouseArrastou(){
-    fm.mouseArrastou();
-    ft.mouseArrastou();
-    p0MouseArrastou(); // se arrastou o p0
-    displayMouseArrastou();
+  void mouseDragged(){
+    fm.mouseDragged();
+    ft.mouseDragged();
+    p0MouseDragged(); // se arrastou o p0
+    displayMouseDragged();
   }
   
   void mouseReleased(){

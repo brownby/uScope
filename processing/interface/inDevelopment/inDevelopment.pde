@@ -13,11 +13,11 @@
  * ☑ object instantiation
  * ☑ setup 
  * ☑ draw
- * ☐ mouseClicked 
- * ☐ mousePressed
- * ☐ mouseReleased
- * ☐ mouseMoved
- * ☐ mouseDragged
+ * ☑ mouseClicked 
+ * ☑ mousePressed
+ * ☑ mouseReleased
+ * ☑ mouseMoved
+ * ☑ mouseDragged
  * ☐ adjustFt
  * ☐ SerialEvent (legacy)
  * 
@@ -200,140 +200,133 @@ void draw() {
 void mouseClicked() {
  
 
-  if (resetAxes.mouseClicked()){
-    for (int k=0; k<numCh;k++){
-     channel[k].p0=display.y+3*Q*(k+1);//posição da tensão zero
+  if (resetAxes.mouseClicked()) {
+    
+    for (int k=0; k<numCh;k++) {
+      
+     channel[k].p0 = display.y+3*Q*(k+1);  // reset zero voltage position for all channels
+     
+     // TODO: add reset for horizontal scaling
+    
     }
-    resetAxes.clicked=false;
+    resetAxes.clicked = false;
   }
   
-  if (resetMedir.mouseClicked()){
-     for (int k=0; k<numCh;k++){
-        channel[k].telaClicou=false; 
+  if (resetMedir.mouseClicked()) {
+    
+     for (int k=0; k<numCh;k++) {
+       
+        channel[k].displayClicked = false; 
+     
      }
-     resetMedir.clicked=false;
+     resetMedir.clicked = false;
   }
   
   showSamples.mouseClicked();
   calcFreq.mouseClicked();
-  //showDif.mouseClicked();
 
-  //se clicou em dt ou q então send comando para garagino e ajustar display
-  if (dt.mouseClicked()) { // se true alterou dt, então ajustarFt() (escala de t na display)
+  if (dt.mouseClicked()) { adjustFt(); } // if dt changed, then adjustFt()
+  if (q.mouseClicked())  { adjustFt(); } // if q changed, then adjustFt()
 
-    adjustFt();
-  }
-  if (q.mouseClicked()) { // se true alterou q, então ajustarFt()
-
-    adjustFt();
-  }
-
-
-  if (oneSample.mouseClicked()) { // receber apenas Uma Amostra
+  if (oneSample.mouseClicked()) { 
+    
     severalSamples.clicked=false;
     streamContinuous.clicked=false;
-
     oneSample.clicked=false;
-    // verificar se tem algum trigger acionado para que ele fique waitfor o disparo
-    // vai ficar piscando para indicar que está aguardando o disparo.
-    int k2=-1;
-    for (int k=0; k<numCh;k++){
+    
+    // check if there is a trigger triggered so that waitfor the trigger
+    // will be flashing to indicate that it is waiting for the trigger
+    
+    int k2 = -1;
+    
+    for (int k=0; k<numCh;k++) {
+      
       if (channel[k].trigger.clicked) {
          k2=k;
          break; 
       }
     }
+    
     println("k2=",k2);
     
-    if (k2>=0 && k2<=3){
-       pnlSamples.blink=true;
-       channel[k2].trigger.blink=true;
-       waitforTrigger=true;
-    } else {
-       pnlSamples.blink=false;
-       waitforTrigger=false;
-     }
+    if (k2>=0 && k2<=3) {
+      
+       pnlSamples.blink = true;
+       channel[k2].trigger.blink = true;
+       waitforTrigger = true;
+       
+    }
+    else {
+      
+       pnlSamples.blink = false;
+       waitforTrigger = false;
+       
+    }
   }
+  
   if (severalSamples.mouseClicked()) {
-    oneSample.clicked=false;
-    streamContinuous.clicked=false;
+    
+    oneSample.clicked = false;
+    streamContinuous.clicked = false;
+  
   }
+  
   if (streamContinuous.mouseClicked()) {
-    oneSample.clicked=false;
-    severalSamples.clicked=false;
+  
+    oneSample.clicked = false;
+    severalSamples.clicked = false;
+  
   }
-
 }
 
 void mousePressed() {
-  //d.mousePressed(); 
-  for (int k=0; k<numCh; k++) {
-    channel[k].mousePressed();
-  }
-  dt.mousePressed();
+  
+  for (int k=0; k<numCh; k++) { channel[k].mousePressed(); }
+  
   q.mousePressed();
-  //ruido.mousePressed();
-
-  // só para aparecer o verde do pressionado
-  oneSample.mousePressed();
-  severalSamples.mousePressed();
-  streamContinuous.mousePressed();
-
- // fWave.mousePressed();
- // tWave.mousePressed();
- // dutyWave.mousePressed();
+  dt.mousePressed();
   
   resetAxes.mousePressed();
   resetMedir.mousePressed();
-
+ 
+  oneSample.mousePressed();
+  severalSamples.mousePressed();
+  streamContinuous.mousePressed();
+  
 }
 
 void mouseReleased() {
-  // d.mouseReleased();
-  for (int k=0; k<numCh; k++) {
-    channel[k].mouseReleased();
-  }
 
-
+  for (int k=0; k<numCh; k++) { channel[k].mouseReleased(); }
+  
   resetAxes.mouseReleased();
   resetMedir.mouseReleased();
-  // só para aparecer o verde do pressionado
+
   oneSample.mouseReleased();
   severalSamples.mouseReleased();
   streamContinuous.mouseReleased();
 
-
-  //se Releaser o mouse no dt ou q, então send os dados para o Garagino
-  if (dt.mouseReleased()) {
-
-    adjustFt();
-  }
-  if (q.mouseReleased()) {
-
-    // acertar as escalas ft de cada channel
-    adjustFt();
-  }
+  if (dt.mouseReleased()) { adjustFt(); }  // if dt changed, then adjustFt()
+  if (q.mouseReleased())  { adjustFt(); }  // if q changed, then adjustFt()
+  
 }
 
 void mouseMoved() {
   
-  for (int k=0; k<numCh; k++) {
-    channel[k].mouseMoveu();
-  } 
+  for (int k=0; k<numCh; k++) { channel[k].mouseMoveu(); } 
+  
   dt.mouseMoveu();
   q.mouseMoveu();
 
 }
 
 void mouseDragged() {
-  //d.mouseArrastou(); 
-  for (int k=0; k<numCh; k++) {
-    channel[k].mouseArrastou();
-  }
-  dt.mouseArrastou();
-  q.mouseArrastou();
 
-  
+  for (int k=0; k<numCh; k++) { channel[k].mouseDragged(); }
+
+  dt.mouseDragged();
+  q.mouseDragged();
+
 }
 
 void adjustFt() {

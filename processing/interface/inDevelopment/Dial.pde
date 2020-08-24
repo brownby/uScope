@@ -28,7 +28,7 @@ class Dial {
    int g; // used to change V/div and ms/div simultaneously on all channels using SHIFT key
    
    //boolean linear=true;  // true=linear,  false=log10
-   //boolean imediato=false; // true=alterar o valor do v quando mouseArrastou
+   //boolean imediato=false; // true=alterar o valor do v quando mouseDragged
                            // false=alterar o valor do v quando mouseReleased
    String tex;
    boolean clicou=false;
@@ -251,8 +251,8 @@ class Dial {
      }
    }
    
-   boolean mouseArrastou(){ // retorna true se é para enviar o comando para Garagino
-      //println("Dial.mouseArrastou");
+   boolean mouseDragged(){ // retorna true se é para enviar o comando para Garagino
+      //println("Dial.mouseDragged");
       boolean enviar=false;
       if (clicou){
          cx=constrain(mouseX-mouseOffSet,x,x+w);
