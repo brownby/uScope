@@ -75,7 +75,7 @@ Minim minim;
 AudioInput in; // USB connection to device
 
 Channel channel[] = new Channel[numCh];
-Group group[] = new Group[numCh+1]; // used to change V/div and ms/div simultaneously on all channels using SHIFT key
+Group group[]     = new Group[numCh+1]; // used to change V/div and ms/div simultaneously on all channels using SHIFT key
 
 Display display;
 
