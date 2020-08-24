@@ -209,7 +209,7 @@ void mouseClicked() {
     
     for (int k=0; k<numCh;k++) {
       
-     channel[k].p0 = display.y+3*DIV*(k+1);  // reset zero voltage position for all channels
+     channel[k].p0 = display.y+4*DIV*(k+1);  // reset zero voltage position for all channels
      
      // TODO: add reset for horizontal scaling
     

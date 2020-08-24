@@ -1,103 +1,86 @@
 class Dial {
-/*  dial(escala,alterar,nInt,formatar,tex,unid,v,vMin,vMax,x,y,w,h);
-      escala=scaleLinear/escLog    //tipo da escala: linear ou logaritmica
-      alterar=changeMove/altSolta   //tipo de alteração: ao mover ou solta o mouse
-      nTipo=nInt/nDec            //n deve ser inteiro ou decimal
-      formatar=fmt / !fmt        // formatar o número true/false
-      
-   constantes usadas na classe Dial 
-     byte scaleLinear=0; // Dial com escala linear
-     byte escLog=1;     // Dial com escala logarítimica (base 10)
-     byte changeMove=2; // mudar o valor ao arrastar o mouse "MouseDragged"
-     byte altSolta=3; // mudar o valor ao soltar o botão do mouse "MouseReleased"
-     byte nInt=4; // n é inteiro (arredondar)
-     byte nDec=5; // n é decimal 
-     boolean fmt=true; // fmt=true="formatar",  !fmt=false="não formatar" 
------------------ */
    
-   int x,y,w,h;
-   FmtNum v, vTemp;
+   boolean clicked = false;
+   boolean showTriangles = false;
+   boolean showIncrements = false;
+   boolean nInt = false;
+   
+   byte scale = scaleLinear;
+   byte change = changeRelease;  // change v when MouseDrag or MouseRelease
+   
+   int x;            // position
+   int y;            // position 
+   int w;            // width
+   int h;            // height
+   int g;            // used to change V/div and ms/div simultaneously on all channels using SHIFT key
+   int cx;
+   int mouseOffSet;
+   
    float vOld;
-   //boolean nInt=false;
    float vMin, vMax;
-   String unidade="";
    
-   byte escala = scaleLinear;
-   byte alterar = changeRelease;  // alterar v quando MouseDrag ou MouseRelease
+   String unity = "";
+   String txt;
+
+   FmtNum v, vTemp;
   
-   int g; // used to change V/div and ms/div simultaneously on all channels using SHIFT key
    
-   //boolean linear=true;  // true=linear,  false=log10
-   //boolean imediato=false; // true=alterar o valor do v quando mouseDragged
-                           // false=alterar o valor do v quando mouseReleased
-   String tex;
-   boolean clicou=false;
-   int cx, mouseOffSet;
-   boolean mostrarTriangulos=false;
-   boolean mostrarIncrementos=false;
-   //boolean formatar=true;  // pede para a classe FmtNum não formatar no formato engenharia
+   Dial(byte scale_, byte change_, boolean nInt_, boolean fmt_, String txt_,String unity_, float v_, float vMin_, float vMax_, int x_, int y_, int w_, int h_) {  //constructor
    
-  
-   //constructor
-   Dial(byte escala_, byte alterar_, boolean nInt_, boolean fmt_, String tex_,String unidade_, float v_, float vMin_, float vMax_, int x_, int y_, int w_, int h_){
-       escala=escala_; alterar=alterar_; tex=tex_;
-       unidade=unidade_;
+       scale=scale_; change=change_; txt=txt_;
+       unity=unity_;
        vMin=vMin_; vMax=vMax_;
        x=x_; y=y_; w=w_; h=h_;
+       
        v=new FmtNum(v_,nInt_,fmt_);
-       //formatar=fmt_;
        updateCx(); 
        vTemp=new FmtNum(v.v,nInt_,fmt_);
-       g=0;
+       
+       g = 0;
+       
    } 
-   Dial(byte escala_, byte alterar_, boolean nInt_, boolean fmt_, String tex_,String unidade_, float v_, float vMin_, float vMax_, int x_, int y_, int w_, int h_, int g_){
-       escala=escala_; alterar=alterar_; tex=tex_;
-       unidade=unidade_;
+   
+   Dial(byte scale_, byte change_, boolean nInt_, boolean fmt_, String txt_,String unity_, float v_, float vMin_, float vMax_, int x_, int y_, int w_, int h_, int g_) {
+     
+       scale=scale_; change=change_; txt=txt_;
+       unity=unity_;
        vMin=vMin_; vMax=vMax_;
        x=x_; y=y_; w=w_; h=h_;
+       
        v=new FmtNum(v_,nInt_,fmt_);
-       //formatar=fmt_;
        updateCx(); 
        vTemp=new FmtNum(v.v,nInt_,fmt_);
       
-       g=g_;
+       g = g_;
        group[g].qtd++;
-       //println("Dial.tex=",tex," g=",g);
-       //println("group[",g,"].qtd=",group[g].qtd);
+
    } 
 
-   void salvar(){
-     vOld=v.v;  
-   }
+   void saveV(){ vOld = v.v; }
    
-   void restaurar(){
-     setV(vOld);
-   }
+   void restore(){ setV(vOld); }
    
    void setV(float v_){
+     
        v.setV(v_); 
        updateCx();
+       
    }
    
-   void updateCx(){
-      //v=v_;
-      
-       cx=v2x(v.v); 
-   }
+   void updateCx(){ cx = v2x(v.v); }
    
-   void display(){
-      display(color(0)); 
-   }
+   void display(){ display(color(0)); }
    
-   void display(color cor){
+   void display(color rgb) {
+     
       // faz retangulo
-      //if (clicou) {stroke(100,0,0);} else {stroke(0);}
-      stroke(cor);
+      //if (clicked) {stroke(100,0,0);} else {stroke(0);}
+      stroke(rgb);
       strokeWeight(1);   fill(200);  rect(x,y,w,h); 
       // faz o valor v
       noStroke();  fill(244,244,244); rect(x+1,y+1,cx-x-2,h-2);
       
-      if (mostrarIncrementos){
+      if (showIncrements){
           fill(0); stroke(0); textSize(10);
          text("-100",x,y+5); 
          text("-10",x+w/6,y+5);
@@ -106,7 +89,7 @@ class Dial {
          text("+10",x+4*w/6,y+5);
          text("+100",x+5*w/6,y+5);
       }
-      if (mostrarTriangulos){
+      if (showTriangles){
         // faz o triangulo do cursor
          fill(250,250,0); stroke(0);
         triangle(cx,y+3*h/4,cx-5,y+h,cx+5,y+h); //rect(cx-10,y,20,h);
@@ -126,9 +109,9 @@ class Dial {
       //faz o texto
       fill(0); strokeWeight(2); textSize(12);  textAlign(CENTER,CENTER); 
 
-      String t=tex+" ";
-      if (clicou) {
-        if (alterar==changeRelease){
+      String t=txt+" ";
+      if (clicked) {
+        if (change==changeRelease){
           t+=vTemp.printV();
         } else {
           t+=v.printV();
@@ -136,7 +119,7 @@ class Dial {
       } else {
         t+=v.printV();
       }
-      text(t+unidade,x+w/2,y+h/2-2);
+      text(t+unity,x+w/2,y+h/2-2);
   
   
    }
@@ -144,7 +127,7 @@ class Dial {
   
    
    int v2x(float v_){
-      if (escala==scaleLinear) {
+      if (scale==scaleLinear) {
         return (int)map(v_,vMin,vMax,x,x+w);
       } else {
         return (int)map(log(v_)/log(10),log(vMin)/log(10), log(vMax)/log(10),x,x+w); 
@@ -152,7 +135,7 @@ class Dial {
    }
    
    float x2v(int cx_){
-     if (escala==scaleLinear){
+     if (scale==scaleLinear){
        return map(cx_,x,x+w,vMin,vMax);
      } else{
        return pow(10,map(cx_,x,x+w,log(vMin)/log(10),log(vMax)/log(10)));
@@ -222,18 +205,18 @@ class Dial {
       if (mouseY>y && mouseY<y+h) {
         if (mouseX>cx-10 && mouseX<cx+10){
          // println("mouseMoveu Dial");
-          mostrarTriangulos=true;
+          showTriangles=true;
         } else {
-          mostrarTriangulos=false;
+          showTriangles=false;
         }
         if (mouseX>x && mouseX<x+w && keyPressed && keyCode==CONTROL){
-          println("mostrarIncrementos=" + mostrarIncrementos);
-           mostrarIncrementos=true; 
+          println("showIncrements=" + showIncrements);
+           showIncrements=true; 
         } else {
-           mostrarIncrementos=false;
+           showIncrements=false;
         }
       }  else {
-        mostrarTriangulos=false;
+        showTriangles=false;
       }   
    }
    
@@ -242,7 +225,7 @@ class Dial {
       if (mouseY>y && mouseY<y+h) {
         if (mouseX>cx-10 && mouseX<cx+10){
           //println("mousePressionado"); 
-          clicou=true; 
+          clicked=true; 
            vTemp.setV(v.v);
            mouseOffSet=mouseX-cx;
            //println("cx=",cx);
@@ -254,13 +237,13 @@ class Dial {
    boolean mouseDragged(){ // retorna true se é para enviar o comando para Garagino
       //println("Dial.mouseDragged");
       boolean enviar=false;
-      if (clicou){
+      if (clicked){
          cx=constrain(mouseX-mouseOffSet,x,x+w);
-         if (alterar==changeMove){ // é para alterar Imediatamente enquanto Mover o Mouse
+         if (change==changeMove){ // é para change Imediatamente enquanto Mover o Mouse
             vTemp.setV(x2v(cx)); // converte o x para v
               v.setV(vTemp.v); 
-              enviar=true;   // enviar o comando de alterar para o Garagino!
-              ifShiftAlterarGrupo(); // se tiver SHIFT então alterar Grupo
+              enviar=true;   // enviar o comando de change para o Garagino!
+              ifShiftAlterarGrupo(); // se tiver SHIFT então change Grupo
          }else{
             vTemp.setV(x2v(cx));
          }
@@ -270,13 +253,13 @@ class Dial {
    
    boolean mouseReleased(){ // retorna true se é para enviar o comando para o Garagino
      boolean enviar=false;
-      if (clicou) {
-        clicou=false;
-        if (alterar==changeRelease){
+      if (clicked) {
+        clicked=false;
+        if (change==changeRelease){
            if (mouseY>y-10 && mouseY<y+h+10) { // && mouseX>x-15 && mouseX<x+w+15){
-               v.setV(vTemp.v); // é para alterar quando Soltar o Mouse
-               enviar=true;  // enviar comando de alterar para o Garagino!
-               ifShiftAlterarGrupo(); // se tiver SHIFT então alterar Grupo
+               v.setV(vTemp.v); // é para change quando Soltar o Mouse
+               enviar=true;  // enviar comando de change para o Garagino!
+               ifShiftAlterarGrupo(); // se tiver SHIFT então change Grupo
             } else{
                cx=v2x(v.v);
            }
