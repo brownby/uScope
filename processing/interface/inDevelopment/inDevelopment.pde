@@ -48,7 +48,7 @@ import ddf.minim.*;  // used to connect to device over USB audio
 
 // *** variable initialization *** //
 
-String version="alpha";
+String version="beta";
 
 boolean nInt = true;             // n is an integer (round) or decimal !nInt 
 boolean fmt = true;              // fmt = true = "format", !fmt = false = "no format"

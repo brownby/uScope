@@ -185,199 +185,170 @@ class Channel {
   }
 
 
-  void displayXt(){ // modo em função do tempo
+  void displayXt(){ 
+    
     float px, py;
-    int pt0,pt1;
-    stroke(nRGB);strokeWeight(2); noFill();
+    stroke(nRGB); strokeWeight(2); noFill();
+    
     beginShape();
-      for (int k=0; k<q.v.v; k++){
-        px=fx(k);
-        if (px>display.x+display.w || px<display.x) {
-           break; 
-        }
-        py=fy(v[k]);
-        if (smooth.clicked) {
-          curveVertex(px,py);
-        } else {
-          vertex(px,py);
-        }
-        if (showSamples.clicked){
-          stroke(255); strokeWeight(4); point(px,py); strokeWeight(2); stroke(nRGB);
-        }
+      for (int k=0; k<q.v.v; k++) {
+
+        px = fx(k);
+        py = fy(v[k]);
+        
+        if (px>display.x+display.w || px<display.x){ break; }
+        
+        if (smooth.clicked){ curveVertex(px,py); }
+        else { vertex(px,py); }
+        
+        if (showSamples.clicked){ stroke(255); strokeWeight(4); point(px,py); strokeWeight(2); stroke(nRGB); }
+        
       }
     endShape();
-     if (calcFreq.clicked){  
-       smoothDiferencial();
-     }
-    strokeWeight(2); stroke(nRGB);
-  }
-  
-  float fx(int x){
-    return display.x+DIV*dt.v.v/horiScale.v.v*x;
-  }
-
-  float fy(int y){
-    return p0-y*fa/vertScale.v.v*DIV;
-  }
-  
-  
-  //14/03/2016 - comecei a procurar a frequencia pelos peaks minimos, criei vMin e pMin
-  //                falta analisar os peaks minimos e tirar os peaks máximos
-  void smoothDiferencial(){
-    float px;
-    int vMax1=0,vMax2=0,pMax1=-1,pMax2=-1; // -1 no pMax para indicar que não foi encontrado
-    int vMin1=0, vMin2=0, pMin1=-1, pMin2=-1;
-    int pM1,pM2;
-    int vMax=0, pMax=-1;
-    int vMin=0, pMin=-1;
-    //float vRuido=map(ruido.v.v,0,5,0,1023);
-    qPeaks=0;
-    // procurar o valor dif máximo vMax => pMax (ponto k)
-    for (int k=1; k<q.v.v; k++){
-       dif[k-1]=v[k]-v[k-1];
-       if (dif[k-1]>vMax) {
-         vMax=dif[k-1];
-         pMax=k-1;
-        }
-        if (dif[k-1]<vMin){
-           vMin=dif[k-1];
-           pMin=k-1;
-        }
-    }
     
+    if (calcFreq.clicked) { smoothDifferential(); }
+    strokeWeight(2); stroke(nRGB);
+  
+  }
  
+   
+  float fx(int x){ return display.x + DIV*dt.v.v/horiScale.v.v*x; }
+  float fy(int y){ return p0 - y*fa/vertScale.v.v*DIV; }  
+ 
+ 
+  void smoothDifferential() {
 
-   // procurar todos os pontos que estão entre vMin e 2/3*vMin-vRuido
+    int vMax  =  0, pMax  = -1;
+    int vMin  =  0, pMin  = -1;  
+    int vMin1 =  0, vMin2 =  0;
+    int pMin1 = -1, pMin2 = -1; // -1 indicates not found 
+
+    qPeaks=0;
+    
+    for (int k=1; k<q.v.v; k++){ // find the maximum dif value vMax >= pMax (point k)
+      dif[k-1]=v[k]-v[k-1];
+      if (dif[k-1]>vMax) {
+        
+        vMax=dif[k-1];
+        pMax=k-1;
+        
+      }
+      if (dif[k-1]<vMin){
+        
+        vMin=dif[k-1];
+        pMin=k-1;
+        
+      }
+    }
+
+   // procurar todos os pontos que estão entre vMin e 2/3*vMin-vNoise
     vMin=(int)(2.0/3.0*(float)vMin);
     qPeaks=0;
-    if (vMin<0){
+    
+    if (vMin<0) {
       for (int k=0; k<q.v.v-1; k++){ 
-         if (dif[k]<=vMin){
-           qPeaks++;
-           peaks[qPeaks-1]=k;
-         }
+        if (dif[k]<=vMin){
+           
+          qPeaks++;
+          peaks[qPeaks-1]=k;
+           
+        }
       }
       if (qPeaks>=2){
-         if (peaks[1]-peaks[0]>1){
-         pMin1=peaks[0]; vMin1=dif[pMin1];
-         pMin2=peaks[1]; vMin2=dif[pMin2];
-         }
+        if (peaks[1]-peaks[0]>1){
+           
+          pMin1=peaks[0]; vMin1=dif[pMin1];
+          pMin2=peaks[1]; vMin2=dif[pMin2];
+         
+        }
       }
     }
     
-    
-    
-    if (pMin1>=0 && pMin2>=0){ //deve ser onda quadrada
-       //println(n," Quadrada");
-    }else{    // deve ser senoide (suave)
-        //println(n," Senoide");
-        //pMax1=-1; pMax2=-1;
-        for (int k=0; k<q.v.v-2; k++){ // pegar 2 pontos de mudança do Zero
-          //println("vMax1=",vMax1," vMax2=",vMax2);
-          if (dif[k]>0 && dif[k+1]<=0){ // achou + para - (pico)
-            //println("entrei ",dif[k],dif[k+1]);
-            if (pMin1<0){
-               vMin1=dif[k+1];
-               pMin1=k+1;
-               //println("pMax1=",pMax1," vMax1=",vMax1);
-            } else if (pMin2<0){
-              vMin2=dif[k+1];
-              pMin2=k+1;
-              // println("pMax2=",pMax2," vMax2=",vMax2);
-              break;
-            }
+    if (pMin1>=0 && pMin2>=0){ }        // must be square wave
+    else{                               // must be sinusoidal (smooth)
+      for (int k=0; k<q.v.v-2; k++) {   // get two change points from zero
+        if (dif[k]>0 && dif[k+1]<=0) {  // found + to - peak?
+          if (pMin1<0) {
+            
+            vMin1=dif[k+1];
+            pMin1=k+1;
+
+          } 
+          else if (pMin2<0) {
+            
+            vMin2=dif[k+1];
+            pMin2=k+1;
+            break;
+            
           }
         }
+      }
     }
-   
-   
-    
-    
-  //== 14/03/2016 - tirei para recalcular a frequencia com div negativo ====  
-   //calcular a frequencia e período
- /*  tCalc.setV(0);
-   fCalc.setV(0);
-   if (pMax1>=0 && pMax2>=0){
-      //desenhar os pMax1 e pMax2
-      strokeWeight(5); stroke(255,0,255);
-      point(fx(pMax1),p0);
-      point(fx(pMax2),p0);
-      strokeWeight(1);
-     
-     tCalc.setV(abs(pMax2-pMax1)*dt.v.v);
-    fCalc.setV(1/tCalc.v);
-    
-    //mostrar a frequencia e o periodo
-    textAlign(LEFT); fill(0);
-    text(fCalc.printV()+"Hz ("+tCalc.printV()+"s)",measure.x,measure.y+29); 
-   }
-  */ 
  
-   //calcular a frequencia e período - dif negativo 14/03/2016 
-   tCalc.setV(0);
-   fCalc.setV(0);
-   if (pMin1>=0 && pMin2>=0){
-      //desenhar os pMin1 e pMin2
-      strokeWeight(5); stroke(255,0,255);
-      point(fx(pMin1),p0);
-      point(fx(pMin2),p0);
-      strokeWeight(1);
-     
-     tCalc.setV(abs(pMin2-pMin1)*dt.v.v);
-    fCalc.setV(1/tCalc.v);
-    
-    //mostrar a frequencia e o periodo
-    textAlign(LEFT); fill(0);
-    text(fCalc.printV()+"Hz ("+tCalc.printV()+"s)",measure.x,measure.y+29); 
-   }
-   
- 
-   
+    tCalc.setV(0);
+    fCalc.setV(0);
+
+    if (pMin1>=0 && pMin2>=0) {
+
+        strokeWeight(5); stroke(255,0,255);  
+        point(fx(pMin1),p0);
+        point(fx(pMin2),p0);
+        
+        strokeWeight(1);
+       
+        tCalc.setV(abs(pMin2 - pMin1)*dt.v.v);
+        fCalc.setV(1/tCalc.v);
+      
+        textAlign(LEFT); fill(0);
+        text(fCalc.printV() + "Hz (" + tCalc.printV() + "s)", measure.x, measure.y + 29); 
+     }  
   }
-  
-  
-  
 
-
-  /*============================================================
-     controle do retangulo de medição na display (faz medições tempoxtensão)
-  =============================================================== */
-    // mostrar o retangulo de seleção e os valores tempo x volts
-    void displayRect(){ 
+  
+  // *** Control of measuring rectangle *** //
+    
+    void displayRect(){ // show the selection rectangle and time, voltage levels
       if (displayClicked){
+        
          fill(nRGB,50); stroke(nRGB,255); strokeWeight(1);
-         tracejado(xi,yi,xi+dx,yi+dy,3);
+         dashed(xi,yi,xi+dx,yi+dy,3);
+         
          fill(255);
+         
          float vTemp=abs(dx)/(DIV)*horiScale.v.v*1000.0;
-         //println("Q=",Q);
          String vh=nf(vTemp,0,1)+" ms";
          String fh=nf(1000/vTemp,0,1)+ " Hz";
          String vv=nf(abs(dy)/(DIV)*vertScale.v.v,0,2)+" V";
+         
          textAlign(RIGHT); text(vh+" "+fh,xi+dx-10,yi+dy/2);
          textAlign(LEFT); text(vv,xi+dx,yi+dy/2);
+         
        }       
      }
      
-     void tracejado(float xi, float yi, float xf, float yf, float step){
-        float temp;
-        boolean faz=true;
-        if (xi>xf) {
-           temp=xf; xf=xi; xi=temp; 
-        } 
-        if (yi>yf) {
-           temp=yf; yf=yi; yi=temp;
-        }
-        for (float x=xi; x<xf; x+=step){
-           if (faz){
+     void dashed(float xi, float yi, float xf, float yf, float step){
+       
+       float temp;
+       boolean faz=true;
+        
+       if (xi>xf){ temp=xf; xf=xi; xi=temp; } 
+       if (yi>yf){ temp=yf; yf=yi; yi=temp; }
+        
+       for (float x=xi; x<xf; x+=step){
+          if (faz){
+             
               line(x,yi,x+step,yi);
               line(x,yf,x+step,yf);
-           } 
-           faz=!faz;
+              
+          } 
+          faz=!faz;
         }
         for (float y=yi; y<yf; y+=step){
            if (faz){
+             
               line(xi,y,xi,y+step);
               line(xf,y,xf,y+step);
+              
            } 
            faz=!faz;
         }
