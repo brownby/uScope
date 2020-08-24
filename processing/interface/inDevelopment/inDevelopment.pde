@@ -99,11 +99,14 @@ FmtNum    tTotalReal, dtReal;  // check if the real sample time is the same as d
 
 // ---- waveform --- //
 
-Panel     pnlWave;   // panel for the waveform generator
-CheckBox  wave;      // f and t are dependent: f = 1/t, t = 1/f
-Dial      fWave;     // frequency of waveform (0.125Hz-10kHz) 
-Dial      tWave;     // period of waveform (100us-8s)
-Dial      dutyWave;  // duty cycle (0-100%)
+Panel     pnlWave;       // panel for the waveform generator
+CheckBox  wave;          // f and t are dependent: f = 1/t, t = 1/f
+Dial      fWave;         // frequency of waveform 
+Dial      aWave;         // amplitude of waveform 
+CheckBox  sineWave;      // type
+CheckBox  pulseWave;     // type
+CheckBox  squareWave;    // type
+CheckBox  sawtoothWave;  // type
 
 
 // *** setup function *** //
@@ -132,15 +135,19 @@ void setup() {
   showSamples      = new CheckBox("show samples", marg1+20, channel[1].y+channel[1].h+70, 15);
   calcFreq         = new CheckBox("detect frequency", showSamples.x, showSamples.y+showSamples.h+5, 15);
   
-  pnlWave          = new Panel("Waveform Generator", display.x+785, display.y+display.h-150, 200, 150);   
-  //wave;      
-  //fWave;   
-  //tWave;     
-  //dutyWave;  
+  pnlWave          = new Panel("Waveform Generator", color(168,52,235), display.x+785, display.y+display.h-150, 200, 150);   
+  wave             = new CheckBox("output status", showSamples.x, pnlWave.y+25, 15);
+  fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 1e3f, 1e-3f, 10e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
+  aWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 1f, 10e-3f, 3f, pnlWave.x+10, fWave.y+fWave.h+3, pnlWave.w-20, 20);
+  sineWave         = new CheckBox("sine", pnlWave.x+10, aWave.y+aWave.h+10, 15);  
+  pulseWave        = new CheckBox("pulse", pnlWave.x+100, aWave.y+aWave.h+10, 15);  
+  squareWave       = new CheckBox("square", sineWave.x, sineWave.y+20, 15);    
+  sawtoothWave     = new CheckBox("sawtooth", pulseWave.x, pulseWave.y+20, 15);    
+
   
 // ---- sampling controls ---- //
 
-  pnlSamples       = new Panel("sampling", display.x+785, display.y+display.h-85, 200, 85);
+  pnlSamples       = new Panel("sampling", color(0,100, 255), display.x+785, display.y+display.h-85, 200, 85);
   dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 24e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
   dtReal           = new FmtNum(0,nInt,fmt);
   q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", 1000-1, 1, 100, dt.x+dt.w+5, dt.y, 60, 20);
@@ -176,7 +183,15 @@ void draw() {
   resetMeasure.display();
   showSamples.display();
   calcFreq.display();
+  
   pnlWave.display();
+  wave.display();
+  fWave.display();
+  aWave.display();
+  sineWave.display();
+  pulseWave.display();
+  squareWave.display();
+  sawtoothWave.display();
   
   for (byte k=0; k<numCh; k++) { channel[k].display(); }
   
