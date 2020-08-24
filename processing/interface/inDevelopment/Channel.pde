@@ -51,11 +51,11 @@ class Channel {
      n = n_; nRGB = nRGB_; x = x_; y = y_; w = w_; h = h_;
 
      chN     = new Button("CH-"+str(n),x,y,w/2,15,nRGB,nRGB);
-     trigger = new CheckBox("trigger",x+w/2+3,y+3,14);
+     trigger = new CheckBox("trigger",x+w/2+10,y+3,14);
      
      chN.clicked = true;
      
-     vertScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","v/div",1f,10e-3f,20f,x+10,y+21,w-20,20,1);
+     vertScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","v/div",1f,10e-3f,20f,x+10,y+23,w-20,20,1);//21
      horiScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","s/div",1e-3f,20e-6f,20f,x+10,vertScale.y+vertScale.h+3,w-20,20,2);
      
      p0 = display.y+4*DIV*(n+1);

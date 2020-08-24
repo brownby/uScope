@@ -30,7 +30,7 @@ class Button{
      
      if (mPressed){ fill(0,100,0); } 
      else if (clicked){ fill(rgb_active); } 
-     else{ fill(200); }
+     else{ fill(200); } 
      
      stroke(rgb_outline); strokeWeight(2); 
      rect(x,y,w,h); 
