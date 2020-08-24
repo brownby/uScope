@@ -20,7 +20,7 @@ void draw() {
   
   for(int i = 0; i < in.bufferSize()-1; i++) { 
     
-    line( i, 75 + in.left.get(i)*100, i+1, 75 + in.left.get(i+1)*100 );
+    line( i, 75 + in.left.get(i)*75, i+1, 75 + in.left.get(i+1)*75 );
   
   }
 }

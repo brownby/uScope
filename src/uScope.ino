@@ -196,7 +196,7 @@ void adc_to_sram_dma() {
   descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf1]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
-  descriptor.BTCNT = NBEATS-10;
+  descriptor.BTCNT = NBEATS;
   descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
@@ -215,7 +215,7 @@ void adc_to_sram_dma() {
   descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer1 + NBEATS; // end of target address
-  descriptor.BTCNT = NBEATS-10;
+  descriptor.BTCNT = NBEATS;
   descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
@@ -804,6 +804,7 @@ void USB_Handler(){
           if(bufnum != prevBuf || prevBuf == 2)
           {
             uart_puts("\n-----");
+            uart_puts("\nPENDCH: "); uart_write(DMAC->PENDCH.reg & 0xff); 
 
             prevBuf = bufnum;
 
@@ -830,6 +831,7 @@ void USB_Handler(){
           {
 
             uart_puts("\nZLP");
+            uart_puts("\nPENDCH: "); uart_write(DMAC->PENDCH.reg & 0xff); 
             
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
