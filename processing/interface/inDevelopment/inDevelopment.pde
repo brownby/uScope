@@ -11,15 +11,15 @@
  * ☑ import libraries
  * ☑ variable initalization
  * ☑ object instantiation
- * ☑ setup 
- * ☑ draw
- * ☑ mouseClicked 
- * ☑ mousePressed
- * ☑ mouseReleased
- * ☑ mouseMoved
- * ☑ mouseDragged
- * ☐ adjustFt
- * ☐ SerialEvent (legacy)
+ * ☑ setup() 
+ * ☑ draw()
+ * ☑ mouseClicked() 
+ * ☑ mousePressed()
+ * ☑ mouseReleased()
+ * ☑ mouseMoved()
+ * ☑ mouseDragged()
+ * ☐ adjustFt()
+ * ☐ SerialEvent() --> legacy
  * 
  * =========== CLASSES ===========
  *
@@ -34,8 +34,8 @@
  *
  * =========== LEGEND ===========
  *
- * ☐ in development
- * ☑ clean & 'complete'
+ * ☐ = in development
+ * ☑ = clean & 'complete'
  *
  * https://github.com/brownby/uScope/tree/usb-dev/processing/interface
  */
