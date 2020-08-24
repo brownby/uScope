@@ -182,7 +182,7 @@ void adc_init() {
 
 void adc_to_sram_dma() { 
   
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select adc channel, 0
+  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select DMA channel, 0
   DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
   
   DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
@@ -200,17 +200,6 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
-
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select adc channel, 1
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
-  
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
   
   descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
@@ -227,8 +216,8 @@ void start_adc_sram_dma() {
   DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select channel
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select channel
-  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
+  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select channel
+  // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
 
 }
 
@@ -250,17 +239,17 @@ void DMAC_Handler() {
 
   __disable_irq(); // disable interrupts
 
-  bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
+  bufnum = !bufnum;
+
+  uint8_t ch =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
   uart_puts("\n\nd"); uart_write(bufnum + ascii);
 
   uart_puts("\nI0: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
-  uart_puts("\nI1: "); uart_write(DMAC->INTSTATUS.bit.CHINT1 + ascii);
 
-  DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
+  DMAC->CHID.reg = DMAC_CHID_ID(ch); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
 
   uart_puts("\nI0a: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
-  uart_puts("\nI1a: "); uart_write(DMAC->INTSTATUS.bit.CHINT1 + ascii);
   uart_putc('\n');
 
   __enable_irq(); // enable interrupts
