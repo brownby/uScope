@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 1000       // number of beats for adc transfer
+#define NBEATS 1000      // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT 0
@@ -49,7 +49,8 @@ char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","A
 
 uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
 
-volatile u_int8_t bufnum = 0;  // track which buffer to write to, while USB reads
+volatile u_int8_t ZLP_c   = 0;
+volatile u_int8_t bufnum  = 0;  // track which buffer to write to, while USB reads
 volatile u_int8_t prevBuf = 2;
 
 extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
@@ -166,10 +167,10 @@ void adc_init() {
   while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
-  ADC->SAMPCTRL.reg = 0x08;              // add 8 half ADC clk cycle periods to sample time
+  ADC->SAMPCTRL.reg = 0x00;              // add 8 half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
-  ADC->CTRLB.bit.PRESCALER = 0x5;        // 0x5 = DIV128
+  ADC->CTRLB.bit.PRESCALER = 0x4;        // 0x5 = DIV128
   ADC->CTRLB.bit.RESSEL = 0x3;           // result resolution, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;            // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;           // ADC is single-ended, ignore MUXNEG defined above
@@ -182,7 +183,28 @@ void adc_init() {
 
 void adc_to_sram_dma() { 
   
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select DMA channel, 0
+  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0);  // select adc channel, 0
+  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
+  
+  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
+  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
+  
+  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
+  DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
+  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
+  DMAC->CHINTENSET.bit.TCMPL = 1;
+
+  //DMAC->PRICTRL0.bit.RRLVLEN3 = 1;
+  
+  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf1]; 
+  descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
+  descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
+  descriptor.BTCNT = NBEATS-10;
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID;// | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
+
+  memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
+
+  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select adc channel, 1
   DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
   
   DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
@@ -193,19 +215,11 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf1]; 
-  descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
-  descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
-
-  memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
-  
-  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0]; 
+  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer1 + NBEATS; // end of target address
-  descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
+  descriptor.BTCNT = NBEATS-5;
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID;// | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
 
@@ -216,8 +230,8 @@ void start_adc_sram_dma() {
   DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select channel
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 
-  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select channel
-  // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
+  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select channel
+  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
 
 }
 
@@ -226,7 +240,7 @@ void dma_init() {
   PM->AHBMASK.reg |= PM_AHBMASK_DMAC; // enable AHB clock
   PM->APBBMASK.reg |= PM_APBBMASK_DMAC; // enable APBB clock
 
-  NVIC_SetPriority(DMAC_IRQn, 0x01); // second priority
+  NVIC_SetPriority(DMAC_IRQn, 0x00); // top priority
   NVIC_EnableIRQ(DMAC_IRQn); // enable interrupts, will trigger DMAC_Handler
 
   DMAC->BASEADDR.reg = (uint32_t)descriptor_section; // where to find descriptor
@@ -239,18 +253,29 @@ void DMAC_Handler() {
 
   __disable_irq(); // disable interrupts
 
-  bufnum = !bufnum;
+  ZLP_c = 0;
 
-  uint8_t ch =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
+  bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
   uart_puts("\n\nd"); uart_write(bufnum + ascii);
 
-  uart_puts("\nI0: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
-
-  DMAC->CHID.reg = DMAC_CHID_ID(ch); // select active channel
+  DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
 
-  uart_puts("\nI0a: "); uart_write(DMAC->INTSTATUS.bit.CHINT0 + ascii);
-  uart_putc('\n');
+  if (bufnum == 1){
+
+    uart_puts("\ncmd0");
+
+    DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
+    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+
+  } 
+  else if (bufnum == 0){
+
+    uart_puts("\ncmd1");
+    DMAC->CHID.reg = DMAC_CHID_ID(1); // select active channel
+    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+
+  }
 
   __enable_irq(); // enable interrupts
 
@@ -299,7 +324,7 @@ void usb_init() {
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
   
-  NVIC_SetPriority(USB_IRQn, 0x00); // top priority
+  NVIC_SetPriority(USB_IRQn, 0x01); // second priority
   NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
 
 }
@@ -788,12 +813,10 @@ void USB_Handler(){
       if(i == ISO_ENDPOINT_IN)
       {
         if(interface_num == 1)
-        {  
-
+        {            
           if(bufnum != prevBuf || prevBuf == 2)
           {
-            uart_puts("\n-----");
-
+            
             prevBuf = bufnum;
 
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
@@ -802,10 +825,12 @@ void USB_Handler(){
             if(bufnum == 0)
             {
               EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
+              uart_puts("\n0-----");
             }
             else if(bufnum == 1)
             {
               EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
+              uart_puts("\n1-----");
             }
 
             EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS;    // size of ADC buffer in SRAM
@@ -828,6 +853,20 @@ void USB_Handler(){
             
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
 
+            ZLP_c++;
+            
+            if (ZLP_c > 6){
+
+              ZLP_c = 0;
+
+              uart_puts("\nCONTINUE");
+              
+              DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
+              DMAC->CHCTRLB.bit.CMD = 0x2;
+              DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+
+            }
+
           }
         continue;
         }
@@ -838,7 +877,6 @@ void USB_Handler(){
   
     }
   }
-
   __enable_irq();
 }
 
