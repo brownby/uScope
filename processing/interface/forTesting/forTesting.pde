@@ -9,7 +9,7 @@ void setup() {
   surface.setSize(1000,150);
   
   minim = new Minim(this);
-  in = minim.getLineIn(Minim.MONO, 1000, 44100, 8);
+  in = minim.getLineIn(Minim.MONO, 1022, 44100, 8);
 
 }
 
