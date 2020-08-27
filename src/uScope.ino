@@ -242,7 +242,7 @@ void dma_init() {
   PM->AHBMASK.reg |= PM_AHBMASK_DMAC; // enable AHB clock
   PM->APBBMASK.reg |= PM_APBBMASK_DMAC; // enable APBB clock
 
-  NVIC_SetPriority(DMAC_IRQn, 0x00); // top priority
+  NVIC_SetPriority(DMAC_IRQn, 0x01); // top priority
   NVIC_EnableIRQ(DMAC_IRQn); // enable interrupts, will trigger DMAC_Handler
 
   DMAC->BASEADDR.reg = (uint32_t)descriptor_section; // where to find descriptor
@@ -331,7 +331,7 @@ void usb_init() {
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
   
-  NVIC_SetPriority(USB_IRQn, 0x01); // second priority
+  NVIC_SetPriority(USB_IRQn, 0x00); // second priority
   NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
 
 }
