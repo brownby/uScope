@@ -192,17 +192,15 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
   DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  // DMAC->CHINTENSET.bit.TCMPL = 1;
-  DMAC->CHINTENSET.bit.SUSP = 1;
+  DMAC->CHINTENSET.bit.TCMPL = 1;
 
   //DMAC->PRICTRL0.bit.RRLVLEN3 = 1;
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf1]; 
-  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf1];
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS-15;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x2); // | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x0); // | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
 
@@ -215,15 +213,13 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
   DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  // DMAC->CHINTENSET.bit.TCMPL = 1;
-  DMAC->CHINTENSET.bit.SUSP = 1; 
+  DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  // descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
-  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0];
+  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer1 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS-5;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x2); // | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x0); // | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
 
@@ -270,16 +266,14 @@ void DMAC_Handler() {
     uart_puts("\ncmd0");
 
     DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
-    // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-    DMAC->CHCTRLB.bit.CMD = 0x2; // resume
+    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 
   } 
   else if (bufnum == 0){
 
     uart_puts("\ncmd1");
     DMAC->CHID.reg = DMAC_CHID_ID(1); // select active channel
-    // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-    DMAC->CHCTRLB.bit.CMD = 0x2; // resume
+    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 
   }
 
@@ -639,7 +633,7 @@ void USB_Handler(){
         USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
         // while (0 == USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1);
 
-        start_adc_sram_dma();
+        // start_adc_sram_dma();
         
       } break;
 
@@ -869,8 +863,8 @@ void USB_Handler(){
               uart_puts("\nCONTINUE");
               
               DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
-              DMAC->CHCTRLB.bit.CMD = 0x2;
-              // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+              // DMAC->CHCTRLB.bit.CMD = 0x2;
+              DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 
             }
 
@@ -946,7 +940,7 @@ void setup() {
   usb_init();
   
   adc_to_sram_dma();
-  // start_adc_sram_dma(); 
+  start_adc_sram_dma(); 
 
   uart_puts("\nStarting...");
 
