@@ -193,6 +193,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
+  DMAC->CHINTENSET.bit.SUSP = 1; 
 
   //DMAC->PRICTRL0.bit.RRLVLEN3 = 1;
   
@@ -214,6 +215,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
+  DMAC->CHINTENSET.bit.SUSP = 1; 
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
