@@ -193,11 +193,12 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   // DMAC->CHINTENSET.bit.TCMPL = 1;
-  DMAC->CHINTENSET.bit.SUSP = 1; 
+  DMAC->CHINTENSET.bit.SUSP = 1;
 
   //DMAC->PRICTRL0.bit.RRLVLEN3 = 1;
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf1]; 
+  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf1];
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS-15;
@@ -217,7 +218,8 @@ void adc_to_sram_dma() {
   // DMAC->CHINTENSET.bit.TCMPL = 1;
   DMAC->CHINTENSET.bit.SUSP = 1; 
   
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
+  // descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
+  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0];
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer1 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS-5;
@@ -242,7 +244,7 @@ void dma_init() {
   PM->AHBMASK.reg |= PM_AHBMASK_DMAC; // enable AHB clock
   PM->APBBMASK.reg |= PM_APBBMASK_DMAC; // enable APBB clock
 
-  NVIC_SetPriority(DMAC_IRQn, 0x01); // top priority
+  NVIC_SetPriority(DMAC_IRQn, 0x00); // top priority
   NVIC_EnableIRQ(DMAC_IRQn); // enable interrupts, will trigger DMAC_Handler
 
   DMAC->BASEADDR.reg = (uint32_t)descriptor_section; // where to find descriptor
@@ -251,13 +253,10 @@ void dma_init() {
 
 }
 
-int dcnt = 0;
-
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
 
-  dcnt++;
   ZLP_c = 0;
 
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
@@ -331,7 +330,7 @@ void usb_init() {
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
   
-  NVIC_SetPriority(USB_IRQn, 0x00); // second priority
+  NVIC_SetPriority(USB_IRQn, 0x01); // second priority
   NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
 
 }
@@ -862,9 +861,8 @@ void USB_Handler(){
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
 
             ZLP_c++;
-            uart_puts("\ncnt"); uart_write(dcnt);
             
-            if (ZLP_c > 6){
+            if (ZLP_c > 10){
 
               ZLP_c = 0;
 
