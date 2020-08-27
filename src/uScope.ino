@@ -199,8 +199,8 @@ void adc_to_sram_dma() {
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf1]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
-  descriptor.BTCNT = NBEATS-10;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID;// | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
+  descriptor.BTCNT = NBEATS-15;
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x2); // | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
 
@@ -219,7 +219,7 @@ void adc_to_sram_dma() {
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer1 + NBEATS; // end of target address
   descriptor.BTCNT = NBEATS-5;
-  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID;// | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
+  descriptor.BTCTRL = DMAC_BTCTRL_BEATSIZE(0x0) | DMAC_BTCTRL_DSTINC | DMAC_BTCTRL_VALID | DMAC_BTCTRL_BLOCKACT(0x2); // | DMAC_BTCTRL_BLOCKACT(0x1); // beat size is a byte
 
   memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
 
@@ -249,10 +249,13 @@ void dma_init() {
 
 }
 
+int dcnt = 0;
+
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
 
+  dcnt++;
   ZLP_c = 0;
 
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
@@ -266,14 +269,16 @@ void DMAC_Handler() {
     uart_puts("\ncmd0");
 
     DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+    // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+    DMAC->CHCTRLB.bit.CMD = 0x2; // resume
 
   } 
   else if (bufnum == 0){
 
     uart_puts("\ncmd1");
     DMAC->CHID.reg = DMAC_CHID_ID(1); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+    // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+    DMAC->CHCTRLB.bit.CMD = 0x2; // resume
 
   }
 
@@ -855,6 +860,7 @@ void USB_Handler(){
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
 
             ZLP_c++;
+            uart_puts("\ncnt"); uart_write(dcnt);
             
             if (ZLP_c > 6){
 
@@ -864,7 +870,7 @@ void USB_Handler(){
               
               DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
               DMAC->CHCTRLB.bit.CMD = 0x2;
-              DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+              // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 
             }
 
