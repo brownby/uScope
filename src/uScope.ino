@@ -192,7 +192,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
   DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
+  // DMAC->CHINTENSET.bit.TCMPL = 1;
   DMAC->CHINTENSET.bit.SUSP = 1; 
 
   //DMAC->PRICTRL0.bit.RRLVLEN3 = 1;
@@ -214,7 +214,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
   DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
+  // DMAC->CHINTENSET.bit.TCMPL = 1;
   DMAC->CHINTENSET.bit.SUSP = 1; 
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
@@ -640,7 +640,7 @@ void USB_Handler(){
         USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
         // while (0 == USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1);
 
-        // start_adc_sram_dma();
+        start_adc_sram_dma();
         
       } break;
 
@@ -948,7 +948,7 @@ void setup() {
   usb_init();
   
   adc_to_sram_dma();
-  start_adc_sram_dma(); 
+  // start_adc_sram_dma(); 
 
   uart_puts("\nStarting...");
 
