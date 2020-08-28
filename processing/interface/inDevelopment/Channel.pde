@@ -69,7 +69,7 @@ class Channel {
   void display() {
      
      if (updated){
-       arrayCopy(buffer,v);  // v --> buffer (?)
+       arrayCopy(buffer,v);  // buffer --> v
        updated=false;
      }
      
@@ -207,6 +207,7 @@ class Channel {
     endShape();
     
     if (calcFreq.clicked) { smoothDifferential(); }
+    if (trigger.clicked) { edgeDetector(); }
     strokeWeight(2); stroke(nRGB);
   
   }
@@ -216,6 +217,23 @@ class Channel {
   float fy(int y){ return p0 - y*fa/vertScale.v.v*DIV; }  
  
  
+  void edgeDetector(){
+    
+    int threshold_high = vTrigger + 10;
+    int threshold_low = vTrigger - 10;
+    byte margin = 5;
+   
+    for (int k=margin+1; k<q.v.v-margin-1; k++){
+      if (v[k-margin]<threshold_low && v[k+margin]>threshold_high){
+       
+        strokeWeight(5); stroke(255,0,255);  
+        point(fx(k),p0Trigger);
+       
+      }
+    }
+   
+    strokeWeight(5); stro  }
+  
   void smoothDifferential() {
 
     int vMax  =  0, pMax  = -1;
@@ -405,10 +423,11 @@ class Channel {
       if (trigger.clicked){
         for (int k=0;k<numCh;k++){
              
-          channel[k].trigger.clicked=false;
-              
+          channel[k].trigger.clicked = false;
+          
         }
         trigger.clicked=true;
+        println("switching trigger for channel "+str(n)+" on");
       }
     }
     
@@ -453,7 +472,7 @@ class Channel {
     if (holdP0){ holdP0 = false; }
     if (holdTrigger){
       
-      vTrigger=constrain(int((p0-p0Trigger)/(fa/vertScale.v.v*DIV)),0,1024);
+      vTrigger=constrain(int((p0-p0Trigger)/(fa/vertScale.v.v*DIV)),0,255);
       println("tv"+str(vTrigger)+".");
       holdTrigger=false;
       
