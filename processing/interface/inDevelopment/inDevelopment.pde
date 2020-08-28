@@ -4,7 +4,7 @@
  * Code for graphical interface
  * 
  * J. Evan Smith, Ben Y. Brown, modified from work by Rogerio Bego
- * Last revised: 24 August 2020
+ * Last revised: 28 August 2020
  *
  * =========== OUTLINE ===========
  *
@@ -57,6 +57,7 @@ boolean stream = true;           // for startStop
 boolean dtError = false;         // check for sampling time error
 boolean waitforTrigger = false;   
 
+byte bufnum = 0;
 byte numCh = 2;
 byte scaleLinear = 0;   
 byte scaleLog = 1;     
@@ -378,17 +379,17 @@ void handleIncoming() {
   
   if (stream == true){
   
-    for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*300)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
-    for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.left.get(i)*300)+40; } 
+    for(int i = 0; i < in.bufferSize()-5; i++) { channel[0].buffer[i+bufnum*in.bufferSize()] = int(in.left.get(i)*300)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
+    for(int i = 0; i < in.bufferSize(); i++) { channel[1].buffer[i+bufnum*in.bufferSize()] = int(in.left.get(i)*300)+40; } 
     
     channel[0].updated=true;
     channel[1].updated=true;
     
-    if (waitforTrigger) {
-      
-      waitforTrigger = false;
-      for (int k=0; k<numCh; k++){ channel[k].trigger.blink=false; }
-      
-    }
-  }
+    //if (waitforTrigger) {
+    //  waitforTrigger = false;
+    //  for (int k=0; k<numCh; k++){ channel[k].trigger.blink=false; }      
+    //}
+    
+    bufnum++; if (bufnum == 4) { bufnum = 0; }
+  } 
 }

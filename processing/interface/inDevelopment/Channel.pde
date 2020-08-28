@@ -18,7 +18,7 @@ class Channel {
   int h;  // height
   
   int qPeaks;
-  int qMax = 1000; 
+  int qMax = 4000; 
   int latch_index = 0;
  
   int v[]      = new int[qMax];
@@ -198,9 +198,9 @@ class Channel {
     
     if (enable_latch == true){
       beginShape();
-      for (int k=0; k<q.v.v; k++) {
+      for (int k=0; k<qMax; k++) {
         
-        if (k+latch_index > q.v.v){ break; }
+        if (k+latch_index > qMax){ break; }
 
         px = fx(k+latch_index)-latch_index; // div is 70 to right
         py = fy(v[k+latch_index]);
@@ -216,7 +216,7 @@ class Channel {
     }
     else{
       beginShape();
-      for (int k=0; k<q.v.v; k++) {
+      for (int k=0; k<qMax; k++) { // k<q.v.v
 
         px = fx(k);
         py = fy(v[k]);
