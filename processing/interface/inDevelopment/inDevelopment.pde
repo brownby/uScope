@@ -206,9 +206,24 @@ void draw() {
 // *** mouseClicked function *** //
 
 void mouseClicked() {
+  
+  for (int k=0; k<numCh; k++) {
+    if (channel[k].mouseClicked()){ 
+      if (channel[k].chN.clicked){
+        println("switch channel "+str(k)+" on");
+      } 
+      else {
+        println("switch channel "+str(k)+" off");
+      }
+    }
+  }
  
   if (startStop.mouseClicked()) {
+    
     stream = !stream; 
+    if (stream == false){ println("stop"); }
+    else { println("start"); }
+    
   }
   
   if (resetAxes.mouseClicked()) {
