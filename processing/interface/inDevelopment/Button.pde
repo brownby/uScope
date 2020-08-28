@@ -6,11 +6,13 @@ class Button{
    int h;  // height
    
    String txt;
+
    boolean mPressed=false;
    boolean clicked=false;
+   
    color rgb_active  = color(0,255,0);
    color rgb_outline = color(0);
-   
+  
    
    Button(String txt_,int x_,int y_, int w_, int h_) {  //constructor
    

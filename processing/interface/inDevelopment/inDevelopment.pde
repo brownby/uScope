@@ -19,7 +19,7 @@
  * ☑ mouseMoved()
  * ☑ mouseDragged()
  * ☑ adjustFt()
- * ☑ handleIncoming() --> buffer vs. stream?
+ * ☑ handleIncoming() --> buffer
  * 
  * =========== CLASSES ===========
  *
@@ -50,21 +50,24 @@ import ddf.minim.*;  // used to connect to device over USB audio
 
 String version="beta";
 
+
 boolean nInt = true;             // n is an integer (round) or decimal !nInt 
 boolean fmt = true;              // fmt = true = "format", !fmt = false = "no format"
+boolean stream = true;           // for startStop
 boolean dtError = false;         // check for sampling time error
 boolean waitforTrigger = false;   
 
 byte numCh = 2;
 byte scaleLinear = 0;   
 byte scaleLog = 1;     
-byte changeMove = 2;     // value changed by "MouseDragged"
-byte changeRelease = 3;  // value changed by "MouseReleased"
+byte changeMove = 2;      // value changed by "MouseDragged"
+byte changeRelease = 3;   // value changed by "MouseReleased"
 
-int vTrigger = 0;  // value of trigger 0-1024 (0-5V), if 10 bit ADC 
-int marg1, marg2;  // to adjust the position of objects
+int sample_rate = 150000; // unused for now, but to avoid "magic" numbers in setting up sampling / "show samples"
+int vTrigger = 0;         // value of trigger 0-1024 (0-5V), if 10 bit ADC 
+int marg1, marg2;         // to adjust the position of objects
 
-float DIV = 45.0;     // division unit size
+float DIV = 45.0;         // division unit size
 
 color rgb[]={color(255, 255, 0), color(0, 204, 255)};  // for 2 channels: yellow (CH0) and blue (CH1)
 
@@ -128,7 +131,7 @@ void setup() {
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
   for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+25+k*130, 185, 110); }
   
-  startStop        = new Button("start / stop",marg1+15,15,185,40);
+  startStop        = new Button("start / stop",marg1+15,15,185,40,color(255,0,0),color(0));
   resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+30,45,20);
   resetMeasure     = new Button("size",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,45,20);
   
@@ -148,7 +151,7 @@ void setup() {
 // ---- sampling controls ---- //
 
   pnlSamples       = new Panel("sampling", color(0,100, 255), display.x+785, display.y+display.h-85, 200, 85);
-  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 24e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
+  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 6.67e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
   dtReal           = new FmtNum(0,nInt,fmt);
   q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", 1000-1, 1, 100, dt.x+dt.w+5, dt.y, 60, 20);
   tTotal           = new FmtNum(dt.v.getV()*q.v.getV(), !nInt);
@@ -204,7 +207,10 @@ void draw() {
 
 void mouseClicked() {
  
-
+  if (startStop.mouseClicked()) {
+    stream = !stream; 
+  }
+  
   if (resetAxes.mouseClicked()) {
     
     for (int k=0; k<numCh;k++) {
@@ -214,6 +220,7 @@ void mouseClicked() {
      // TODO: add reset for horizontal scaling
     
     }
+    println("reset axes");
     resetAxes.clicked = false;
   }
   
@@ -224,6 +231,7 @@ void mouseClicked() {
         channel[k].displayClicked = false; 
      
      }
+     println("reset measure");
      resetMeasure.clicked = false;
   }
   
@@ -296,10 +304,6 @@ void mousePressed() {
   
   resetAxes.mousePressed();
   resetMeasure.mousePressed();
- 
-  oneSample.mousePressed();
-  severalSamples.mousePressed();
-  streamContinuous.mousePressed();
   
 }
 
@@ -312,10 +316,6 @@ void mouseReleased() {
   
   resetAxes.mouseReleased();
   resetMeasure.mouseReleased();
-
-  oneSample.mouseReleased();
-  severalSamples.mouseReleased();
-  streamContinuous.mouseReleased();
 
   if (dt.mouseReleased()) { adjustFt(); }  // if dt changed, then adjustFt()
   if (q.mouseReleased())  { adjustFt(); }  // if q changed, then adjustFt()
@@ -361,16 +361,19 @@ void adjustFt() {
   
 void handleIncoming() {
   
-  for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*300)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
-  for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.left.get(i)*300)+40; } 
+  if (stream == true){
   
-  channel[0].updated=true;
-  channel[1].updated=true;
-  
-  if (waitforTrigger) {
+    for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*300)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
+    for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.left.get(i)*300)+40; } 
     
-    waitforTrigger = false;
-    for (int k=0; k<numCh; k++){ channel[k].trigger.blink=false; }
+    channel[0].updated=true;
+    channel[1].updated=true;
     
+    if (waitforTrigger) {
+      
+      waitforTrigger = false;
+      for (int k=0; k<numCh; k++){ channel[k].trigger.blink=false; }
+      
+    }
   }
 }
