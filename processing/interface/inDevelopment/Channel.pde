@@ -226,13 +226,12 @@ class Channel {
     for (int k=margin+1; k<q.v.v-margin-1; k++){
       if (v[k-margin]<threshold_low && v[k+margin]>threshold_high){
        
-        strokeWeight(5); stroke(255,0,255);  
+        strokeWeight(5); stroke(255,0,0);  
         point(fx(k),p0Trigger);
        
       }
     }
-   
-    strokeWeight(5); stro  }
+  }
   
   void smoothDifferential() {
 
