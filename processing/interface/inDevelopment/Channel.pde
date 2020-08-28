@@ -197,15 +197,26 @@ class Channel {
     strokeWeight(2); stroke(nRGB);
     
     if (enable_latch == true){
+      
+      channel[n].trigger.blink = true;
+      
       beginShape();
       for (int k=0; k<q.v.v; k++) {
         
-        if (k+latch_index > q.v.v){ break; }
+        //if (k+latch_index > q.v.v){ break; }
 
         px = fx(k+latch_index)-latch_index; // div is 70 to right
         py = fy(v[k+latch_index]);
         
         if (px>display.x+display.w || px<display.x){ break; }
+        
+        //strokeWeight(5); stroke(0,255,0); // display latch edge
+        //point(fx(latch_index),p0Trigger);
+          
+        //strokeWeight(2); stroke(0,255,0);  
+        //triangle(fx(latch_index),display.h+65,fx(latch_index)-10,display.h+75,fx(latch_index)+10,display.h+75);
+        
+        
         
         if (smooth.clicked){ curveVertex(px,py); }
         else { vertex(px,py); }
@@ -215,6 +226,9 @@ class Channel {
       endShape();
     }
     else{
+      
+      channel[n].trigger.blink = false;
+      
       beginShape();
       for (int k=0; k<q.v.v; k++) {
 
@@ -244,27 +258,31 @@ class Channel {
  
   void edgeDetector(){
     
-    int threshold_high = vTrigger + 10;
-    int threshold_low = vTrigger - 10;
+    byte hysteresis = 10;
     byte margin = 5;
+    
+    int threshold_high = vTrigger + hysteresis;
+    int threshold_low = vTrigger - hysteresis;
     
     for (int k=margin+1; k<q.v.v-margin-1; k++){
       if (v[k-margin]<threshold_low && v[k+margin]>threshold_high){
         
-        //strokeWeight(5); stroke(255,0,0); // to display all edges detected
+        if (fx(k)>display.x+display.w || fx(k)<display.x){ break; }
+        
+        //strokeWeight(5); stroke(0,255,0); // to display all edges detected
         //point(fx(k),p0Trigger);  
         
         if (latch_index == 0){ 
           
-          //if (fx(k)>display.x+display.w || fx(k)<display.x){ break; }
+          if (fx(k)>display.x+display.w || fx(k)<display.x){ break; }
           
           latch_index = k;
           
-          strokeWeight(5); stroke(255,0,0); // display latch edge
-          point(fx(latch_index),p0Trigger);
+          //strokeWeight(5); stroke(0,255,0); // display latch edge
+          //point(fx(latch_index),p0Trigger);
           
-          strokeWeight(2); stroke(255,0,0);  
-          triangle(fx(latch_index),display.h+65,fx(latch_index)-10,display.h+75,fx(latch_index)+10,display.h+75);
+          //strokeWeight(2); stroke(0,255,0);  
+          //triangle(fx(latch_index),display.h+65,fx(latch_index)-10,display.h+75,fx(latch_index)+10,display.h+75);
         
         }
       }
@@ -510,7 +528,7 @@ class Channel {
     if (holdP0){ holdP0 = false; }
     if (holdTrigger){
       
-      vTrigger=constrain(int((p0-p0Trigger)/(fa/vertScale.v.v*DIV)),0,255);
+      vTrigger=constrain(int((p0-p0Trigger)/(fa/vertScale.v.v*DIV)),0,1024);
       println("tv"+str(vTrigger)+".");
       holdTrigger=false;
       

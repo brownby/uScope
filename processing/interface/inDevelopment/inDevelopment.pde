@@ -163,11 +163,6 @@ void setup() {
   q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", 1000-1, 1, 100, dt.x+dt.w+5, dt.y, 60, 20);
   tTotal           = new FmtNum(dt.v.getV()*q.v.getV(), !nInt);
   tTotalReal       = new FmtNum(0,!nInt);
-  oneSample        = new Button("one", dt.x, dt.y+dt.h+5, 50, 20);
-  severalSamples   = new Button("many", oneSample.x+oneSample.w+5, oneSample.y, oneSample.w, oneSample.h);
-  streamContinuous = new Button("contin", severalSamples.x+severalSamples.w+5, severalSamples.y, severalSamples.w, severalSamples.h);
-  
-  
  
 }
 
@@ -245,7 +240,7 @@ void mouseClicked() {
      channel[k].horiScale.restore();
      channel[k].vertScale.restore();        // return to inital scale
      
-     channel[k].displayClicked = false; // remove cursors
+     channel[k].displayClicked = false;     // remove cursors
 
     }
     println("reset axes");
@@ -259,7 +254,7 @@ void mouseClicked() {
         channel[k].displayClicked = false; 
      
      }
-     println("reset measure");
+     println("reset cursors");
      resetCursors.clicked = false;
   }
   
@@ -268,56 +263,7 @@ void mouseClicked() {
 
   if (dt.mouseClicked()) { adjustFt(); } // if dt changed, then adjustFt()
   if (q.mouseClicked())  { adjustFt(); } // if q changed, then adjustFt()
-
-  if (oneSample.mouseClicked()) { 
-    
-    severalSamples.clicked=false;
-    streamContinuous.clicked=false;
-    oneSample.clicked=false;
-    
-    // check if there is a trigger triggered so that waitfor the trigger
-    // will be flashing to indicate that it is waiting for the trigger
-    
-    int k2 = -1;
-    
-    for (int k=0; k<numCh;k++) {
-      
-      if (channel[k].trigger.clicked) {
-         k2=k;
-         break; 
-      }
-    }
-    
-    println("k2=",k2);
-    
-    if (k2>=0 && k2<=3) {
-      
-       pnlSamples.blink = true;
-       channel[k2].trigger.blink = true;
-       waitforTrigger = true;
-       
-    }
-    else {
-      
-       pnlSamples.blink = false;
-       waitforTrigger = false;
-       
-    }
-  }
   
-  if (severalSamples.mouseClicked()) {
-    
-    oneSample.clicked = false;
-    streamContinuous.clicked = false;
-  
-  }
-  
-  if (streamContinuous.mouseClicked()) {
-  
-    oneSample.clicked = false;
-    severalSamples.clicked = false;
-  
-  }
 }
 
 
@@ -397,11 +343,5 @@ void handleIncoming() {
     channel[0].updated=true;
     channel[1].updated=true;
     
-    //if (waitforTrigger) {
-      
-    //  waitforTrigger = false;
-    //  for (int k=0; k<numCh; k++){ channel[k].trigger.blink=false; }
-      
-    //}
   }
 }
