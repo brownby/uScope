@@ -18,7 +18,7 @@ class Channel {
   int h;  // height
   
   int qPeaks;
-  int qMax = 4000; 
+  int qMax = 1000; 
   int latch_index = 0;
  
   int v[]      = new int[qMax];
@@ -46,7 +46,7 @@ class Channel {
  
   CheckBox trigger;  // trigger
   CheckBox smooth;   // smooth data with curveVertex(), vertex()
-  CheckBox measure;  // measure time and voltage
+  CheckBox cursors;  // cursors time and voltage
 
   Channel(byte n_, color nRGB_, int x_, int y_, int w_, int h_) { // constructor
   
@@ -63,7 +63,7 @@ class Channel {
      p0 = display.y+4*DIV*(n+1);
      p0Trigger = p0;
      
-     measure = new CheckBox("measure",horiScale.x,horiScale.y+horiScale.h+5,15);
+     cursors = new CheckBox("cursors",horiScale.x,horiScale.y+horiScale.h+5,15);
      smooth  = new CheckBox("smooth",horiScale.x+horiScale.w/2,horiScale.y+horiScale.h+5,15);
      
   }
@@ -87,7 +87,7 @@ class Channel {
        trigger.display();
        vertScale.display();
        horiScale.display();
-       measure.display();
+       cursors.display();
        smooth.display();
        
        strokeWeight(1); stroke(nRGB,150);
@@ -198,9 +198,9 @@ class Channel {
     
     if (enable_latch == true){
       beginShape();
-      for (int k=0; k<qMax; k++) {
+      for (int k=0; k<q.v.v; k++) {
         
-        if (k+latch_index > qMax){ break; }
+        if (k+latch_index > q.v.v){ break; }
 
         px = fx(k+latch_index)-latch_index; // div is 70 to right
         py = fy(v[k+latch_index]);
@@ -216,7 +216,7 @@ class Channel {
     }
     else{
       beginShape();
-      for (int k=0; k<qMax; k++) { // k<q.v.v
+      for (int k=0; k<q.v.v; k++) {
 
         px = fx(k);
         py = fy(v[k]);
@@ -246,20 +246,24 @@ class Channel {
     
     int threshold_high = vTrigger + 10;
     int threshold_low = vTrigger - 10;
-    byte margin = 3;
+    byte margin = 5;
     
     for (int k=margin+1; k<q.v.v-margin-1; k++){
       if (v[k-margin]<threshold_low && v[k+margin]>threshold_high){
+        
+        //strokeWeight(5); stroke(255,0,0); // to display all edges detected
+        //point(fx(k),p0Trigger);  
+        
         if (latch_index == 0){ 
           
-          if (fx(k)>display.x+display.w || fx(k)<display.x){ break; }
+          //if (fx(k)>display.x+display.w || fx(k)<display.x){ break; }
           
           latch_index = k;
           
-          strokeWeight(5); stroke(255,0,0);  
+          strokeWeight(5); stroke(255,0,0); // display latch edge
           point(fx(latch_index),p0Trigger);
           
-          strokeWeight(2);
+          strokeWeight(2); stroke(255,0,0);  
           triangle(fx(latch_index),display.h+65,fx(latch_index)-10,display.h+75,fx(latch_index)+10,display.h+75);
         
         }
@@ -352,7 +356,7 @@ class Channel {
         fCalc.setV(1/tCalc.v);
       
         textAlign(LEFT); fill(0);
-        text(fCalc.printV() + "Hz (" + tCalc.printV() + "s)", measure.x, measure.y + 29); 
+        text(fCalc.printV() + "Hz (" + tCalc.printV() + "s)", cursors.x, cursors.y + 29); 
      }  
   }
 
@@ -408,7 +412,7 @@ class Channel {
 
   void displayMousePressed() {
 
-    if (measure.clicked) { // set to search for which channel color is closest to mouse
+    if (cursors.clicked) { // set to search for which channel color is closest to mouse
       if (mouseX>display.x && mouseX<display.x+display.w && mouseY>display.y && mouseY<display.y+display.h){
         
         displayClicked = true;
@@ -422,7 +426,7 @@ class Channel {
      
   void displayMouseDragged() {
     
-    if (measure.clicked){
+    if (cursors.clicked){
       if (displayClicked){  
         if (mouseX>display.x && mouseX<display.x+display.w && mouseY>display.y && mouseY<display.y+display.h){
           
@@ -436,7 +440,7 @@ class Channel {
   
   void displayMouseRelease() {
 
-    if (measure.clicked){
+    if (cursors.clicked){
       if (displayClicked) {
         if (abs(dx)<10 && abs(dy)<10){
           
@@ -468,10 +472,10 @@ class Channel {
     vertScale.mouseClicked();
     horiScale.mouseClicked();
     
-    if (measure.mouseClicked()) {
-      if (measure.clicked) {
-        for (int k=0;k<numCh;k++) { channel[k].measure.clicked=false; }
-        measure.clicked=true;
+    if (cursors.mouseClicked()) {
+      if (cursors.clicked) {
+        for (int k=0;k<numCh;k++) { channel[k].cursors.clicked=false; }
+        cursors.clicked=true;
       }
     }
     smooth.mouseClicked();

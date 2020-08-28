@@ -4,7 +4,7 @@
  * Code for graphical interface
  * 
  * J. Evan Smith, Ben Y. Brown, modified from work by Rogerio Bego
- * Last revised: 28 August 2020
+ * Last revised: 24 August 2020
  *
  * =========== OUTLINE ===========
  *
@@ -57,7 +57,6 @@ boolean stream = true;           // for startStop
 boolean dtError = false;         // check for sampling time error
 boolean waitforTrigger = false;   
 
-byte bufnum = 0;
 byte numCh = 2;
 byte scaleLinear = 0;   
 byte scaleLog = 1;     
@@ -85,7 +84,7 @@ Display display;
 
 Button    startStop;
 Button    resetAxes;
-Button    resetMeasure;  // measure vs size? *flag
+Button    resetCursors;  // measure vs size? *flag
 
 CheckBox  showSamples; 
 CheckBox  calcFreq;    // detect frequency
@@ -134,7 +133,7 @@ void setup() {
   
   startStop        = new Button("start / stop",marg1+15,15,185,40,color(255,0,0),color(0));
   resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+30,45,20);
-  resetMeasure     = new Button("size",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,45,20);
+  resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,60,20);
   
   showSamples      = new CheckBox("show samples", marg1+25, channel[1].y+channel[1].h+70, 15);
   calcFreq         = new CheckBox("detect frequency", showSamples.x, showSamples.y+showSamples.h+5, 15);
@@ -184,7 +183,7 @@ void draw() {
 
   startStop.display();
   resetAxes.display();
-  resetMeasure.display();
+  resetCursors.display();
   showSamples.display();
   calcFreq.display();
   
@@ -240,7 +239,7 @@ void mouseClicked() {
     resetAxes.clicked = false;
   }
   
-  if (resetMeasure.mouseClicked()) {
+  if (resetCursors.mouseClicked()) {
     
      for (int k=0; k<numCh;k++) {
        
@@ -248,7 +247,7 @@ void mouseClicked() {
      
      }
      println("reset measure");
-     resetMeasure.clicked = false;
+     resetCursors.clicked = false;
   }
   
   showSamples.mouseClicked();
@@ -319,7 +318,7 @@ void mousePressed() {
   dt.mousePressed();
   
   resetAxes.mousePressed();
-  resetMeasure.mousePressed();
+  resetCursors.mousePressed();
   
 }
 
@@ -331,7 +330,7 @@ void mouseReleased() {
   for (int k=0; k<numCh; k++) { channel[k].mouseReleased(); }
   
   resetAxes.mouseReleased();
-  resetMeasure.mouseReleased();
+  resetCursors.mouseReleased();
 
   if (dt.mouseReleased()) { adjustFt(); }  // if dt changed, then adjustFt()
   if (q.mouseReleased())  { adjustFt(); }  // if q changed, then adjustFt()
@@ -379,17 +378,17 @@ void handleIncoming() {
   
   if (stream == true){
   
-    for(int i = 0; i < in.bufferSize()-5; i++) { channel[0].buffer[i+bufnum*in.bufferSize()] = int(in.left.get(i)*300)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
-    for(int i = 0; i < in.bufferSize(); i++) { channel[1].buffer[i+bufnum*in.bufferSize()] = int(in.left.get(i)*300)+40; } 
+    for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*300)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
+    for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.left.get(i)*300)+40; } 
     
     channel[0].updated=true;
     channel[1].updated=true;
     
     //if (waitforTrigger) {
+      
     //  waitforTrigger = false;
-    //  for (int k=0; k<numCh; k++){ channel[k].trigger.blink=false; }      
+    //  for (int k=0; k<numCh; k++){ channel[k].trigger.blink=false; }
+      
     //}
-    
-    bufnum++; if (bufnum == 4) { bufnum = 0; }
-  } 
+  }
 }
