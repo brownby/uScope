@@ -205,19 +205,11 @@ class Channel {
         
         //if (k+latch_index > q.v.v){ break; }
 
-        px = fx(k+latch_index)-latch_index; // div is 70 to right
+        px = fx(k+latch_index)-latch_index+75; // div is 70 to right
         py = fy(v[k+latch_index]);
         
         if (px>display.x+display.w || px<display.x){ break; }
-        
-        //strokeWeight(5); stroke(0,255,0); // display latch edge
-        //point(fx(latch_index),p0Trigger);
-          
-        //strokeWeight(2); stroke(0,255,0);  
-        //triangle(fx(latch_index),display.h+65,fx(latch_index)-10,display.h+75,fx(latch_index)+10,display.h+75);
-        
-        
-        
+       
         if (smooth.clicked){ curveVertex(px,py); }
         else { vertex(px,py); }
         
@@ -225,7 +217,7 @@ class Channel {
       }
       endShape();
     }
-    else{
+    else if (enable_latch == false){
       
       channel[n].trigger.blink = false;
       
@@ -284,9 +276,16 @@ class Channel {
           //strokeWeight(2); stroke(0,255,0);  
           //triangle(fx(latch_index),display.h+65,fx(latch_index)-10,display.h+75,fx(latch_index)+10,display.h+75);
         
+          strokeWeight(5); stroke(0,255,0); // display latch edge
+          point(display.x+75,p0Trigger);
+          
+          strokeWeight(2); stroke(0,255,0);  
+          triangle(display.x+75,display.h+65,display.x+65,display.h+75,display.x+85,display.h+75);
+        
         }
       }
       if (latch_index != 0){ enable_latch = true; }
+      else { enable_latch = false; }
     }
   }
   
