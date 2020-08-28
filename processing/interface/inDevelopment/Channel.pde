@@ -7,6 +7,7 @@ class Channel {
   boolean updated = false;
   boolean holdP0=false;         // indicates mouse got p0, zero voltage position
   boolean holdTrigger=false;    // indicates mouse got trigger
+  boolean enable_latch = false;
   boolean displayClicked=false;  
   
   color nRGB;
@@ -16,14 +17,15 @@ class Channel {
   int w;  // width
   int h;  // height
   
-  int qMax = 1000; // max number of points (?)
+  int qPeaks;
+  int qMax = 1000; 
+  int latch_index = 0;
  
   int v[]      = new int[qMax];
   int dif[]    = new int[qMax];  // v[t+1]-v[t]
   int buffer[] = new int[qMax];
   int peaks[]  = new int[qMax];
-  int qPeaks;
-  
+
   float p0;               // zero voltage position
   float p0Trigger;        // trigger position
   float dP0Trigger;       // difference between p0 and p0Trigger
@@ -190,7 +192,30 @@ class Channel {
     float px, py;
     stroke(nRGB); strokeWeight(2); noFill();
     
-    beginShape();
+    if (trigger.clicked) { edgeDetector(); }
+    
+    strokeWeight(2); stroke(nRGB);
+    
+    if (enable_latch == true){
+      beginShape();
+      for (int k=0; k<q.v.v; k++) {
+        
+        if (k+latch_index > q.v.v){ break; }
+
+        px = fx(k+latch_index)-latch_index; // div is 70 to right
+        py = fy(v[k+latch_index]);
+        
+        if (px>display.x+display.w || px<display.x){ break; }
+        
+        if (smooth.clicked){ curveVertex(px,py); }
+        else { vertex(px,py); }
+        
+        if (showSamples.clicked){ stroke(255); strokeWeight(4); point(px,py); strokeWeight(2); stroke(nRGB); }
+      }
+      endShape();
+    }
+    else{
+      beginShape();
       for (int k=0; k<q.v.v; k++) {
 
         px = fx(k);
@@ -202,13 +227,13 @@ class Channel {
         else { vertex(px,py); }
         
         if (showSamples.clicked){ stroke(255); strokeWeight(4); point(px,py); strokeWeight(2); stroke(nRGB); }
-        
-      }
-    endShape();
+      } 
+      endShape();
+    }
     
     if (calcFreq.clicked) { smoothDifferential(); }
-    if (trigger.clicked) { edgeDetector(); }
-    strokeWeight(2); stroke(nRGB);
+    
+    latch_index = 0;
   
   }
  
@@ -221,15 +246,25 @@ class Channel {
     
     int threshold_high = vTrigger + 10;
     int threshold_low = vTrigger - 10;
-    byte margin = 5;
-   
+    byte margin = 3;
+    
     for (int k=margin+1; k<q.v.v-margin-1; k++){
       if (v[k-margin]<threshold_low && v[k+margin]>threshold_high){
-       
-        strokeWeight(5); stroke(255,0,0);  
-        point(fx(k),p0Trigger);
-       
+        if (latch_index == 0){ 
+          
+          if (fx(k)>display.x+display.w || fx(k)<display.x){ break; }
+          
+          latch_index = k;
+          
+          strokeWeight(5); stroke(255,0,0);  
+          point(fx(latch_index),p0Trigger);
+          
+          strokeWeight(2);
+          triangle(fx(latch_index),display.h+65,fx(latch_index)-10,display.h+75,fx(latch_index)+10,display.h+75);
+        
+        }
       }
+      if (latch_index != 0){ enable_latch = true; }
     }
   }
   
