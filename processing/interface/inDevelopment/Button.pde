@@ -30,7 +30,7 @@ class Button{
    
    void display() {
      
-     if (mPressed){ fill(0,100,0); } 
+     if (mPressed){ fill(0,255,0); } 
      else if (clicked){ fill(rgb_active); } 
      else{ fill(200); }
      

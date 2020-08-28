@@ -131,6 +131,13 @@ void setup() {
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
   for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+25+k*130, 185, 110); }
   
+  for (byte k=0; k<numCh; k++){ 
+  
+    channel[k].vertScale.saveV();
+    channel[k].horiScale.saveV();
+    
+  }
+  
   startStop        = new Button("start / stop",marg1+15,15,185,40,color(255,0,0),color(0));
   resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+30,45,20);
   resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,60,20);
@@ -159,6 +166,8 @@ void setup() {
   oneSample        = new Button("one", dt.x, dt.y+dt.h+5, 50, 20);
   severalSamples   = new Button("many", oneSample.x+oneSample.w+5, oneSample.y, oneSample.w, oneSample.h);
   streamContinuous = new Button("contin", severalSamples.x+severalSamples.w+5, severalSamples.y, severalSamples.w, severalSamples.h);
+  
+  
  
 }
 
@@ -230,10 +239,14 @@ void mouseClicked() {
     
     for (int k=0; k<numCh;k++) {
       
-     channel[k].p0 = display.y+4*DIV*(k+1);  // reset zero voltage position for all channels
+     channel[k].p0 = display.y+4*DIV*(k+1); // reset zero voltage position for all channels
+     channel[k].chN.clicked = true;         // turn on all channels
+
+     channel[k].horiScale.restore();
+     channel[k].vertScale.restore();        // return to inital scale
      
-     // TODO: add reset for horizontal scaling
-    
+     channel[k].displayClicked = false; // remove cursors
+
     }
     println("reset axes");
     resetAxes.clicked = false;
