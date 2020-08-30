@@ -193,6 +193,7 @@ class Channel {
     stroke(nRGB); strokeWeight(2); noFill();
     
     if (trigger.clicked) { edgeDetector(); }
+    else { enable_latch = false; }
     
     strokeWeight(2); stroke(nRGB);
     
@@ -479,12 +480,16 @@ class Channel {
         for (int k=0;k<numCh;k++){
           
           channel[k].trigger.clicked = false;
+          vTrigger = 0;
           
         }
         trigger.clicked=true;
         println("switching trigger for channel "+str(n)+" on");
       }
-      else{ enable_latch = false; }
+      else{ 
+          vTrigger = 0;
+          enable_latch = false; 
+      }  
     }
     
     vertScale.mouseClicked();
