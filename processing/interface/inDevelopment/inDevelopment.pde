@@ -153,6 +153,8 @@ void setup() {
   pulseWave        = new CheckBox("pulse", pnlWave.x+90, aWave.y+aWave.h+10, 15);  
   squareWave       = new CheckBox("square", sineWave.x, sineWave.y+20, 15);    
   sawtoothWave     = new CheckBox("sawtooth", pulseWave.x, pulseWave.y+20, 15);    
+  
+  sineWave.clicked = true;
 
   
 // ---- sampling controls ---- //
@@ -220,6 +222,49 @@ void mouseClicked() {
         println("switch channel "+str(k)+" off");
       }
     }
+  }
+  
+  if (wave.mouseClicked()){
+    
+    if (wave.clicked == true){ println("turning output on"); }
+    else{ println("turning output off"); }
+   
+  }
+  
+  if (sineWave.mouseClicked()){
+  
+    sineWave.clicked = true;
+    pulseWave.clicked = false;
+    squareWave.clicked = false;
+    sawtoothWave.clicked = false;
+       
+  }
+   
+  if (pulseWave.mouseClicked()){
+  
+    sineWave.clicked = false;
+    pulseWave.clicked = true;
+    squareWave.clicked = false;
+    sawtoothWave.clicked = false;
+       
+  }
+  
+  if (squareWave.mouseClicked()){
+  
+    sineWave.clicked = false;
+    pulseWave.clicked = false;
+    squareWave.clicked = true;
+    sawtoothWave.clicked = false;
+       
+  }
+  
+    if (sawtoothWave.mouseClicked()){
+  
+    sineWave.clicked = false;
+    pulseWave.clicked = false;
+    squareWave.clicked = false;
+    sawtoothWave.clicked = true;
+       
   }
  
   if (startStop.mouseClicked()) {
