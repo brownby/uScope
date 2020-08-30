@@ -1012,7 +1012,7 @@ void fngenerator(type waveform){
   switch (waveform){
     
     case 0: 
-      for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 500.0f + 512.0f;
+      for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 250.0f + 251.0f;
       break;
       
     case 1:
