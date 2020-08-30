@@ -208,6 +208,7 @@ class Channel {
         py = fy(v[k]);
         
         if (px>display.x+display.w || px<display.x){ break; }
+        if (py<display.y){ continue; }
        
         if (smooth.clicked){ curveVertex(px,py); }
         else { vertex(px,py); }
@@ -227,6 +228,7 @@ class Channel {
         py = fy(v[k]);
         
         if (px>display.x+display.w || px<display.x){ break; }
+        if (py<display.y){ continue; }
         
         if (smooth.clicked){ curveVertex(px,py); }
         else { vertex(px,py); }

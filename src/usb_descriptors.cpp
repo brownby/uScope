@@ -76,10 +76,10 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bLength             = sizeof(usb_audio_feature_unit_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x06,  // feature unit
-    .bUnitID             = 0x02,  // ?, chosen by programmer
-    .bSourceID           = 0x01,  // for input_terminal or 0x02 for output_terminal
+    .bUnitID             = 0x02,  // chosen by programmer, between input and output terminals
+    .bSourceID           = 0x01,  // for input_terminal
     .bControlSize        = 0x02,  // x2 bytes for mute, volume
-    .bmaControls         = 0x0001, 
+    .bmaControls         = 0x3, 
     .iFeature            = 0x00,  // unused
   },
 

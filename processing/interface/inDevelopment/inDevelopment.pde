@@ -227,9 +227,14 @@ void mouseClicked() {
   
   if (wave.mouseClicked()){
     
-    if (wave.clicked == true){ println("turning output on"); }
-    else{ println("turning output off"); }
-   
+    if (wave.clicked == true){ 
+      in.unmute();
+      println("turning output on"); 
+    }
+    else{ 
+      in.mute();
+      println("turning output off"); 
+    }
   }
   
   if (sineWave.mouseClicked()){
