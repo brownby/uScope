@@ -201,7 +201,7 @@ class Channel {
       channel[n].trigger.blink = true;
       
       beginShape();
-      for (int k=0; k<q.v.v; k++) {
+      for (int k=0; k<q.v.v-latch_index; k++) {
         
         //if (k+latch_index > q.v.v){ break; }
 
@@ -477,13 +477,14 @@ class Channel {
     if (trigger.mouseClicked()) {
       if (trigger.clicked){
         for (int k=0;k<numCh;k++){
-             
+          
           channel[k].trigger.clicked = false;
           
         }
         trigger.clicked=true;
         println("switching trigger for channel "+str(n)+" on");
       }
+      else{ enable_latch = false; }
     }
     
     vertScale.mouseClicked();
