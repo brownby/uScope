@@ -153,7 +153,8 @@ void setup() {
   pulseWave        = new CheckBox("pulse", pnlWave.x+90, aWave.y+aWave.h+10, 15);  
   squareWave       = new CheckBox("square", sineWave.x, sineWave.y+20, 15);    
   sawtoothWave     = new CheckBox("sawtooth", pulseWave.x, pulseWave.y+20, 15);    
-  
+
+  wave.clicked = true;
   sineWave.clicked = true;
 
   
@@ -237,6 +238,8 @@ void mouseClicked() {
     pulseWave.clicked = false;
     squareWave.clicked = false;
     sawtoothWave.clicked = false;
+    
+    println("sine wave selected");
        
   }
    
@@ -247,6 +250,8 @@ void mouseClicked() {
     squareWave.clicked = false;
     sawtoothWave.clicked = false;
        
+    println("pulse wave selected");   
+       
   }
   
   if (squareWave.mouseClicked()){
@@ -255,6 +260,8 @@ void mouseClicked() {
     pulseWave.clicked = false;
     squareWave.clicked = true;
     sawtoothWave.clicked = false;
+    
+    println("square wave selected");
        
   }
   
@@ -264,6 +271,8 @@ void mouseClicked() {
     pulseWave.clicked = false;
     squareWave.clicked = false;
     sawtoothWave.clicked = true;
+    
+    println("sawtooth wave selected");
        
   }
  

@@ -23,7 +23,7 @@ class CheckBox {
    
    void display() {
      
-      if (blink) { fill(map(millis()%1000,0,1000,0,125)); }
+      if (blink) { fill(map(millis()%750,0,1000,0,125)); }
       else { fill(0); }
       
       textAlign(LEFT,CENTER); 

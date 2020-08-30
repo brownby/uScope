@@ -1007,7 +1007,7 @@ void usb_pipe_status(){
 void fngenerator(type waveform){
 
   int i;
-  float phase = 3.14159*2.0*2./NPTS;
+  float phase = 3.14159*3.0*2./NPTS;
 
   switch (waveform){
     
