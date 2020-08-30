@@ -61,7 +61,7 @@ extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
 extern UsbDeviceDescriptor usb_endpoints[];
 extern const uint8_t usb_num_endpoints;
 
-enum type {sine, sawtooth}; // supported waveform types
+enum type {sine, pulse, square, sawtooth}; // supported waveform types
 
 typedef struct __attribute__((packed)){
   uint16_t BTCTRL;   // block transfer control
@@ -1011,11 +1011,19 @@ void fngenerator(type waveform){
 
   switch (waveform){
     
-    case 0: 
+    case 0:  // sine wave
       for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 250.0f + 251.0f;
       break;
       
-    case 1:
+    case 1:  // pulse wave
+      for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*1024*i/NPTS;
+      break;
+
+    case 2:  // square wave
+      for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*1024*i/NPTS;
+      break;
+
+    case 3:  // sawtooth wave
       for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*1024*i/NPTS;
       break;
 

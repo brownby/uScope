@@ -71,17 +71,31 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .iTerminal           = 0x00,   // unused
   },
 
+  .feature_unit = 
+  {
+    .bLength             = sizeof(usb_audio_feature_unit_descriptor_t),
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
+    .bDescriptorSubtype  = 0x06,  // feature unit
+    .bUnitID             = 0x02,  // ?, chosen by programmer
+    .bSourceID           = 0x01,  // for input_terminal or 0x02 for output_terminal
+    .bControlSize        = 0x02,  // x2 bytes for mute, volume
+    .bmaControls         = 0x0001, 
+    .iFeature            = 0x00,  // unused
+  },
+
   .output_terminal =
   {
     .bLength             = sizeof(usb_audio_output_terminal_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x03,   // output terminal (from device to host over isochronous endpoint)
-    .bTerminalID         = 0x02,   // unique ID, chosen by developer
+    .bTerminalID         = 0x03,   // unique ID, chosen by developer
     .wTerminalType       = 0x0101, // 0x0101 = USB streaming
     .bAssocTerminal      = 0x00,   // no association
-    .bSourceID           = 0x01,   // source is from input terminal
+    .bSourceID           = 0x02,   // source is from input terminal
     .iTerminal           = 0x00,   // unused
   },
+
+
 
   .stream0_interface =
   {
@@ -120,7 +134,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bLength             = sizeof(usb_audio_stream_class_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = 0x01,   // general
-    .bTerminalLink       = 0x02,   // ID for output terminal
+    .bTerminalLink       = 0x03,   // ID for output terminal
     .bDelay              = 0x00,   // 0x01 in example, interface delay *flag
     //.wFormatTag          = 0x0002, // 0x0002 for Windows, 0x0001 for Mac
      .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag 

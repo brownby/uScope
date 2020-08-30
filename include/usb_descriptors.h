@@ -70,6 +70,17 @@ typedef struct __attribute__((packed)) {
 typedef struct __attribute__((packed)) {
   uint8_t bLength;
   uint8_t bDescriptorType;
+  uint8_t bDescriptorSubtype; 
+  uint8_t bUnitID;
+  uint8_t bSourceID;
+  uint8_t bControlSize;
+  uint16_t bmaControls;
+  uint8_t iFeature;
+} usb_audio_feature_unit_descriptor_t;
+
+typedef struct __attribute__((packed)) {
+  uint8_t bLength;
+  uint8_t bDescriptorType;
   uint8_t bDescriptorSubtype;
   uint8_t bTerminalID;
   uint16_t wTerminalType;
@@ -132,6 +143,7 @@ typedef struct __attribute__((packed)) {
   usb_interface_descriptor_t                 standard_AC_interface;
   usb_class_AC_interface_descriptor_t        class_AC_interface;
   usb_audio_input_terminal_descriptor_t      input_terminal;
+  usb_audio_feature_unit_descriptor_t        feature_unit;
   usb_audio_output_terminal_descriptor_t     output_terminal;
   usb_interface_descriptor_t                 stream0_interface;
   usb_interface_descriptor_t                 stream1_interface;
