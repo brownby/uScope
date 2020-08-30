@@ -30,7 +30,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bConfigurationValue = 0x01, // used to select this configuration, not important given bNumConfigurations = 1
     .iConfiguration      = USB_STR_CONFIGURATION,
     .bmAttributes        = 0x80,
-    .bMaxPower           = 200, // 400 mA
+    .bMaxPower           = 250, // 400 mA
   },
 
   .standard_AC_interface =
@@ -52,7 +52,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubType  = 0x01,   // header subtype
     .bcdADC              = 0x0100, // 1.0
-    .wTotalLength        = sizeof(usb_class_AC_interface_descriptor_t) + sizeof(usb_audio_input_terminal_descriptor_t) + sizeof(usb_audio_output_terminal_descriptor_t), 
+    .wTotalLength        = sizeof(usb_class_AC_interface_descriptor_t) + sizeof(usb_audio_input_terminal_descriptor_t) + sizeof(usb_audio_feature_unit_descriptor_t)+ sizeof(usb_audio_output_terminal_descriptor_t), 
     .bInCollection       = 0x01,   // number of streaming interfaces --> AlternateSetting = 0x01 for bInterfaceNumber = 0x01
     .baInterfaceNr       = 0x01,   // interface number of the first AudioStreaming interface, possibility for continued list
   },
@@ -78,8 +78,8 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorSubtype  = 0x06,  // feature unit
     .bUnitID             = 0x02,  // chosen by programmer, between input and output terminals
     .bSourceID           = 0x01,  // for input_terminal
-    .bControlSize        = 0x02,  // x2 bytes for mute, volume
-    .bmaControls         = 0x3, 
+    .bControlSize        = 0x01,  // size in bytes of an element of the bmaControlls() array
+    .bmaControls         = {0x01, 0x01, 0x00},  // ?
     .iFeature            = 0x00,  // unused
   },
 
@@ -91,11 +91,9 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bTerminalID         = 0x03,   // unique ID, chosen by developer
     .wTerminalType       = 0x0101, // 0x0101 = USB streaming
     .bAssocTerminal      = 0x00,   // no association
-    .bSourceID           = 0x02,   // source is from input terminal
+    .bSourceID           = 0x02,   // source is from feature unit
     .iTerminal           = 0x00,   // unused
   },
-
-
 
   .stream0_interface =
   {
