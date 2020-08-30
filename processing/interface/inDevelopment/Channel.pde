@@ -202,12 +202,10 @@ class Channel {
       channel[n].trigger.blink = true;
       
       beginShape();
-      for (int k=0; k<q.v.v-latch_index; k++) {
-        
-        //if (k+latch_index > q.v.v){ break; }
+      for (int k=latch_index; k<q.v.v; k++) {
 
-        px = fx(k+latch_index)-latch_index+75; // div is 70 to right
-        py = fy(v[k+latch_index]);
+        px = 115 + fx(k)-fx(latch_index);
+        py = fy(v[k]);
         
         if (px>display.x+display.w || px<display.x){ break; }
        
@@ -245,7 +243,7 @@ class Channel {
   }
  
    
-  float fx(int x){ return display.x + DIV*dt.v.v/horiScale.v.v*x; }
+  float fx(int x){ return display.x + DIV*dt.v.v/horiScale.v.v*x; } // dt.v.v is sample time = 6.67E-6, horiScale.v.v = time/div
   float fy(int y){ return p0 - y*fa/vertScale.v.v*DIV; }  
  
  
@@ -271,17 +269,20 @@ class Channel {
           
           latch_index = k;
           
-          //strokeWeight(5); stroke(0,255,0); // display latch edge
+          //strokeWeight(5); stroke(0,255,0); // display latch edge (moving)
           //point(fx(latch_index),p0Trigger);
           
           //strokeWeight(2); stroke(0,255,0);  
           //triangle(fx(latch_index),display.h+65,fx(latch_index)-10,display.h+75,fx(latch_index)+10,display.h+75);
         
-          strokeWeight(5); stroke(0,255,0); // display latch edge
+          strokeWeight(5); stroke(0,255,0); // display fixed latch edge
           point(display.x+75,p0Trigger);
           
           strokeWeight(2); stroke(0,255,0);  
           triangle(display.x+75,display.h+65,display.x+65,display.h+75,display.x+85,display.h+75);
+          
+          strokeWeight(1); stroke(0,255,0); 
+          line(display.x+75,display.y,display.x+75,display.y+display.h);
         
         }
       }
