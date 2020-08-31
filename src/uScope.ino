@@ -41,8 +41,10 @@ uint8_t adc_buffer2[NBEATS];
 uint8_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
-bool mute = false;
+volatile boolean mute = true;
+volatile uint8_t volume = 5;
 
+static uint32_t usb_ctrl_audio[1];
 static uint32_t usb_ctrl_in_buf[16];
 static uint32_t usb_ctrl_out_buf[16];
 
@@ -873,32 +875,75 @@ void USB_Handler(){
       case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_MIN):{
 
         uart_puts("\nGetMin");
+
+        uint8_t temp_min = 1;
+        memcpy(usb_ctrl_audio, &temp_min, sizeof(temp_min));
+        
+        uart_puts(": "); uart_write(usb_ctrl_audio[0]+ascii);
+
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_min);
+
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
       
       }
 
       case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_MAX):{
       
         uart_puts("\nGetMax");
+
+        uint8_t temp_max = 9;
+        memcpy(usb_ctrl_audio, &temp_max, sizeof(temp_max));
+
+        uart_puts(": "); uart_write(usb_ctrl_audio[0]+ascii);
+
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_max);
+
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
       
       }
 
       case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_RES):{
 
         uart_puts("\nGetRes");
+
+        uint8_t temp_res = 1;
+        memcpy(usb_ctrl_audio, &temp_res, sizeof(temp_res));
+
+        uart_puts(": ");uart_write(usb_ctrl_audio[0]+ascii);
+
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_res);
+
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        //while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
       
       }
 
-      case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_MEM):{
+      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_MEM):{
       
-        uart_puts("\nGetMem");
-      
-      }
+      //   uart_puts("\nGetMem");
 
-      case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_STAT):{
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
       
-        uart_puts("\nGetStat");
+      // }
+
+      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_STAT):{
       
-      }
+      //   uart_puts("\nGetStat");
+
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
+      
+      // }
 
       case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_CUR):{
 
@@ -907,14 +952,41 @@ void USB_Handler(){
         uart_puts("\nControlSelector: "); uart_write(wValue_H + ascii);
         uart_puts("\nChannelNumber: "); uart_write(wValue_L + ascii);
 
-        memcpy(usb_ctrl_in_buf, &mute, sizeof(mute));
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(mute);
+        if (wValue_H == 1){
 
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+          bool temp_mute = mute;
+          memcpy(usb_ctrl_audio, &temp_mute, sizeof(temp_mute));
+
+          uart_puts("\nCurrentMute: ");uart_write(usb_ctrl_audio[0]+ascii);
+
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_mute);
+
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+          while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+
+        }
+
+        else if (wValue_H == 2){
+
+          uint8_t temp_volume = volume;
+          memcpy(usb_ctrl_audio, &temp_volume, sizeof(temp_volume));
+
+          uart_puts("\nCurrentVolume: ");uart_write(usb_ctrl_audio[0]+ascii);
+
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_volume);
+
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+          while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+
+        }
+
+        else{uart_puts("/nCHECK ELSE");}
 
       } break;
 
@@ -925,7 +997,10 @@ void USB_Handler(){
         uart_puts("\nControlSelector: "); uart_write(wValue_H + ascii);
         uart_puts("\nChannelNumber: "); uart_write(wValue_L + ascii);
 
-        mute = false; // set via global here? 
+        //memcpy(&mute, &usb_ctrl_in_buf[sizeof(usb_audio_feature_unit_descriptor_t)+1], sizeof(mute));
+        mute = !mute;
+
+        uart_puts("\n\n"); uart_write(mute+ascii);
 
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
@@ -934,49 +1009,49 @@ void USB_Handler(){
 
       } break;
 
-      case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_MIN):{
+      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_MIN):{
 
-        uart_puts("\nSetMin");
+      //   uart_puts("\nSetMin");
 
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+      //   EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+      //   while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
       
-      }
+      // }
 
-      case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_MAX):{
+      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_MAX):{
       
-        uart_puts("\nSetMax");
+      //   uart_puts("\nSetMax");
 
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+      //   EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+      //   while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
       
-      }
+      // }
 
-      case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_RES):{
+      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_RES):{
 
-        uart_puts("\nSetRes");
+      //   uart_puts("\nSetRes");
 
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+      //   EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+      //   while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
       
-      }
+      // }
 
-      case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_MEM):{
+      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_MEM):{
       
-        uart_puts("\nSetMem");
+      //   uart_puts("\nSetMem");
 
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+      //   EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+      //   while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
       
-      }
+      // }
       
       default: {
 
@@ -1141,7 +1216,7 @@ void fngenerator(type waveform){
       
   }
   
-  while(1){
+  while(mute == false){
     for (int i = 0; i < NPTS; i++){ 
       analogWrite(A0,waveout[i]);
     }

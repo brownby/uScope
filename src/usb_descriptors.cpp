@@ -79,7 +79,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bUnitID             = 0x02,  // chosen by programmer, between input and output terminals
     .bSourceID           = 0x01,  // for input_terminal
     .bControlSize        = 0x01,  // size in bytes of an element of the bmaControlls() array
-    .bmaControls         = {0x03,0x00},  // mute for master, MONO channel
+    .bmaControls         = {0x03,0x00},  // 0x01 = mute for master control, MONO channel
     .iFeature            = 0x00,  // unused
   },
 
@@ -135,7 +135,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bTerminalLink       = 0x03,   // ID for output terminal
     .bDelay              = 0x00,   // 0x01 in example, interface delay *flag
     //.wFormatTag          = 0x0002, // 0x0002 for Windows, 0x0001 for Mac
-     .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag 
+    .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag 
                                    // macOS recognizes PCM, but not PCM8 (legacy = unsupported)? 
   },
 
