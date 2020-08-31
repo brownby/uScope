@@ -16,7 +16,7 @@
 #include "usb_enums.h"
 
 #define freq_CPU 48000000                                           // CPU clock frequency
-static uint32_t baud = 230400;                                      // for UART debug of USB
+static uint32_t baud = 115200;                                      // for UART debug of USB
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
@@ -41,10 +41,10 @@ uint8_t adc_buffer2[NBEATS];
 uint8_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
-volatile boolean mute = true;
-volatile uint8_t volume = 5;
+volatile bool mute = true;
+volatile uint16_t volume = 5;
 
-static uint8_t usb_ctrl_audio[1];
+static uint16_t usb_ctrl_audio;
 static uint32_t usb_ctrl_in_buf[16];
 static uint32_t usb_ctrl_out_buf[16];
 
@@ -876,12 +876,12 @@ void USB_Handler(){
 
         uart_puts("\nGetMin");
 
-        uint8_t temp_min = 1;
-        memcpy(usb_ctrl_audio, &temp_min, sizeof(temp_min));
+        uint16_t temp_min = 1;
+        memcpy(&usb_ctrl_audio, &temp_min, sizeof(temp_min));
         
-        uart_puts(": "); uart_write(usb_ctrl_audio[0]+ascii);
+        uart_puts(": "); uart_write(usb_ctrl_audio+ascii);
 
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&usb_ctrl_audio;
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_min);
 
@@ -895,12 +895,12 @@ void USB_Handler(){
       
         uart_puts("\nGetMax");
 
-        uint8_t temp_max = 9;
-        memcpy(usb_ctrl_audio, &temp_max, sizeof(temp_max));
+        uint16_t temp_max = 9;
+        memcpy(&usb_ctrl_audio, &temp_max, sizeof(temp_max));
 
-        uart_puts(": "); uart_write(usb_ctrl_audio[0]+ascii);
+        uart_puts(": "); uart_write(usb_ctrl_audio+ascii);
 
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&usb_ctrl_audio;
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_max);
 
@@ -914,12 +914,12 @@ void USB_Handler(){
 
         uart_puts("\nGetRes");
 
-        uint8_t temp_res = 1;
-        memcpy(usb_ctrl_audio, &temp_res, sizeof(temp_res));
+        uint16_t temp_res = 1;
+        memcpy(&usb_ctrl_audio, &temp_res, sizeof(temp_res));
 
-        uart_puts(": ");uart_write(usb_ctrl_audio[0]+ascii);
+        uart_puts(": ");uart_write(usb_ctrl_audio+ascii);
 
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&usb_ctrl_audio;
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_res);
 
@@ -955,11 +955,11 @@ void USB_Handler(){
         if (wValue_H == 1){
 
           bool temp_mute = mute;
-          memcpy(usb_ctrl_audio, &temp_mute, sizeof(temp_mute));
+          memcpy(&usb_ctrl_audio, &temp_mute, sizeof(temp_mute));
 
-          uart_puts("\nCurrentMute: ");uart_write(usb_ctrl_audio[0]+ascii);
+          uart_puts("\nCurrentMute: ");uart_write(usb_ctrl_audio+ascii);
 
-          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&usb_ctrl_audio;
           EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
           EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_mute);
 
@@ -972,17 +972,17 @@ void USB_Handler(){
         else if (wValue_H == 2){
 
           uint8_t temp_volume = volume;
-          memcpy(usb_ctrl_audio, &temp_volume, sizeof(temp_volume));
+          memcpy(&usb_ctrl_audio, &temp_volume, sizeof(temp_volume));
 
-          uart_puts("\nCurrentVolume: ");uart_write(usb_ctrl_audio[0]+ascii);
+          uart_puts("\nCurrentVolume: ");uart_write(usb_ctrl_audio+ascii);
 
           uart_puts("\nSize: ");uart_write(sizeof(usb_ctrl_audio)+ascii);
 
           for (int i = 0; i < sizeof(usb_ctrl_audio); i++){
-            uart_putc('\n'); uart_write(usb_ctrl_audio[i]+ascii);
+            uart_putc('\n'); uart_write(usb_ctrl_audio+ascii);
           }
 
-          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)&usb_ctrl_audio;
           EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
           EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(temp_volume);
 
