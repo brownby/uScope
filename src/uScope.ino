@@ -160,6 +160,30 @@ void uart_puts(char *s) {
    
 }
 
+void uart_put_hex(uint8_t x) {
+  uint8_t highNibble = (x & 0xf0) >> 4;
+  uint8_t lowNibble = x & 0xf;
+
+  if(highNibble >= 10)
+  {
+    uart_putc('a' + (highNibble - 10));
+  }
+  else
+  {
+    uart_putc(highNibble + ascii);
+  }
+
+  if(lowNibble >= 10)
+  {
+    uart_putc('a' + (lowNibble - 10));
+  }
+  else
+  {
+    uart_putc(lowNibble + ascii);
+  }
+  
+}
+
 void adc_init() {
 
   pinPeripheral(ADCPIN, PIO_ANALOG);     // for pin, set function
@@ -473,8 +497,13 @@ void USB_Handler(){
     
     usb_request_t * request = (usb_request_t*) usb_ctrl_out_buf;
 
-    uart_puts("\n\nbRequest: ");uart_write(request->bRequest + ascii); // key for 0,1,3,5,6,7,8,9,10,11,12
-    uart_puts("\nbmRequestType: "); uart_write(request->bmRequestType + ascii); 
+    uart_puts("\n\nbRequest: "); uart_put_hex(request->bRequest);
+    uart_puts("\nbmRequestType: "); uart_put_hex(request->bmRequestType);
+    // uart_puts("\n\nbRequest: ");uart_write(request->bRequest + ascii); // key for 0,1,3,5,6,7,8,9,10,11,12
+    // uart_puts("\nbmRequestType: "); uart_write(request->bmRequestType + ascii);
+    // uart_puts("\nbmRequestType[7]: "); uart_write(((request->bmRequestType & 0x80) >> 7) + ascii); 
+    // uart_puts("\nbmRequestType[6:5]: "); uart_write(((request->bmRequestType & 0x60) >> 5) + ascii);
+    // uart_puts("\nbmRequestType[4:0]: "); uart_write((request->bmRequestType & 0xf) + ascii);
 
     uint8_t wValue_L = request->wValue & 0xff;
     uint8_t wValue_H = request->wValue >> 8;
@@ -971,7 +1000,7 @@ void USB_Handler(){
 
         else if (wValue_H == 2){
 
-          uint8_t temp_volume = volume;
+          uint16_t temp_volume = volume;
           memcpy(&usb_ctrl_audio, &temp_volume, sizeof(temp_volume));
 
           uart_puts("\nCurrentVolume: ");uart_write(usb_ctrl_audio+ascii);
