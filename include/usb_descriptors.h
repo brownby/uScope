@@ -155,10 +155,10 @@ typedef struct __attribute__((packed)) {
   usb_ep_descriptor_t                        scope_iso_ep;
   usb_audio_iso_ep_descriptor_t              scope_iso_ep_class_detail;
   usb_interface_descriptor_t                 stream0_fngen_interface;
-  usb_interface_descriptor_t                 stream1_fngen_interface;
-  usb_audio_format_descriptor_t              fngen_format_type;
-  usb_ep_descriptor_t                        fngen_iso_ep;
-  usb_audio_iso_ep_descriptor_t              fngen_iso_ep_class_detail;
+  // usb_interface_descriptor_t                 stream1_fngen_interface;
+  // usb_audio_format_descriptor_t              fngen_format_type;
+  // usb_ep_descriptor_t                        fngen_iso_ep;
+  // usb_audio_iso_ep_descriptor_t              fngen_iso_ep_class_detail;
 } usb_configuration_hierarchy_t;
 
 extern usb_configuration_hierarchy_t usb_configuration_hierarchy;

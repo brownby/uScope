@@ -502,12 +502,16 @@ void USB_Handler(){
 
     uint8_t wValue_L = request->wValue & 0xff;
     uint8_t wValue_H = request->wValue >> 8;
+    uint8_t wIndex_L = request->wIndex & 0xff;
+    uint8_t wIndex_H = request->wIndex >> 8;
     uint8_t type = request->wValue >> 8;
     uint8_t index = request->wValue & 0xff;
     uint16_t leng = request->wLength;
 
     uart_puts("\nwValueH: "); uart_put_hex(wValue_H);
     uart_puts("\nwValueL: "); uart_put_hex(wValue_L);
+    uart_puts("\nwIndexH: "); uart_put_hex(wIndex_H);
+    uart_puts("\nwIndexL: "); uart_put_hex(wIndex_L);
 
     switch ((request->bRequest << 8) | request->bmRequestType){
       case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):{

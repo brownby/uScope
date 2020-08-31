@@ -77,7 +77,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
   {
     .bLength             = sizeof(usb_audio_input_terminal_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
-    .bDescriptorSubtype  = 0x02, // input terminal
+    .bDescriptorSubtype  = 0x02, // input terminal (host to device)
     .bTerminalID         = 0x03, // unique ID
     .wTerminalType       = 0x0101, // USB streaming
     .bAssocTerminal      = 0x00, // no association
@@ -131,8 +131,8 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bLength             = sizeof(usb_interface_descriptor_t),
     .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
     .bInterfaceNumber    = 0x01, // the second of three interfaces
-    .bAlternateSetting   = 0x00, // OFF, zero-bandwidth setting
-    .bNumEndpoints       = 0x00, // none 
+    .bAlternateSetting   = 0x00, // OFF
+    .bNumEndpoints       = 0x00, // none, zero-bandwidth setting
     .bInterfaceClass     = 0x01, // audio
     .bInterfaceSubClass  = 0x02, // streaming
     .bInterfaceProtocol  = 0x00, // unused
@@ -152,7 +152,6 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bInterfaceClass     = 0x01, // audio
     .bInterfaceSubClass  = 0x02, // streaming
     .bInterfaceProtocol  = 0x00, // unused
-    // .iInterface          = USB_STR_INTERFACE,
     .iInterface          = 0x00, // unused
   },
 
@@ -189,7 +188,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
     .bEndpointAddress    = 0x81,   // ep[1].in
     .bmAttributes        = 0x01,   // isochronous, not shared
-    .wMaxPacketSize      = 0x03ff, // 512 --> change to 1023, should match NBEATs for ADC buffer size? *flag
+    .wMaxPacketSize      = 0x03ff, // 1023 bytes
     .bInterval           = 0x01,   // 1 ms, one packet per frame
     .bRefresh            = 0x00,   // unused
     .bSynchAddress       = 0x00,   // unused, no sync
