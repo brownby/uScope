@@ -32,11 +32,16 @@ uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass t
 #define USB_CMD(dir, rcpt, type, cmd) \
     ((USB_##cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 
+#define USB_AUDIO_CMD(dir, rcpt, type, cmd) \
+    ((cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
+
 uint8_t adc_buffer0[NBEATS];  // buffer with length set by NBEATS
 uint8_t adc_buffer1[NBEATS];  // alternating buffer
 uint8_t adc_buffer2[NBEATS];
 uint8_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
+
+bool mute = false;
 
 static uint32_t usb_ctrl_in_buf[16];
 static uint32_t usb_ctrl_out_buf[16];
@@ -466,7 +471,7 @@ void USB_Handler(){
     
     usb_request_t * request = (usb_request_t*) usb_ctrl_out_buf;
 
-    uart_puts("\n\nbRequest: ");uart_write(request->bRequest+ascii); // key for 0,1,3,5,6,7,8,9,10,11,12
+    uart_puts("\n\nbRequest: ");uart_write(request->bRequest + ascii); // key for 0,1,3,5,6,7,8,9,10,11,12
     uart_puts("\nbmRequestType: "); uart_write(request->bmRequestType + ascii); 
 
     uint8_t wValue_L = request->wValue & 0xff;
@@ -721,9 +726,6 @@ void USB_Handler(){
         EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
         USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
         USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
-        // while (0 == USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1);
-
-        // start_adc_sram_dma();
         
       } break;
 
@@ -867,6 +869,38 @@ void USB_Handler(){
         uart_puts("\nGetDescriptor: Interface");
         uart_puts("\nEmpty case");
     
+      } break;
+
+      case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_CUR):{
+
+        uart_puts("\nGetCurrent");
+
+        uart_puts("\nControlSelector: "); uart_write(wValue_H + ascii);
+        uart_puts("\nChannelNumber: "); uart_write(wValue_L + ascii);
+        uart_puts("\nIndex: "); uart_write(index + ascii);
+
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+
+      } break;
+
+      case USB_AUDIO_CMD(OUT, INTERFACE, CLASS, SET_CUR):{
+
+        uart_puts("\nSetCurrent");
+
+        uart_puts("\nControlSelector: "); uart_write(wValue_H + ascii);
+        uart_puts("\nChannelNumber: "); uart_write(wValue_L + ascii);
+        uart_puts("\nIndex: "); uart_write(index + ascii);
+
+        mute = 
+
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+
       } break;
       
       default: {
