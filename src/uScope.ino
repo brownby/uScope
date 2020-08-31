@@ -44,7 +44,7 @@ uint16_t waveout[NPTS];       // buffer for waveform
 volatile boolean mute = true;
 volatile uint8_t volume = 5;
 
-static uint32_t usb_ctrl_audio[1];
+static uint8_t usb_ctrl_audio[1];
 static uint32_t usb_ctrl_in_buf[16];
 static uint32_t usb_ctrl_out_buf[16];
 
@@ -925,7 +925,7 @@ void USB_Handler(){
 
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-        //while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
       
       }
 
@@ -975,6 +975,12 @@ void USB_Handler(){
           memcpy(usb_ctrl_audio, &temp_volume, sizeof(temp_volume));
 
           uart_puts("\nCurrentVolume: ");uart_write(usb_ctrl_audio[0]+ascii);
+
+          uart_puts("\nSize: ");uart_write(sizeof(usb_ctrl_audio)+ascii);
+
+          for (int i = 0; i < sizeof(usb_ctrl_audio); i++){
+            uart_putc('\n'); uart_write(usb_ctrl_audio[i]+ascii);
+          }
 
           EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_audio;
           EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_8;
