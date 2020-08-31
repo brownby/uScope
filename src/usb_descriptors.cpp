@@ -79,7 +79,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bUnitID             = 0x02,  // chosen by programmer, between input and output terminals
     .bSourceID           = 0x01,  // for input_terminal
     .bControlSize        = 0x01,  // size in bytes of an element of the bmaControlls() array
-    .bmaControls         = 0x0300,  // 0x01 = mute for master control, MONO channel
+    .bmaControls         = {0x00, 0x03},
     .iFeature            = 0x00,  // unused
   },
 

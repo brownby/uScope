@@ -1010,7 +1010,7 @@ void USB_Handler(){
 
         }
 
-        else{uart_puts("/nCHECK ELSE");}
+        else{uart_puts("\nCHECK ELSE");}
 
       } break;
 

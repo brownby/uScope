@@ -74,7 +74,7 @@ typedef struct __attribute__((packed)) {
   uint8_t bUnitID;
   uint8_t bSourceID;
   uint8_t bControlSize;
-  uint16_t bmaControls;
+  uint8_t bmaControls[2];
   uint8_t iFeature;
 } usb_audio_feature_unit_descriptor_t;
 
