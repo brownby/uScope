@@ -60,9 +60,9 @@ char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","A
 
 uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
 
-volatile u_int8_t ZLP_c   = 0;
-volatile u_int8_t bufnum  = 0;  // track which buffer to write to, while USB reads
-volatile u_int8_t prevBuf = 4;
+volatile uint8_t ZLP_c   = 0;
+volatile uint8_t bufnum  = 0;  // track which buffer to write to, while USB reads
+volatile uint8_t prevBuf = 4;
 
 extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
 extern UsbDeviceDescriptor usb_endpoints[];
@@ -647,7 +647,13 @@ void USB_Handler(){
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;        // start 
 
-            while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait  
+            while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1)
+            {
+              // if(index == 5)
+              // {
+              //   uart_puts("\nh");
+              // }
+            } // wait  
            
           } 
            
@@ -701,6 +707,8 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.DTGLIN = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
           EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
+
+          // start_adc_sram_dma();
 
         }
       } break;
