@@ -76,6 +76,7 @@ color rgb[]={color(255, 255, 0), color(0, 204, 255)};  // for 2 channels: yellow
 
 Minim minim;
 AudioInput in; // USB connection to device
+AudioOutput out;
 
 Channel channel[] = new Channel[numCh];
 Group group[]     = new Group[numCh+1]; // used to change V/div and ms/div simultaneously on all channels using SHIFT key
@@ -126,6 +127,7 @@ void setup() {
   
   minim = new Minim(this);
   in = minim.getLineIn(Minim.MONO, 1000, 44100, 8);
+  out = minim.getLineOut(Minim.MONO, 1000, 44100, 8);
   in.disableMonitoring();
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
@@ -229,6 +231,7 @@ void mouseClicked() {
     
     if (wave.clicked == true){ 
       in.unmute();
+      out.unmute();
       //in.setVolume(1.0);
       println(in.isMuted());
       println(in.getVolume());
@@ -236,6 +239,7 @@ void mouseClicked() {
     }
     else{ 
       in.mute();
+      out.mute();
       //in.setVolume(0.0);
       println(in.isMuted());
       println(in.getVolume());

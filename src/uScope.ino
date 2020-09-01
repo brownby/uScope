@@ -25,8 +25,9 @@ uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass t
 
 #define CONTROL_ENDPOINT 0
 #define ISO_ENDPOINT_IN  1
-#define CDC_ENDPOINT_OUT 2
-#define CDC_ENDPOINT_IN  3
+#define ISO_ENDPOINT_OUT 2
+// #define CDC_ENDPOINT_OUT 2
+// #define CDC_ENDPOINT_IN  3
 
 #define LIMIT(a, b)     (((a) > (b)) ? (b) : (a))
 #define USB_CMD(dir, rcpt, type, cmd) \
@@ -712,6 +713,12 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
           EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
 
+          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPCFG.bit.EPTYPE0 = 2; // isochronous OUT
+          // // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPINTENSET.bit.TRCPT1 = 1;
+          // // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPSTATUSCLR.bit.DTGLIN = 1;
+          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPSTATUSSET.bit.BK0RDY = 1;
+          // EP[ISO_ENDPOINT_OUT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
+
           // start_adc_sram_dma();
 
         }
@@ -760,9 +767,12 @@ void USB_Handler(){
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
         // send ISO ZLP - to trigger first TRCPT1
-        EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-        USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+        if(interface_num == 1)
+        {
+          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+          USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+        }
         
       } break;
 
@@ -1080,7 +1090,7 @@ void USB_Handler(){
 
       if(i == ISO_ENDPOINT_IN)
       {
-        if(interface_num == 1)
+        if(interface_num != 0)
         {            
           if(bufnum != prevBuf || prevBuf == 4)
           {
