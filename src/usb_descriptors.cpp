@@ -217,56 +217,68 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .iInterface          = 0x00, // unused
   },
 
-  // .stream1_fngen_interface =
-  // {
-  //   .bLength             = sizeof(usb_interface_descriptor_t),
-  //   .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
-  //   .bInterfaceNumber    = 0x02, // the second of three interfaces
-  //   .bAlternateSetting   = 0x01, // ON, operational setting
-  //   .bNumEndpoints       = 0x01, // x1 endpoint
-  //   .bInterfaceClass     = 0x01, // audio
-  //   .bInterfaceSubClass  = 0x02, // streaming
-  //   .bInterfaceProtocol  = 0x00, // unused
-  //   // .iInterface          = USB_STR_INTERFACE,
-  //   .iInterface          = 0x00, // unused
-  // },
+  .stream1_fngen_interface =
+  {
+    .bLength             = sizeof(usb_interface_descriptor_t),
+    .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
+    .bInterfaceNumber    = 0x02, // the second of three interfaces
+    .bAlternateSetting   = 0x01, // ON, operational setting
+    .bNumEndpoints       = 0x01, // x1 endpoint
+    .bInterfaceClass     = 0x01, // audio
+    .bInterfaceSubClass  = 0x02, // streaming
+    .bInterfaceProtocol  = 0x00, // unused
+    // .iInterface          = USB_STR_INTERFACE,
+    .iInterface          = 0x00, // unused
+  },
 
-  // .fngen_format_type =
-  // {
-  //   .bLength             = sizeof(usb_audio_format_descriptor_t),
-  //   .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
-  //   .bDescriptorSubtype  = 0x02, // format
-  //   .bFormatType         = 0x01, // type I
-  //   .bNrChannels         = 0x01, // 1 channel
-  //   .bSubframeSize       = 0x01, // 1 byte per audio subframe 
-  //   .bBitResolution      = 0x08, // 8 bits 
-  //   .bSamFreqType        = 0x01, // 1 sampling frequency
-  //   .bSamFreq0_byte0     = 0x44,
-  //   .bSamFreq0_byte1     = 0xAC,
-  //   .bSamFreq0_byte2     = 0x00, // 44.1 kHz
-  // },
+  .stream1_fngen_class_detail =
+  {
+    .bLength             = sizeof(usb_audio_stream_class_descriptor_t),
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
+    .bDescriptorSubtype  = 0x01,   // general
+    .bTerminalLink       = 0x03,   // ID for input fngen terminal
+    .bDelay              = 0x00,   // 0x01 in example, interface delay *flag
+    .wFormatTag          = 0x0002, // 0x0002 for Windows, 0x0001 for Mac
+    // .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag 
+                                   // macOS recognizes PCM, but not PCM8 (legacy = unsupported)? 
+  },
 
-  // .fngen_iso_ep =
-  // {
-  //   .bLength             = sizeof(usb_ep_descriptor_t),
-  //   .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
-  //   .bEndpointAddress    = 0x02,   // ep[2].out
-  //   .bmAttributes        = 0x01,   // isochronous, not shared
-  //   .wMaxPacketSize      = 0x03ff, // 1023, should match NBEATs for ADC buffer size? *flag
-  //   .bInterval           = 0x01,   // 1 ms, one packet per frame
-  //   .bRefresh            = 0x00,   // unused
-  //   .bSynchAddress       = 0x00,   // unused, no sync
-  // },
+  .fngen_format_type =
+  {
+    .bLength             = sizeof(usb_audio_format_descriptor_t),
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
+    .bDescriptorSubtype  = 0x02, // format
+    .bFormatType         = 0x01, // type I
+    .bNrChannels         = 0x01, // 1 channel
+    .bSubframeSize       = 0x01, // 1 byte per audio subframe 
+    .bBitResolution      = 0x08, // 8 bits 
+    .bSamFreqType        = 0x01, // 1 sampling frequency
+    .bSamFreq0_byte0     = 0x44,
+    .bSamFreq0_byte1     = 0xAC,
+    .bSamFreq0_byte2     = 0x00, // 44.1 kHz
+  },
 
-  // .fngen_iso_ep_class_detail =
-  // {
-  //   .bLength             = sizeof(usb_audio_iso_ep_descriptor_t),
-  //   .bDescriptorType     = USB_CS_ENDPOINT_DESCRIPTOR,
-  //   .bDescriptorSubtype  = 0x01,   // general
-  //   .bmAttributes        = 0x00,   // no sampling frequency control, no pitch control, no packet padding
-  //   .bLockDelayUnits     = 0x00,   // unused
-  //   .wLockDelay          = 0x0000, // unused
-  // }
+  .fngen_iso_ep =
+  {
+    .bLength             = sizeof(usb_ep_descriptor_t),
+    .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
+    .bEndpointAddress    = 0x02,   // ep[2].out
+    .bmAttributes        = 0x01,   // isochronous, not shared
+    .wMaxPacketSize      = 0x03ff, // 1023, should match NBEATs for ADC buffer size? *flag
+    .bInterval           = 0x01,   // 1 ms, one packet per frame
+    .bRefresh            = 0x00,   // unused
+    .bSynchAddress       = 0x00,   // unused, no sync
+  },
+
+  .fngen_iso_ep_class_detail =
+  {
+    .bLength             = sizeof(usb_audio_iso_ep_descriptor_t),
+    .bDescriptorType     = USB_CS_ENDPOINT_DESCRIPTOR,
+    .bDescriptorSubtype  = 0x01,   // general
+    .bmAttributes        = 0x00,   // no sampling frequency control, no pitch control, no packet padding
+    .bLockDelayUnits     = 0x00,   // unused
+    .wLockDelay          = 0x0000, // unused
+  }
 };
 
 alignas(4) usb_string_descriptor_zero_t usb_string_descriptor_zero =
