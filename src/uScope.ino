@@ -714,8 +714,8 @@ void USB_Handler(){
           EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
 
           // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPCFG.bit.EPTYPE0 = 2; // isochronous OUT
-          // // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPINTENSET.bit.TRCPT1 = 1;
-          // // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPSTATUSCLR.bit.DTGLIN = 1;
+          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPINTENSET.bit.TRCPT0 = 1;
+          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPSTATUSCLR.bit.DTGLOUT = 1;
           // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPSTATUSSET.bit.BK0RDY = 1;
           // EP[ISO_ENDPOINT_OUT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
 
