@@ -206,7 +206,7 @@ void draw() {
   for (byte k=0; k<numCh; k++) { channel[k].display(); }
   
   handleIncoming();
-
+  
 }
 
 
@@ -229,10 +229,16 @@ void mouseClicked() {
     
     if (wave.clicked == true){ 
       in.unmute();
+      //in.setVolume(1.0);
+      println(in.isMuted());
+      println(in.getVolume());
       println("turning output on"); 
     }
     else{ 
       in.mute();
+      //in.setVolume(0.0);
+      println(in.isMuted());
+      println(in.getVolume());
       println("turning output off"); 
     }
   }
