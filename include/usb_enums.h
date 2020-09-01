@@ -84,13 +84,27 @@ enum{
 };
 
 enum{
-  USB_DEVICE_DESCRIPTOR                    = 1,
-  USB_CONFIGURATION_DESCRIPTOR             = 2,
-  USB_STRING_DESCRIPTOR                    = 3,
-  USB_INTERFACE_DESCRIPTOR                 = 4,
-  USB_ENDPOINT_DESCRIPTOR                  = 5,
-  USB_CS_INTERFACE_DESCRIPTOR              = 0x24,
-  USB_CS_ENDPOINT_DESCRIPTOR               = 0x25,
+  USB_DEVICE_DESCRIPTOR         = 1,
+  USB_CONFIGURATION_DESCRIPTOR  = 2,
+  USB_STRING_DESCRIPTOR         = 3,
+  USB_INTERFACE_DESCRIPTOR      = 4,
+  USB_ENDPOINT_DESCRIPTOR       = 5,
+  USB_CS_INTERFACE_DESCRIPTOR   = 0x24,
+  USB_CS_ENDPOINT_DESCRIPTOR    = 0x25,
+};
+
+enum{
+  SET_CUR   = 0x01,
+  GET_CUR   = 0x81,
+  SET_MIN   = 0x02,
+  GET_MIN   = 0x82,
+  SET_MAX   = 0x03,
+  GET_MAX   = 0x83,
+  SET_RES   = 0x04,
+  GET_RES   = 0x84,
+  SET_MEM   = 0x05,
+  GET_MEM   = 0x85,
+  GET_STAT  = 0xFF,
 };
 
 #endif
