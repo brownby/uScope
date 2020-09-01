@@ -51,7 +51,8 @@ typedef struct __attribute__((packed)) {
   uint16_t bcdADC;
   uint16_t wTotalLength;
   uint8_t bInCollection;
-  uint8_t baInterfaceNr;
+  uint8_t baInterfaceNr1;
+  uint8_t baInterfaceNr2;
 } usb_class_AC_interface_descriptor_t; // pg. 37 of spec
 
 typedef struct __attribute__((packed)) {
@@ -74,7 +75,7 @@ typedef struct __attribute__((packed)) {
   uint8_t bUnitID;
   uint8_t bSourceID;
   uint8_t bControlSize;
-  uint16_t bmaControls;
+  uint8_t bmaControls[2];
   uint8_t iFeature;
 } usb_audio_feature_unit_descriptor_t;
 
@@ -142,15 +143,23 @@ typedef struct __attribute__((packed)) {
   usb_configuration_descriptor_t             configuration;
   usb_interface_descriptor_t                 standard_AC_interface;
   usb_class_AC_interface_descriptor_t        class_AC_interface;
-  usb_audio_input_terminal_descriptor_t      input_terminal;
+  usb_audio_input_terminal_descriptor_t      input_terminal_scope;
+  usb_audio_input_terminal_descriptor_t      input_terminal_fngen;
+  usb_audio_output_terminal_descriptor_t     output_terminal_scope;
+  usb_audio_output_terminal_descriptor_t     output_terminal_fngen;
   usb_audio_feature_unit_descriptor_t        feature_unit;
-  usb_audio_output_terminal_descriptor_t     output_terminal;
-  usb_interface_descriptor_t                 stream0_interface;
-  usb_interface_descriptor_t                 stream1_interface;
-  usb_audio_stream_class_descriptor_t        stream1_class_detail;
-  usb_audio_format_descriptor_t              format_type;
-  usb_ep_descriptor_t                        iso_ep;
-  usb_audio_iso_ep_descriptor_t              iso_ep_class_detail;
+  usb_interface_descriptor_t                 stream0_scope_interface;
+  usb_interface_descriptor_t                 stream1_scope_interface;
+  usb_audio_stream_class_descriptor_t        stream1_scope_class_detail;
+  usb_audio_format_descriptor_t              scope_format_type;
+  usb_ep_descriptor_t                        scope_iso_ep;
+  usb_audio_iso_ep_descriptor_t              scope_iso_ep_class_detail;
+  usb_interface_descriptor_t                 stream0_fngen_interface;
+  usb_interface_descriptor_t                 stream1_fngen_interface;
+  usb_audio_stream_class_descriptor_t        stream1_fngen_class_detail;
+  usb_audio_format_descriptor_t              fngen_format_type;
+  usb_ep_descriptor_t                        fngen_iso_ep;
+  usb_audio_iso_ep_descriptor_t              fngen_iso_ep_class_detail;
 } usb_configuration_hierarchy_t;
 
 extern usb_configuration_hierarchy_t usb_configuration_hierarchy;
