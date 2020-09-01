@@ -965,22 +965,6 @@ void USB_Handler(){
       
       } break;
 
-      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_MEM):{
-      
-      //   uart_puts("\nGetMem");
-
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
-      
-      // }
-
-      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_STAT):{
-      
-      //   uart_puts("\nGetStat");
-
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.STALLRQ1 = 1;
-      
-      // }
-
       case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_CUR):{
 
         uart_puts("\nGetCurrent");
@@ -1033,61 +1017,35 @@ void USB_Handler(){
         uart_puts("\nControlSelector: "); uart_write(wValue_H + ascii);
         uart_puts("\nChannelNumber: "); uart_write(wValue_L + ascii);
 
-        //memcpy(&mute, &usb_ctrl_in_buf[sizeof(usb_audio_feature_unit_descriptor_t)+1], sizeof(mute));
-        mute = !mute;
+        if (wValue_H == 1){
+          //memcpy(&mute, &usb_ctrl_in_buf[sizeof(usb_audio_feature_unit_descriptor_t)+1], sizeof(mute));
+          mute = !mute;
 
-        uart_puts("\n\n"); uart_write(mute+ascii);
+          uart_puts("\n\n"); uart_write(mute+ascii);
 
-        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+          while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+
+        }
+        
+        else if (wValue_H == 2){
+
+          volume = volume; 
+
+          uart_puts("\n\n"); uart_write(volume+ascii);
+
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+          while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+
+        }
+
+        else{ uart_puts("CHECKELSE"); }
 
       } break;
-
-      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_MIN):{
-
-      //   uart_puts("\nSetMin");
-
-      //   EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-      //   while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
-      
-      // }
-
-      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_MAX):{
-      
-      //   uart_puts("\nSetMax");
-
-      //   EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-      //   while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
-      
-      // }
-
-      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_RES):{
-
-      //   uart_puts("\nSetRes");
-
-      //   EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-      //   while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
-      
-      // }
-
-      // case USB_AUDIO_CMD(IN, INTERFACE, CLASS, SET_MEM):{
-      
-      //   uart_puts("\nSetMem");
-
-      //   EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
-      //   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
-      //   while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
-      
-      // }
       
       default: {
 
