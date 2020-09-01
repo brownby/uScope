@@ -4,7 +4,7 @@
  * Intended for use with MKR Zero (SAMD21)
  * 
  * J. Evan Smith, Ben Y. Brown
- * Last revised: 16 August 2020
+ * Last revised: 1 September 2020
  */
 
 #include "Arduino.h"          // required before wiring_private.h, also includes USBDesc.h, USBCore.h, USBAPI.h, and USB_host.h
@@ -26,8 +26,6 @@ uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass t
 #define CONTROL_ENDPOINT 0
 #define ISO_ENDPOINT_IN  1
 #define ISO_ENDPOINT_OUT 2
-// #define CDC_ENDPOINT_OUT 2
-// #define CDC_ENDPOINT_IN  3
 
 #define LIMIT(a, b)     (((a) > (b)) ? (b) : (a))
 #define USB_CMD(dir, rcpt, type, cmd) \
@@ -329,16 +327,6 @@ void start_adc_sram_dma() {
 
   DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select channel
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select channel
-  // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf2); // select channel
-  // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf3); // select channel
-  // DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
 }
 
 void dma_init() {
@@ -441,7 +429,6 @@ void usb_init() {
   USB->DEVICE.CTRLB.bit.DETACH = 0;
   
   USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_EORST;  
-  // USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_SOF; //*flag 
   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1;
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
@@ -652,13 +639,7 @@ void USB_Handler(){
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
             USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;        // start 
 
-            while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1)
-            {
-              // if(index == 5)
-              // {
-              //   uart_puts("\nh");
-              // }
-            } // wait  
+            while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1);
            
           } 
            
@@ -712,14 +693,6 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.DTGLIN = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
           EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
-
-          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPCFG.bit.EPTYPE0 = 2; // isochronous OUT
-          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPINTENSET.bit.TRCPT0 = 1;
-          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPSTATUSCLR.bit.DTGLOUT = 1;
-          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_OUT].EPSTATUSSET.bit.BK0RDY = 1;
-          // EP[ISO_ENDPOINT_OUT].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
-
-          // start_adc_sram_dma();
 
         }
       } break;
@@ -1027,7 +1000,7 @@ void USB_Handler(){
         uart_puts("\nChannelNumber: "); uart_write(wValue_L + ascii);
 
         if (wValue_H == 1){
-          //memcpy(&mute, &usb_ctrl_in_buf[sizeof(usb_audio_feature_unit_descriptor_t)+1], sizeof(mute));
+        
           mute = !mute;
 
           uart_puts("\n\n"); uart_write(mute+ascii);
@@ -1132,7 +1105,6 @@ void USB_Handler(){
           {
 
             // uart_puts("\nZLP");
-            // uart_puts("\nDESC: "); uart_write((uint16_t)(wrb[0].DESCADDR & 0xffff));
             
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
@@ -1156,7 +1128,6 @@ void USB_Handler(){
               }
               
               DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
-              // DMAC->CHCTRLB.bit.CMD = 0x2;
               DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 
             }
