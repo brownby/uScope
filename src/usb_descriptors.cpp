@@ -40,7 +40,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bFirstInterface     = 0x00, // interface number of AC interface
     .bInterfaceCount     = 0x02, // AC and AS interface
     .bFunctionClass      = 0x01, // audio
-    .bFunctionSubClass   = 0x01, // there are two sub-classes used? will try other
+    .bFunctionSubClass   = 0x01, // should match subclass of first interface
     .bFunctionProtocol   = 0x00, // unused
     .iFunction           = 0x00, // unused
   },
@@ -183,7 +183,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bFirstInterface     = 0x02,
     .bInterfaceCount     = 0x02,
     .bFunctionClass      = USB_CDC_COMM_CLASS,
-    .bFunctionSubClass   = USB_CDC_ACM_SUBCLASS,
+    .bFunctionSubClass   = USB_CDC_ACM_SUBCLASS, // should match subclass of first interface
     .bFunctionProtocol   = 0x00,
     .iFunction           = 0x00,
   },

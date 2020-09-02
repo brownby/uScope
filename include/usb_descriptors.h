@@ -205,6 +205,13 @@ typedef struct __attribute__((packed)) {
   usb_ep_descriptor_t                               ep_out;
 } usb_configuration_hierarchy_t;
 
+typedef struct __attribute__((packed)) {
+  uint32_t dwDTERate;
+  uint8_t  bCharFormat;
+  uint8_t  bParityType;
+  uint8_t  bDataBits;
+} usb_cdc_line_coding_t;
+
 extern usb_configuration_hierarchy_t usb_configuration_hierarchy;
 extern usb_device_descriptor_t usb_device_descriptor;
 extern usb_string_descriptor_zero_t usb_string_descriptor_zero;

@@ -37,6 +37,9 @@ uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass t
 #define USB_AUDIO_CMD(dir, rcpt, type, cmd) \
     ((cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 
+#define USB_CDC_CMD(dir, rcpt, type, cmd) \
+    ((cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
+
 uint8_t adc_buffer0[NBEATS];  // buffer with length set by NBEATS
 uint8_t adc_buffer1[NBEATS];  // alternating buffer
 uint8_t adc_buffer2[NBEATS];
@@ -48,7 +51,7 @@ volatile uint16_t volume = 5;
 
 static uint16_t usb_ctrl_audio;
 static uint32_t usb_ctrl_in_buf[16];
-static uint32_t usb_ctrl_out_buf[16];
+static uint8_t usb_ctrl_out_buf[16];
 
 static uint32_t adctobuf0 = 0;  // dma channel for adc to buf0
 static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
@@ -91,6 +94,14 @@ typedef struct __attribute__((packed)) {
 typedef struct { 
     UsbDeviceDescBank DeviceDescBank[2]; 
 } UsbdDescriptor;
+
+static usb_cdc_line_coding_t usb_cdc_line_coding =
+{
+  .dwDTERate   = 115200,
+  .bCharFormat = 0, // 1 stop bit
+  .bParityType = 0, // no parity
+  .bDataBits   = 8, // 8 data bits
+};
 
 volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16)));        // write-back descriptor
 dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
@@ -472,7 +483,7 @@ void USB_Handler(){
 
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].ADDR.reg = (uint32_t)usb_ctrl_out_buf;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
-    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 8;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 16;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT = 0;
 
     USB->DEVICE.DeviceEndpoint[0].EPSTATUSCLR.bit.BK0RDY = 1;
@@ -503,6 +514,7 @@ void USB_Handler(){
     uart_puts("\nwValueL: "); uart_put_hex(wValue_L);
     uart_puts("\nwIndexH: "); uart_put_hex(wIndex_H);
     uart_puts("\nwIndexL: "); uart_put_hex(wIndex_L);
+    uart_puts("\nwLength: "); uart_put_hex(leng);
 
     switch ((request->bRequest << 8) | request->bmRequestType){
       case USB_CMD(IN, DEVICE, STANDARD, GET_DESCRIPTOR):{
@@ -1029,6 +1041,63 @@ void USB_Handler(){
         }
 
         else{ uart_puts("CHECKELSE"); }
+
+      } break;
+
+      case USB_CDC_CMD(OUT, INTERFACE, CLASS, SET_LINE_CODING):
+      {
+        uart_puts("\nSetLineCoding");
+
+        usb_cdc_line_coding_t *line_coding = (usb_cdc_line_coding_t *)(usb_ctrl_out_buf + sizeof(usb_request_t));
+
+        uart_puts("\nbCharFormat: "); uart_put_hex(line_coding->bCharFormat);
+        uart_puts("\nbDataBits: "); uart_put_hex(line_coding->bDataBits);
+        uart_puts("\nbParity: "); uart_put_hex(line_coding->bParityType);
+
+        if(leng = sizeof(usb_cdc_line_coding_t))
+        {
+          usb_cdc_line_coding = *line_coding;
+        }
+
+      } break;
+
+      case USB_CDC_CMD(IN, INTERFACE, CLASS, GET_LINE_CODING):
+      {
+        uart_puts("\nGetLineCoding");
+
+        uint8_t *codingAddr_temp = (uint8_t *)&usb_cdc_line_coding; 
+
+        if (leng <= usb_device_descriptor.bMaxPacketSize0){
+        
+          memcpy(usb_ctrl_in_buf, codingAddr_temp, leng);
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_ctrl_in_buf;
+        
+        }
+
+        else {
+  
+          EP[CONTROL_ENDPOINT].DeviceDescBank[1].ADDR.reg = (uint32_t)codingAddr_temp;
+
+        }
+
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT  = leng;          // how big it is
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+    
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;          // clear flag
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;        // start 
+
+        while (0 == USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1); // wait
+
+      } break;
+
+      case USB_CDC_CMD(OUT, INTERFACE, CLASS, SET_CONTROL_LINE_STATE):
+      {
+        uart_puts("\nSetControlLineState");
+
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
       } break;
       
