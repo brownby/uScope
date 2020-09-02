@@ -6,9 +6,9 @@ alignas(4) usb_device_descriptor_t usb_device_descriptor =
   .bLength            = 18,     // bytes
   .bDescriptorType    = 0x01,   // for device
   .bcdUSB             = 0x0200, // version of USB spec
-  .bDeviceClass       = 0x00,   // 0x00 = none / defined at interface level
-  .bDeviceSubClass    = 0x00,
-  .bDeviceProtocol    = 0x00, 
+  .bDeviceClass       = 0xef,   // 0xef = multi-interface function
+  .bDeviceSubClass    = 0x02,   // 0x02 = common class
+  .bDeviceProtocol    = 0x01,   // 0x01 = IAD, interface association descriptor
   .bMaxPacketSize0    = 64,     // *flag --> relation to iso_ep.wMaxPacketSize?
   .idVendor           = 0x6666, // Arduino 0x2341
   .idProduct          = 0x6666, // MKZero 0x804f
@@ -31,6 +31,18 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .iConfiguration      = 0x00, //unused
     .bmAttributes        = 0x80,
     .bMaxPower           = 250, // 400 mA
+  },
+
+  .audio_IAD =
+  {
+    .bLength             = sizeof(usb_interface_association_descriptor_t),
+    .bDescriptorType     = USB_IAD_DESCRIPTOR,
+    .bFirstInterface     = 0x00, // interface number of AC interface
+    .bInterfaceCount     = 0x02, // AC and AS interface
+    .bFunctionClass      = 0x01, // audio
+    .bFunctionSubClass   = 0x00, // there are two sub-classes used? will try other
+    .bFunctionProtocol   = 0x00, // unused
+    .iFunction           = 0x00, // unused
   },
 
   .standard_AC_interface =
@@ -164,6 +176,18 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .wLockDelay          = 0x0000, // unused
   },
 
+  .cdc_IAD =
+  {
+    .bLength             = sizeof(usb_interface_association_descriptor_t),
+    .bDescriptorType     = USB_IAD_DESCRIPTOR,
+    .bFirstInterface     = 0x02,
+    .bInterfaceCount     = 0x02,
+    .bFunctionClass      = USB_CDC_COMM_CLASS,
+    .bFunctionSubClass   = 0x00,
+    .bFunctionProtocol   = 0x00,
+    .iFunction           = 0x00,
+  },
+
   .interface_comm =
   {
     .bLength             = sizeof(usb_interface_descriptor_t),
@@ -182,7 +206,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bFunctionalLength   = sizeof(usb_cdc_header_functional_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = USB_CDC_HEADER_SUBTYPE,
-    .bcdCDC              = 0x0110, // might need to be 0x1001? 
+    .bcdCDC              = 0x0110,
   },
 
   .cdc_acm =

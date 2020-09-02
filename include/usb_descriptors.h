@@ -170,7 +170,19 @@ typedef struct __attribute__((packed)) {
 } usb_string_descriptor_zero_t;
 
 typedef struct __attribute__((packed)) {
+  uint8_t bLength;
+  uint8_t bDescriptorType;
+  uint8_t bFirstInterface;
+  uint8_t bInterfaceCount;
+  uint8_t bFunctionClass;
+  uint8_t bFunctionSubClass;
+  uint8_t bFunctionProtocol;
+  uint8_t iFunction;
+} usb_interface_association_descriptor_t;
+
+typedef struct __attribute__((packed)) {
   usb_configuration_descriptor_t                    configuration;
+  usb_interface_association_descriptor_t            audio_IAD;
   usb_interface_descriptor_t                        standard_AC_interface;
   usb_class_AC_interface_descriptor_t               class_AC_interface;
   usb_audio_input_terminal_descriptor_t             input_terminal_scope;
@@ -181,6 +193,7 @@ typedef struct __attribute__((packed)) {
   usb_audio_format_descriptor_t                     scope_format_type;
   usb_ep_descriptor_t                               scope_iso_ep;
   usb_audio_iso_ep_descriptor_t                     scope_iso_ep_class_detail;
+  usb_interface_association_descriptor_t            cdc_IAD;
   usb_interface_descriptor_t                        interface_comm;
   usb_cdc_header_functional_descriptor_t            cdc_header;
   usb_cdc_abstract_control_managment_descriptor_t   cdc_acm;
