@@ -26,7 +26,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bLength             = sizeof(usb_configuration_descriptor_t),
     .bDescriptorType     = USB_CONFIGURATION_DESCRIPTOR,
     .wTotalLength        = sizeof(usb_configuration_hierarchy_t),
-    .bNumInterfaces      = 0x02, // AC and AudioStreaming interface
+    .bNumInterfaces      = 0x04, // AC and AudioStreaming interface, CDC comm and data interface
     .bConfigurationValue = 0x01, // used to select this configuration, not important given bNumConfigurations = 1
     .iConfiguration      = 0x00, //unused
     .bmAttributes        = 0x80,
@@ -81,18 +81,6 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bAssocTerminal      = 0x00,   // no association
     .bSourceID           = 0x04, // source is from feature unit
     .iTerminal           = 0x00,   // unused
-  },
-
-  .feature_unit = 
-  {
-    .bLength             = sizeof(usb_audio_feature_unit_descriptor_t),
-    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
-    .bDescriptorSubtype  = 0x06,  // feature unit
-    .bUnitID             = 0x04,  // chosen by programmer, between input and output terminals
-    .bSourceID           = 0x01, // for scope input terminal
-    .bControlSize        = 0x01,  // size in bytes of an element of the bmaControls() array
-    .bmaControls         = {0x00, 0x03},
-    .iFeature            = 0x00,  // unused
   },
 
   .stream0_scope_interface =
@@ -174,6 +162,96 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bmAttributes        = 0x00,   // no sampling frequency control, no pitch control, no packet padding
     .bLockDelayUnits     = 0x00,   // unused
     .wLockDelay          = 0x0000, // unused
+  },
+
+  .interface_comm =
+  {
+    .bLength             = sizeof(usb_interface_descriptor_t),
+    .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
+    .bInterfaceNumber    = 0x02,
+    .bAlternateSetting   = 0x00,
+    .bNumEndpoints       = 0x01,
+    .bInterfaceClass     = USB_CDC_COMM_CLASS,
+    .bInterfaceSubClass  = USB_CDC_ACM_SUBCLASS,
+    .bInterfaceProtocol  = 0x00,
+    .iInterface          = 0x00,    
+  },
+
+  .cdc_header =
+  {
+    .bFunctionalLength   = sizeof(usb_cdc_header_functional_descriptor_t),
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
+    .bDescriptorSubtype  = USB_CDC_HEADER_SUBTYPE,
+    .bcdCDC              = 0x0110, // might need to be 0x1001? 
+  },
+
+  .cdc_acm =
+  {
+    .bFunctionalLength   = sizeof(usb_cdc_abstract_control_managment_descriptor_t),
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
+    .bDescriptorSubtype  = USB_CDC_ACM_SUBTYPE,
+    .bmCapabilities      = USB_CDC_ACM_SUPPORT_LINE_REQUESTS, // Arduino COM port also supports send break requests
+  },
+
+  .cdc_call_mgmt =
+  {
+    .bFunctionalLength   = sizeof(usb_cdc_call_managment_functional_descriptor_t),
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
+    .bDescriptorSubtype  = USB_CDC_CALL_MGMT_SUBTYPE,
+    .bmCapabilities      = USB_CDC_CALL_MGMT_OVER_DCI, // Arduino COM port uses USB_CDC_CALL_MGMT_SUPPPORTED
+    .bDataInterface      = 0x03, // interface number of data interface
+  },
+
+  .cdc_union =
+  {
+    .bFunctionalLength   = sizeof(usb_cdc_union_functional_descriptor_t),
+    .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
+    .bDescriptorSubtype  = USB_CDC_UNION_SUBTYPE,
+    .bMasterInterface    = 0x00,
+    .bSlaveInterface0    = 0x03, // slave interface number, same as data interface to match ataradov's VCP and Arduino COM
+  },
+
+  .ep_comm =
+  {
+    .bLength             = sizeof(usb_ep_descriptor_t),
+    .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
+    .bEndpointAddress    = 0x83, // ep[3].in
+    .bmAttributes        = USB_INTERRUPT_ENDPOINT,
+    .wMaxPacketSize      = 64,
+    .bInterval           = 0x10, // to match Arduino COM, set to 1 for ataradov
+  },
+
+  .interface_data =
+  {
+    .bLength             = sizeof(usb_interface_descriptor_t),
+    .bDescriptorType     = USB_INTERFACE_DESCRIPTOR,
+    .bInterfaceNumber    = 0x03,
+    .bAlternateSetting   = 0x00,
+    .bNumEndpoints       = 0x02,
+    .bInterfaceClass     = USB_CDC_DATA_CLASS,
+    .bInterfaceSubClass  = 0x00,
+    .bInterfaceProtocol  = 0x00,
+    .iInterface          = 0x00,
+  },
+
+  .ep_in =
+  {
+    .bLength             = sizeof(usb_ep_descriptor_t),
+    .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
+    .bEndpointAddress    = 0x84, // ep[4].in
+    .bmAttributes        = USB_BULK_ENDPOINT,
+    .wMaxPacketSize      = 64,
+    .bInterval           = 0x00,
+  },
+
+  .ep_out =
+  {
+    .bLength             = sizeof(usb_ep_descriptor_t),
+    .bDescriptorType     = USB_ENDPOINT_DESCRIPTOR,
+    .bEndpointAddress    = 0x05, // ep[5].out
+    .bmAttributes        = USB_BULK_ENDPOINT,
+    .wMaxPacketSize      = 64,
+    .bInterval           = 0x00,
   },
   
 };

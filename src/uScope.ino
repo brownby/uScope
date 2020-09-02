@@ -26,6 +26,9 @@ uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass t
 #define CONTROL_ENDPOINT 0
 #define ISO_ENDPOINT_IN  1
 #define ISO_ENDPOINT_OUT 2
+#define CDC_ENDPOINT_COMM 3
+#define CDC_ENDPOINT_IN 4
+#define CDC_ENDPOINT_OUT 5
 
 #define LIMIT(a, b)     (((a) > (b)) ? (b) : (a))
 #define USB_CMD(dir, rcpt, type, cmd) \

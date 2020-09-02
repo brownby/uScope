@@ -134,24 +134,62 @@ typedef struct __attribute__((packed)) {
 } usb_audio_iso_ep_descriptor_t; // pg. 62 of spec
 
 typedef struct __attribute__((packed)) {
+  uint8_t  bFunctionalLength;
+  uint8_t  bDescriptorType;
+  uint8_t  bDescriptorSubtype;
+  uint16_t bcdCDC;
+} usb_cdc_header_functional_descriptor_t;
+
+typedef struct __attribute__((packed)) {
+  uint8_t   bFunctionalLength;
+  uint8_t   bDescriptorType;
+  uint8_t   bDescriptorSubtype;
+  uint8_t   bmCapabilities;
+} usb_cdc_abstract_control_managment_descriptor_t;
+
+typedef struct __attribute__((packed)) {
+  uint8_t   bFunctionalLength;
+  uint8_t   bDescriptorType;
+  uint8_t   bDescriptorSubtype;
+  uint8_t   bmCapabilities;
+  uint8_t   bDataInterface;
+} usb_cdc_call_managment_functional_descriptor_t;
+
+typedef struct __attribute__((packed)) {
+  uint8_t   bFunctionalLength;
+  uint8_t   bDescriptorType;
+  uint8_t   bDescriptorSubtype;
+  uint8_t   bMasterInterface;
+  uint8_t   bSlaveInterface0;
+} usb_cdc_union_functional_descriptor_t;
+
+typedef struct __attribute__((packed)) {
   uint8_t bLength;
   uint8_t bDescriptorType; 
   uint16_t wLANGID;  
 } usb_string_descriptor_zero_t;
 
 typedef struct __attribute__((packed)) {
-  usb_configuration_descriptor_t             configuration;
-  usb_interface_descriptor_t                 standard_AC_interface;
-  usb_class_AC_interface_descriptor_t        class_AC_interface;
-  usb_audio_input_terminal_descriptor_t      input_terminal_scope;
-  usb_audio_output_terminal_descriptor_t     output_terminal_scope;
-  usb_audio_feature_unit_descriptor_t        feature_unit;
-  usb_interface_descriptor_t                 stream0_scope_interface;
-  usb_interface_descriptor_t                 stream1_scope_interface;
-  usb_audio_stream_class_descriptor_t        stream1_scope_class_detail;
-  usb_audio_format_descriptor_t              scope_format_type;
-  usb_ep_descriptor_t                        scope_iso_ep;
-  usb_audio_iso_ep_descriptor_t              scope_iso_ep_class_detail;
+  usb_configuration_descriptor_t                    configuration;
+  usb_interface_descriptor_t                        standard_AC_interface;
+  usb_class_AC_interface_descriptor_t               class_AC_interface;
+  usb_audio_input_terminal_descriptor_t             input_terminal_scope;
+  usb_audio_output_terminal_descriptor_t            output_terminal_scope;
+  usb_interface_descriptor_t                        stream0_scope_interface;
+  usb_interface_descriptor_t                        stream1_scope_interface;
+  usb_audio_stream_class_descriptor_t               stream1_scope_class_detail;
+  usb_audio_format_descriptor_t                     scope_format_type;
+  usb_ep_descriptor_t                               scope_iso_ep;
+  usb_audio_iso_ep_descriptor_t                     scope_iso_ep_class_detail;
+  usb_interface_descriptor_t                        interface_comm;
+  usb_cdc_header_functional_descriptor_t            cdc_header;
+  usb_cdc_abstract_control_managment_descriptor_t   cdc_acm;
+  usb_cdc_call_managment_functional_descriptor_t    cdc_call_mgmt;
+  usb_cdc_union_functional_descriptor_t             cdc_union;
+  usb_ep_descriptor_t                               ep_comm;
+  usb_interface_descriptor_t                        interface_data;
+  usb_ep_descriptor_t                               ep_in;
+  usb_ep_descriptor_t                               ep_out;
 } usb_configuration_hierarchy_t;
 
 extern usb_configuration_hierarchy_t usb_configuration_hierarchy;

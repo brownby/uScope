@@ -107,4 +107,67 @@ enum{
   GET_STAT  = 0xFF,
 };
 
+enum{
+  SET_LINE_CODING = 0x20,
+  GET_LINE_CODING = 0x21,
+  SET_CONTROL_LINE_STATE = 0x22,
+};
+
+enum
+{
+  USB_CDC_DEVICE_CLASS  = 2,  // USB Communication Device Class
+  USB_CDC_COMM_CLASS    = 2,  // CDC Communication Class Interface
+  USB_CDC_DATA_CLASS    = 10, // CDC Data Class Interface
+};
+
+enum
+{
+  USB_CDC_DLCM_SUBCLASS = 1, // Direct Line Control Model
+  USB_CDC_ACM_SUBCLASS  = 2, // Abstract Control Model
+  USB_CDC_TCM_SUBCLASS  = 3, // Telephone Control Model
+  USB_CDC_MCCM_SUBCLASS = 4, // Multi-Channel Control Model
+  USB_CDC_CCM_SUBCLASS  = 5, // CAPI Control Model
+  USB_CDC_ETH_SUBCLASS  = 6, // Ethernet Networking Control Model
+  USB_CDC_ATM_SUBCLASS  = 7, // ATM Networking Control Model
+};
+
+enum
+{
+  USB_CDC_HEADER_SUBTYPE    = 0, // Header Functional Descriptor
+  USB_CDC_CALL_MGMT_SUBTYPE = 1, // Call Management
+  USB_CDC_ACM_SUBTYPE       = 2, // Abstract Control Management
+  USB_CDC_UNION_SUBTYPE     = 6, // Union Functional Descriptor
+};
+
+// USB CDC Call Management Capabilities
+enum
+{
+  USB_CDC_CALL_MGMT_SUPPORTED = (1 << 0),
+  USB_CDC_CALL_MGMT_OVER_DCI  = (1 << 1),
+};
+
+// USB CDC ACM Capabilities
+enum
+{
+  // Device supports the request combination of Set_Comm_Feature,
+  // Clear_Comm_Feature, and Get_Comm_Feature.
+  USB_CDC_ACM_SUPPORT_FEATURE_REQUESTS   = (1 << 0),
+
+  // Device supports the request combination of Set_Line_Coding, Set_Control_Line_State,
+  // Get_Line_Coding, and the notification Serial_State.
+  USB_CDC_ACM_SUPPORT_LINE_REQUESTS      = (1 << 1),
+
+  // Device supports the request Send_Break.
+  USB_CDC_ACM_SUPPORT_SENDBREAK_REQUESTS = (1 << 2),
+
+  // Device supports the notification Network_Connection.
+  USB_CDC_ACM_SUPPORT_NOTIFY_REQUESTS    = (1 << 3),
+};
+
+enum
+{
+  USB_CDC_CTRL_SIGNAL_DTE_PRESENT        = (1 << 0), // DTR
+  USB_CDC_CTRL_SIGNAL_ACTIVATE_CARRIER   = (1 << 1), // RTS
+};
+
 #endif
