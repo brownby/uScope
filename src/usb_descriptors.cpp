@@ -91,7 +91,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bTerminalID         = 0x02,   // unique ID, chosen by developer
     .wTerminalType       = 0x0101, // 0x0101 = USB streaming
     .bAssocTerminal      = 0x00,   // no association
-    .bSourceID           = 0x04, // source is from feature unit
+    .bSourceID           = 0x01, // source is scope input terminal
     .iTerminal           = 0x00,   // unused
   },
 
