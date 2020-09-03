@@ -55,7 +55,10 @@ static uint8_t usb_ctrl_out_buf[16];
 static uint8_t usb_cdc_out_buf; // only receiving one byte at a time from serial connection
 static uint8_t *usb_cdc_in_buf;
 
-char incoming_string[];
+char incoming_string[255] = {0}; // up to 255 character long strings
+char command[255] = {0};
+uint8_t char_count = 0;
+bool cmd_recv = 0;
 
 static uint32_t adctobuf0 = 0;  // dma channel for adc to buf0
 static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
@@ -95,6 +98,11 @@ typedef struct __attribute__((packed)) {
   uint16_t  wLength;
 } usb_request_t;
 
+// typedef struct __attribute__((packed)) {
+//   usb_request_t request;
+//   uint16_t      value;
+// } usb_cdc_notify_serial_state_t;
+
 typedef struct { 
     UsbDeviceDescBank DeviceDescBank[2]; 
 } UsbdDescriptor;
@@ -113,6 +121,10 @@ dmacdescriptor descriptor __attribute__ ((aligned (16)));
 UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
 uint8_t interface_num = 0; // Current interface selected by host
 uint8_t alt_setting = 0;
+
+// usb_cdc_notify_serial_state_t usb_cdc_notify_message; 
+// static int usb_cdc_serial_state;
+// static bool usb_cdc_comm_busy;
 
 void uart_init() {
    
@@ -451,6 +463,16 @@ void usb_init() {
   USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1;
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
+
+  // usb_cdc_notify_message.request.bmRequestType = USB_IN_TRANSFER | USB_INTERFACE_RECIPIENT | USB_CLASS_REQUEST;
+  // usb_cdc_notify_message.request.bRequest = NOTIFY_SERIAL_STATE;
+  // usb_cdc_notify_message.request.wValue = 0;
+  // usb_cdc_notify_message.request.wIndex = 0;
+  // usb_cdc_notify_message.request.wLength = sizeof(uint16_t);
+  // usb_cdc_notify_message.value = 0;
+
+  // usb_cdc_serial_state = 0;
+  // usb_cdc_comm_busy = false;
   
   NVIC_SetPriority(USB_IRQn, 0x01); // second priority
   NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
@@ -1156,7 +1178,20 @@ void USB_Handler(){
       USB->DEVICE.DeviceEndpoint[i].EPSTATUSSET.bit.BK0RDY = 1;
 
       if(i == CDC_ENDPOINT_OUT) {
-
+        uart_puts("\nCDC OUT");
+        char incoming_c = (char)usb_cdc_out_buf;
+        if(incoming_c == '\n')
+        {
+          char_count = 0;
+          cmd_recv = 1;
+          memcpy(command, incoming_string, sizeof(command));
+          memset(incoming_string, 0, sizeof(incoming_string)); // reset incoming_string array
+        }
+        else
+        {
+          incoming_string[char_count] = incoming_c;
+          char_count++;
+        }
       }
     
     }
@@ -1293,9 +1328,21 @@ void fngenerator(type waveform){
       
   }
   
-  while(mute == false){
-    for (int i = 0; i < NPTS; i++){ 
-      analogWrite(A0,waveout[i]);
+  while(true){
+    if(cmd_recv)
+    {
+      cmd_recv = false;
+      if(command == "o")
+      {
+        digitalWrite(LED_BUILTIN, HIGH);
+      }
+    }
+
+    if(!mute)
+    {
+      for (int i = 0; i < NPTS; i++){ 
+        analogWrite(A0,waveout[i]);
+      }
     }
   }
 }
