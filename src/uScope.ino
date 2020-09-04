@@ -52,8 +52,8 @@ volatile uint16_t volume = 5;
 static uint16_t usb_ctrl_audio;
 static uint32_t usb_ctrl_in_buf[16];
 static uint8_t usb_ctrl_out_buf[16];
-static uint8_t usb_cdc_out_buf; // only receiving one byte at a time from serial connection
-static uint8_t *usb_cdc_in_buf;
+static uint8_t usb_cdc_out_buf[64] = {0}; 
+static uint8_t usb_cdc_in_buf[64];
 
 char incoming_string[255] = {0}; // up to 255 character long strings
 char command[255] = {0};
@@ -101,10 +101,10 @@ typedef struct __attribute__((packed)) {
   uint16_t  wLength;
 } usb_request_t;
 
-// typedef struct __attribute__((packed)) {
-//   usb_request_t request;
-//   uint16_t      value;
-// } usb_cdc_notify_serial_state_t;
+typedef struct __attribute__((packed)) {
+  usb_request_t request;
+  uint16_t      value;
+} usb_cdc_notify_serial_state_t;
 
 typedef struct { 
     UsbDeviceDescBank DeviceDescBank[2]; 
@@ -125,8 +125,8 @@ UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
 uint8_t interface_num = 0; // Current interface selected by host
 uint8_t alt_setting = 0;
 
-// usb_cdc_notify_serial_state_t usb_cdc_notify_message; 
-// static int usb_cdc_serial_state;
+usb_cdc_notify_serial_state_t usb_cdc_notify_message; 
+static int usb_cdc_serial_state;
 // static bool usb_cdc_comm_busy;
 
 void uart_init() {
@@ -467,14 +467,14 @@ void usb_init() {
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
 
-  // usb_cdc_notify_message.request.bmRequestType = USB_IN_TRANSFER | USB_INTERFACE_RECIPIENT | USB_CLASS_REQUEST;
-  // usb_cdc_notify_message.request.bRequest = NOTIFY_SERIAL_STATE;
-  // usb_cdc_notify_message.request.wValue = 0;
-  // usb_cdc_notify_message.request.wIndex = 0;
-  // usb_cdc_notify_message.request.wLength = sizeof(uint16_t);
-  // usb_cdc_notify_message.value = 0;
+  usb_cdc_notify_message.request.bmRequestType = USB_IN_TRANSFER | USB_INTERFACE_RECIPIENT | USB_CLASS_REQUEST;
+  usb_cdc_notify_message.request.bRequest = NOTIFY_SERIAL_STATE;
+  usb_cdc_notify_message.request.wValue = 0;
+  usb_cdc_notify_message.request.wIndex = 0;
+  usb_cdc_notify_message.request.wLength = sizeof(uint16_t);
+  usb_cdc_notify_message.value = 0;
 
-  // usb_cdc_serial_state = 0;
+  usb_cdc_serial_state = 0;
   // usb_cdc_comm_busy = false;
   
   NVIC_SetPriority(USB_IRQn, 0x01); // second priority
@@ -511,7 +511,7 @@ void USB_Handler(){
     EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
     EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
 
-    EP[CONTROL_ENDPOINT].DeviceDescBank[0].ADDR.reg = (uint32_t)usb_ctrl_out_buf;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[0].ADDR.reg = (uint32_t)&usb_ctrl_out_buf;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 16;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT = 0;
@@ -739,11 +739,15 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
           EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
 
-          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPCFG.bit.EPTYPE1 = 4; // interrupt IN
-          // not sure if I want to actually do anything with this endpoint
+          EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].ADDR.reg = (uint32_t)&usb_cdc_notify_message;
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
+
+          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPCFG.bit.EPTYPE1 = 4; // interrupt IN
+          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPINTENSET.bit.TRCPT1 = 1;
+          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPSTATUSCLR.bit.DTGLIN = 1;
+          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPSTATUSSET.bit.BK1RDY = 1;
 
           EP[CDC_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_cdc_in_buf;
           EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
@@ -757,14 +761,15 @@ void USB_Handler(){
           
           EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].ADDR.reg = (uint32_t)&usb_cdc_out_buf;
           EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
-          EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 1;
+          EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 64;
           EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT = 0;
 
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPCFG.bit.EPTYPE0 = 3; // bulk out
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPINTENSET.bit.TRCPT0 = 1;
-          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPSTATUS.bit.DTGLOUT = 1;
-          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPSTATUSSET.bit.BK0RDY = 1;
+          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPSTATUSCLR.bit.DTGLOUT = 1;
+          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPSTATUSCLR.bit.BK0RDY = 1; // arm receive
 
+          usb_cdc_serial_state |= USB_CDC_SERIAL_STATE_DSR;
         }
       } break;
 
@@ -1110,7 +1115,7 @@ void USB_Handler(){
         uart_puts("\nbDataBits: "); uart_put_hex(line_coding->bDataBits);
         uart_puts("\nbParity: "); uart_put_hex(line_coding->bParityType);
 
-        if(leng = sizeof(usb_cdc_line_coding_t))
+        if(leng == sizeof(usb_cdc_line_coding_t))
         {
           usb_cdc_line_coding = *line_coding;
         }
@@ -1194,19 +1199,28 @@ void USB_Handler(){
 
       if(i == CDC_ENDPOINT_OUT) {
         uart_puts("\nCDC OUT");
-        char incoming_c = (char)usb_cdc_out_buf;
+        uart_puts("\nBYTECOUNT: "); uart_put_hex((uint8_t)(EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT & 0xff));
+        char incoming_c = (char)*usb_cdc_out_buf;
+     
+        uart_putc('\n'); uart_putc(incoming_c);
+
         if(incoming_c == '\n')
         {
           char_count = 0;
-          cmd_recv = 1;
+          cmd_recv = true;
           memcpy(command, incoming_string, sizeof(command));
           memset(incoming_string, 0, sizeof(incoming_string)); // reset incoming_string array
         }
         else
         {
           incoming_string[char_count] = incoming_c;
+          uart_puts("\nincoming_string: "); uart_puts(incoming_string);
           char_count++;
         }
+
+        USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
+        USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK0RDY = 1;
+        continue;
       }
 
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
@@ -1301,6 +1315,14 @@ void USB_Handler(){
         // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(*test_message);
         // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
         // USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+      }
+
+      if(i == CDC_ENDPOINT_COMM)
+      {
+        uart_puts("\nCDC COMM");
+
+          continue;
+        }
       }
 
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;

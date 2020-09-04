@@ -141,6 +141,17 @@ enum
   USB_CDC_UNION_SUBTYPE     = 6, // Union Functional Descriptor
 };
 
+enum
+{
+  USB_CDC_SERIAL_STATE_DCD     = (1 << 0),
+  USB_CDC_SERIAL_STATE_DSR     = (1 << 1),
+  USB_CDC_SERIAL_STATE_BREAK   = (1 << 2),
+  USB_CDC_SERIAL_STATE_RING    = (1 << 3),
+  USB_CDC_SERIAL_STATE_FRAMING = (1 << 4),
+  USB_CDC_SERIAL_STATE_PARITY  = (1 << 5),
+  USB_CDC_SERIAL_STATE_OVERRUN = (1 << 6),
+};
+
 // USB CDC Call Management Capabilities
 enum
 {
