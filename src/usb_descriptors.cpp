@@ -222,7 +222,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bFunctionalLength   = sizeof(usb_cdc_call_managment_functional_descriptor_t),
     .bDescriptorType     = USB_CS_INTERFACE_DESCRIPTOR,
     .bDescriptorSubtype  = USB_CDC_CALL_MGMT_SUBTYPE,
-    .bmCapabilities      = USB_CDC_CALL_MGMT_OVER_DCI, // Arduino COM port uses USB_CDC_CALL_MGMT_SUPPPORTED
+    .bmCapabilities      = USB_CDC_CALL_MGMT_SUPPORTED, // Arduino COM port uses USB_CDC_CALL_MGMT_SUPPPORTED
     .bDataInterface      = 0x03, // interface number of data interface
   },
 

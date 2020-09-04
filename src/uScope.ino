@@ -60,6 +60,9 @@ char command[255] = {0};
 uint8_t char_count = 0;
 bool cmd_recv = 0;
 
+bool RTS = false;
+bool DTR = false;
+
 static uint32_t adctobuf0 = 0;  // dma channel for adc to buf0
 static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
 static uint32_t adctobuf2 = 2;  // dma channel for adc to buf2
@@ -738,6 +741,8 @@ void USB_Handler(){
 
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPCFG.bit.EPTYPE1 = 4; // interrupt IN
           // not sure if I want to actually do anything with this endpoint
+          EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+          EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
 
           EP[CDC_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)usb_cdc_in_buf;
@@ -1110,6 +1115,12 @@ void USB_Handler(){
           usb_cdc_line_coding = *line_coding;
         }
 
+        // send control ZLP
+        EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
+        USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
+        while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
+
       } break;
 
       case USB_CDC_CMD(IN, INTERFACE, CLASS, GET_LINE_CODING): {
@@ -1143,6 +1154,13 @@ void USB_Handler(){
       case USB_CDC_CMD(OUT, INTERFACE, CLASS, SET_CONTROL_LINE_STATE): {
         uart_puts("\nSetControlLineState");
 
+        uart_puts("\nRTS: "); uart_put_hex((wValue_L & 0x02) >> 1);
+        uart_puts("\nDTR: "); uart_put_hex(wValue_L & 0x01);
+
+        RTS = (wValue_L & 0x02) >> 1;
+        DTR = wValue_L & 0x01;
+
+        // send control ZLP
         EP[CONTROL_ENDPOINT].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1 = 1;
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
@@ -1174,9 +1192,6 @@ void USB_Handler(){
     flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
 
-      USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
-      USB->DEVICE.DeviceEndpoint[i].EPSTATUSSET.bit.BK0RDY = 1;
-
       if(i == CDC_ENDPOINT_OUT) {
         uart_puts("\nCDC OUT");
         char incoming_c = (char)usb_cdc_out_buf;
@@ -1193,6 +1208,9 @@ void USB_Handler(){
           char_count++;
         }
       }
+
+      USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
+      USB->DEVICE.DeviceEndpoint[i].EPSTATUSSET.bit.BK0RDY = 1;
     
     }
     
@@ -1275,6 +1293,16 @@ void USB_Handler(){
         }
       }
 
+      if(i == CDC_ENDPOINT_IN)
+      {
+        // char * test_message = "Test sending\n";
+
+        // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)test_message;
+        // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(*test_message);
+        // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+        // USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+      }
+
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
       USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
   
@@ -1299,6 +1327,8 @@ void usb_pipe_status(){
   __enable_irq();
 
 }
+
+char test_message = 'T';
 
 void fngenerator(type waveform){
 
@@ -1329,6 +1359,16 @@ void fngenerator(type waveform){
   }
   
   while(true){
+
+
+    // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&test_message;
+    // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(test_message);
+    // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+    // USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
+    // USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+
+    // while(0 == USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1);
+
     if(cmd_recv)
     {
       cmd_recv = false;
