@@ -127,7 +127,7 @@ uint8_t alt_setting = 0;
 
 usb_cdc_notify_serial_state_t usb_cdc_notify_message; 
 static int usb_cdc_serial_state;
-// static bool usb_cdc_comm_busy;
+static bool usb_cdc_comm_busy;
 
 void uart_init() {
    
@@ -480,6 +480,25 @@ void usb_init() {
   NVIC_SetPriority(USB_IRQn, 0x01); // second priority
   NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
 
+}
+
+void usb_cdc_send_state_notify()
+{
+  if(usb_cdc_comm_busy)
+  {
+    return;
+  }
+
+  if(usb_cdc_serial_state != usb_cdc_notify_message.value)
+  {
+    usb_cdc_comm_busy = true;
+    usb_cdc_notify_message.value = usb_cdc_serial_state;
+
+    EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+    EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(usb_cdc_notify_message);
+
+    USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPSTATUSSET.bit.BK1RDY = 1;
+  }
 }
 
 void USB_Handler(){
@@ -1321,8 +1340,16 @@ void USB_Handler(){
       {
         uart_puts("\nCDC COMM");
 
-          continue;
-        }
+        usb_cdc_comm_busy = false;
+
+        int one_shot = USB_CDC_SERIAL_STATE_BREAK | USB_CDC_SERIAL_STATE_RING |
+          USB_CDC_SERIAL_STATE_FRAMING | USB_CDC_SERIAL_STATE_PARITY |
+          USB_CDC_SERIAL_STATE_OVERRUN;
+
+        usb_cdc_notify_message.value &= ~one_shot;
+        usb_cdc_serial_state &= ~one_shot;
+
+        usb_cdc_send_state_notify();
       }
 
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
