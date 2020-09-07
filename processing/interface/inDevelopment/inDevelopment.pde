@@ -232,11 +232,11 @@ void mouseClicked() {
   if (wave.mouseClicked()){
     
     if (wave.clicked == true){ 
-      myDevice.write("o");
+      myDevice.write("x");
       println("turning output on"); 
     }
     else{ 
-      myDevice.write("f");
+      myDevice.write("o");
       println("turning output off"); 
     }
   }
