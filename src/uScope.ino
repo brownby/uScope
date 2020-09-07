@@ -1414,18 +1414,16 @@ void fngenerator(type waveform){
 
     // while(0 == USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1);
 
-    if(cmd_recv)
-    {
+    if(cmd_recv) {
+
       cmd_recv = false;
-      if(command == "o")
-      {
-        digitalWrite(LED_BUILTIN, HIGH);
-      }
+      if(command[0] == 'o'){ digitalWrite(LED_BUILTIN, HIGH); }
+      else{ digitalWrite(LED_BUILTIN, LOW); }
+
     }
 
-    if(!mute)
-    {
-      for (int i = 0; i < NPTS; i++){ 
+    if(!mute) {
+      for (int i = 0; i < NPTS; i++) { 
         analogWrite(A0,waveout[i]);
       }
     }
@@ -1445,6 +1443,8 @@ void setup() {
   adc_init();
   dma_init(); 
   usb_init();
+
+  pinMode(LED_BUILTIN,OUTPUT);
   
   adc_to_sram_dma();
   start_adc_sram_dma(); 
