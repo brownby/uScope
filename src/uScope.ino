@@ -1373,52 +1373,50 @@ void usb_pipe_status(){
 
 }
 
-char test_message = 'T';
-
-void fngenerator(type waveform){
+void fngenerator(){
 
   int i;
   float phase = 3.14159*3.0*2./NPTS;
 
-  switch (waveform){
-    
-    case 0:  // sine wave
-      for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 250.0f + 251.0f;
-      break;
-      
-    case 1:  // pulse wave
-      for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*1024*i/NPTS;
-      break;
-
-    case 2:  // square wave
-      for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*1024*i/NPTS;
-      break;
-
-    case 3:  // sawtooth wave
-      for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*1024*i/NPTS;
-      break;
-
-    default:
-      break;
-      
-  }
+  for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 250.0f + 251.0f; // default
   
-  while(true){
-
-
-    // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&test_message;
-    // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(test_message);
-    // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-    // USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-    // USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
-
-    // while(0 == USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1);
+  while(true) {
 
     if(cmd_recv) {
 
       cmd_recv = false;
-      if(command[0] == 'o'){ digitalWrite(LED_BUILTIN, HIGH); }
-      else{ digitalWrite(LED_BUILTIN, LOW); }
+
+      switch (command[0]){
+
+        case '0':  // sine wave
+          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 250.0f + 251.0f;
+          break;
+      
+        case '1':  // pulse wave
+          for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*1024*i/NPTS;
+          break;
+
+        case '2':  // square wave
+          for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*1024*i/NPTS;
+          break;
+
+        case '3':  // sawtooth wave
+          for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*1024*i/NPTS;
+          break;
+
+        case 'o':
+          mute = false; 
+          digitalWrite(LED_BUILTIN,HIGH);
+          break;
+
+        case 'f':
+          mute = true; 
+          digitalWrite(LED_BUILTIN,LOW);
+          break;
+
+        default:
+          break;
+      }
 
     }
 
@@ -1457,7 +1455,6 @@ void setup() {
 
 void loop() {
 
-  type waveform = sine;
-  fngenerator(waveform);
+  fngenerator();
   
 }

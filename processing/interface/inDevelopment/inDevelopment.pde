@@ -43,13 +43,12 @@
 
 // *** import libraries *** //
 
-import ddf.minim.*;  // used to connect to device over USB audio
-
+import ddf.minim.*;           // used to connect to device over USB audio
+import processing.serial.*;   // used to connect to device over virtual COM port
 
 // *** variable initialization *** //
 
 String version="beta";
-
 
 boolean nInt = true;             // n is an integer (round) or decimal !nInt 
 boolean fmt = true;              // fmt = true = "format", !fmt = false = "no format"
@@ -76,6 +75,8 @@ color rgb[]={color(255, 255, 0), color(0, 204, 255)};  // for 2 channels: yellow
 
 Minim minim;
 AudioInput in; // USB connection to device
+
+Serial myDevice;
 
 Channel channel[] = new Channel[numCh];
 Group group[]     = new Group[numCh+1]; // used to change V/div and ms/div simultaneously on all channels using SHIFT key
@@ -127,6 +128,9 @@ void setup() {
   minim = new Minim(this);
   in = minim.getLineIn(Minim.MONO, 1000, 44100, 8);
   in.disableMonitoring();
+  
+  printArray(Serial.list());
+  myDevice = new Serial(this, "/dev/cu.usbmodemALL_00013", 115200);
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
   for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+25+k*130, 185, 110); }
@@ -228,17 +232,11 @@ void mouseClicked() {
   if (wave.mouseClicked()){
     
     if (wave.clicked == true){ 
-      in.unmute();
-      //in.setVolume(1.0);
-      println(in.isMuted());
-      println(in.getVolume());
+      myDevice.write("o");
       println("turning output on"); 
     }
     else{ 
-      in.mute();
-      //in.setVolume(0.0);
-      println(in.isMuted());
-      println(in.getVolume());
+      myDevice.write("f");
       println("turning output off"); 
     }
   }
@@ -250,6 +248,8 @@ void mouseClicked() {
     squareWave.clicked = false;
     sawtoothWave.clicked = false;
     
+    myDevice.write("0");
+    
     println("sine wave selected");
        
   }
@@ -260,6 +260,8 @@ void mouseClicked() {
     pulseWave.clicked = true;
     squareWave.clicked = false;
     sawtoothWave.clicked = false;
+    
+    myDevice.write("1");
        
     println("pulse wave selected");   
        
@@ -272,6 +274,8 @@ void mouseClicked() {
     squareWave.clicked = true;
     sawtoothWave.clicked = false;
     
+    myDevice.write("2");
+    
     println("square wave selected");
        
   }
@@ -282,6 +286,8 @@ void mouseClicked() {
     pulseWave.clicked = false;
     squareWave.clicked = false;
     sawtoothWave.clicked = true;
+    
+    myDevice.write("3");
     
     println("sawtooth wave selected");
        
