@@ -4,7 +4,7 @@
  * Intended for use with MKR Zero (SAMD21)
  * 
  * J. Evan Smith, Ben Y. Brown
- * Last revised: 1 September 2020
+ * Last revised: 7 September 2020
  */
 
 #include "Arduino.h"          // required before wiring_private.h, also includes USBDesc.h, USBCore.h, USBAPI.h, and USB_host.h
@@ -23,12 +23,12 @@ uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass t
 #define NBEATS 1000         // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
-#define CONTROL_ENDPOINT 0
-#define ISO_ENDPOINT_IN  1
-#define ISO_ENDPOINT_OUT 2
+#define CONTROL_ENDPOINT  0
+#define ISO_ENDPOINT_IN   1
+#define ISO_ENDPOINT_OUT  2
 #define CDC_ENDPOINT_COMM 3
-#define CDC_ENDPOINT_IN 4
-#define CDC_ENDPOINT_OUT 5
+#define CDC_ENDPOINT_IN   4
+#define CDC_ENDPOINT_OUT  5
 
 #define LIMIT(a, b)     (((a) > (b)) ? (b) : (a))
 #define USB_CMD(dir, rcpt, type, cmd) \
@@ -532,7 +532,7 @@ void USB_Handler(){
 
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].ADDR.reg = (uint32_t)&usb_ctrl_out_buf;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
-    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 16;
+    EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.MULTI_PACKET_SIZE = 8;
     EP[CONTROL_ENDPOINT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT = 0;
 
     USB->DEVICE.DeviceEndpoint[0].EPSTATUSCLR.bit.BK0RDY = 1;
@@ -1217,28 +1217,24 @@ void USB_Handler(){
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
 
       if(i == CDC_ENDPOINT_OUT) {
+      
+        int incoming_length = EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT & 0xff;
+        for (int i=0; i<incoming_length; i++){ incoming_string[i] = usb_cdc_out_buf[i]; }
+
         uart_puts("\nCDC OUT");
         uart_puts("\nBYTECOUNT: "); uart_put_hex((uint8_t)(EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT & 0xff));
-        char incoming_c = (char)*usb_cdc_out_buf;
-     
-        uart_putc('\n'); uart_putc(incoming_c);
+        uart_puts("\nincoming_string: "); uart_puts(incoming_string);
 
-        if(incoming_c == '\n')
-        {
-          char_count = 0;
-          cmd_recv = true;
-          memcpy(command, incoming_string, sizeof(command));
-          memset(incoming_string, 0, sizeof(incoming_string)); // reset incoming_string array
-        }
-        else
-        {
-          incoming_string[char_count] = incoming_c;
-          uart_puts("\nincoming_string: "); uart_puts(incoming_string);
-          char_count++;
-        }
+        cmd_recv = true;
+        memcpy(command, incoming_string, sizeof(command));
+        memset(incoming_string, 0, sizeof(incoming_string)); // reset incoming_string array
+
+        USB->DEVICE.DeviceEndpoint[i].EPSTATUSSET.bit.BK0RDY = 1;
+        EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT = 0;
 
         USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT0 = 1;
         USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK0RDY = 1;
+
         continue;
       }
 
