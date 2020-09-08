@@ -60,7 +60,7 @@ static uint8_t usb_cdc_in_buf[64];
 
 char incoming_string[255] = {0}; // up to 255 character long strings
 String control_str = "";  // range up to 99,999 
-char command[255] = {0};
+char command[6] = {0};
 uint8_t char_count = 0;
 bool cmd_recv = 0;
 
@@ -1422,22 +1422,36 @@ void fngenerator(){
         case 'a':
           
           control_str = "";
-          for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
+          for (int i = 0; i < 5; i++){ 
+
+            control_str += command[i+1]; 
+            
+          }
+
           uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
-          amplitude = control_str.toFloat();
+          amplitude = map(control_str.toInt(),100,3000,1,250);
+          uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
           break;
 
         case 'f':
           
           control_str = "";
-          for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
+          for (int i = 0; i < 5; i++){ 
+            
+            control_str += command[i+1]; 
+            
+          }
+
           uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
-          frequency = control_str.toFloat();
+          frequency = map(control_str.toInt(),1,20000,2,20);
+          uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
           break;
 
         default:
           break;
       }
+
+      phase = 2.0*3.14159*frequency/NPTS;
 
       switch(waveform){
 

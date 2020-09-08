@@ -151,8 +151,8 @@ void setup() {
   
   pnlWave          = new Panel("Waveform Generator", color(168,52,235), marg1+15, display.y+display.h-150, 185, 150);   //display.x+785
   wave             = new CheckBox("output status", showSamples.x, pnlWave.y+25, 15);
-  fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 1e3f, 1e-3f, 10e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
-  aWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 1f, 10e-3f, 3f, pnlWave.x+10, fWave.y+fWave.h+3, pnlWave.w-20, 20);
+  fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 3e3f, 1, 20e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
+  aWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 1f, 100e-3f, 3f, pnlWave.x+10, fWave.y+fWave.h+3, pnlWave.w-20, 20);
   sineWave         = new CheckBox("sine", pnlWave.x+10, aWave.y+aWave.h+10, 15);  
   pulseWave        = new CheckBox("pulse", pnlWave.x+90, aWave.y+aWave.h+10, 15);  
   squareWave       = new CheckBox("square", sineWave.x, sineWave.y+20, 15);    
@@ -332,8 +332,8 @@ void mouseClicked() {
   showSamples.mouseClicked();
   calcFreq.mouseClicked();
 
-  if (dt.mouseClicked()) { adjustFt(); } // if dt changed, then adjustFt()
-  if (q.mouseClicked())  { adjustFt(); } // if q changed, then adjustFt()
+  fWave.mouseClicked(); // if dt changed, then adjustFt()
+  aWave.mouseClicked();// if q changed, then adjustFt()
   
 }
 
@@ -361,13 +361,13 @@ void mouseReleased() {
   resetAxes.mouseReleased();
   resetCursors.mouseReleased();
 
-  fWave.mouseReleased();  
-  aWave.mouseReleased();  
+  fWave.mouseReleased();
+  aWave.mouseReleased();
   
 }
 
 
-// *** mouseReleased function *** //
+// *** mouseMoved function *** //
 
 void mouseMoved() {
   
@@ -387,6 +387,9 @@ void mouseDragged() {
 
   fWave.mouseDragged();
   aWave.mouseDragged();
+
+  if(fWave.mouseDragged()){ myDevice.write("f"+nf(round(fWave.v.v))); }
+  if(aWave.mouseDragged()){ myDevice.write("a"+nf(round(aWave.v.v*1E3))); }
 
 }
 
