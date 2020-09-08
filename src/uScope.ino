@@ -46,7 +46,9 @@ uint8_t adc_buffer2[NBEATS];
 uint8_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
-volatile float amplitude = 250;
+float amplitude = 250.0;
+float frequency = 1000.0;
+
 volatile bool mute = false;
 volatile uint16_t volume = 5;
 
@@ -57,6 +59,7 @@ static uint8_t usb_cdc_out_buf[64] = {0};
 static uint8_t usb_cdc_in_buf[64];
 
 char incoming_string[255] = {0}; // up to 255 character long strings
+String control_str = "";  // range up to 99,999 
 char command[255] = {0};
 uint8_t char_count = 0;
 bool cmd_recv = 0;
@@ -1417,10 +1420,18 @@ void fngenerator(){
           break;
 
         case 'a':
-          //amplitude = map(command[1],0,9,0,250);
-          uart_puts("\namplitude: ");uart_put_hex(command[1]);
-          uart_puts("\namplitude: ");uart_write(command[1]+ascii);
-          //uart_puts("\namplitude_map: ");uart_put_hex(amplitude);
+          
+          control_str = "";
+          for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
+          uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
+          amplitude = control_str.toFloat();
+          break;
+
+        case 'f':
+          
+          for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
+          uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
+          frequency = control_str.toFloat();
           break;
 
         default:
@@ -1428,22 +1439,23 @@ void fngenerator(){
       }
 
       switch(waveform){
+
         case 0:  // sine wave
-          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 250.0f + 251.0f;
+          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + 251.0f;
           break;
       
         case 1:  // pulse wave
-          for (i=0;i<NPTS/20;i++) waveout[i] = 500.0f;
+          for (i=0;i<NPTS/20;i++) waveout[i] = 2.0 * amplitude;
           for (i=NPTS/20;i<NPTS;i++) waveout[i] = 0.0f;
           break;
 
         case 2:  // square wave
-          for (i=0;i<NPTS/2;i++) waveout[i] = 500.0f;
+          for (i=0;i<NPTS/2;i++) waveout[i] = 2.0 * amplitude;
           for (i=NPTS/2;i<NPTS;i++) waveout[i] = 0.0f;
           break;
 
         case 3:  // sawtooth wave
-          for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*510*i/NPTS;
+          for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*amplitude*i/NPTS;
           break;
 
       }
