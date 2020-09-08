@@ -4,7 +4,7 @@
  * Code for graphical interface
  * 
  * J. Evan Smith, Ben Y. Brown, modified from work by Rogerio Bego
- * Last revised: 24 August 2020
+ * Last revised: 8 September 2020
  *
  * =========== OUTLINE ===========
  *
@@ -130,7 +130,7 @@ void setup() {
   in.disableMonitoring();
   
   printArray(Serial.list());
-  //myDevice = new Serial(this, "/dev/cu.usbmodemALL_00013", 115200);
+  myDevice = new Serial(this, "/dev/cu.usbmodemALL_00013", 115200);
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
   for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+25+k*130, 185, 110); }
@@ -344,9 +344,8 @@ void mousePressed() {
   
   for (int k=0; k<numCh; k++) { channel[k].mousePressed(); }
   
-  q.mousePressed();
-  dt.mousePressed();
-  
+  fWave.mousePressed();
+  aWave.mousePressed();
   resetAxes.mousePressed();
   resetCursors.mousePressed();
   
@@ -362,8 +361,8 @@ void mouseReleased() {
   resetAxes.mouseReleased();
   resetCursors.mouseReleased();
 
-  if (dt.mouseReleased()) { adjustFt(); }  // if dt changed, then adjustFt()
-  if (q.mouseReleased())  { adjustFt(); }  // if q changed, then adjustFt()
+  fWave.mouseReleased();  
+  aWave.mouseReleased();  
   
 }
 
@@ -374,8 +373,8 @@ void mouseMoved() {
   
   for (int k=0; k<numCh; k++) { channel[k].mouseMoveu(); } 
   
-  dt.mouseMoveu();
-  q.mouseMoveu();
+  fWave.mouseMoveu();
+  aWave.mouseMoveu();
 
 }
 
@@ -386,8 +385,8 @@ void mouseDragged() {
 
   for (int k=0; k<numCh; k++) { channel[k].mouseDragged(); }
 
-  dt.mouseDragged();
-  q.mouseDragged();
+  fWave.mouseDragged();
+  aWave.mouseDragged();
 
 }
 

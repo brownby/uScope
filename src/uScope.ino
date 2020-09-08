@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 1000         // number of beats for adc transfer
+#define NBEATS 512         // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
@@ -1429,6 +1429,7 @@ void fngenerator(){
 
         case 'f':
           
+          control_str = "";
           for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
           uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
           frequency = control_str.toFloat();
