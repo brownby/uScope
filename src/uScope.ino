@@ -46,7 +46,7 @@ uint16_t adc_buffer2[NBEATS];
 uint16_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
-float amplitude = 250.0;
+float amplitude = 510.0;
 float frequency = 1000.0;
 
 volatile bool mute = false;
@@ -1470,7 +1470,7 @@ void fngenerator(){
           break;
 
         case 3:  // sawtooth wave
-          for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 2*amplitude*i/NPTS;
+          for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 4.0*amplitude*i/NPTS;
           break;
 
       }
