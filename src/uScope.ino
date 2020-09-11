@@ -1429,7 +1429,7 @@ void fngenerator(){
           }
 
           uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
-          amplitude = map(control_str.toInt(),100,3300,1,510);
+          amplitude = map(control_str.toInt(),100,3300,15,510);
           uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
           break;
 
@@ -1456,7 +1456,7 @@ void fngenerator(){
       switch(waveform){
 
         case 0:  // sine wave
-          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + 512.0f;
+          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + amplitude + 2.0f;
           break;
       
         case 1:  // pulse wave

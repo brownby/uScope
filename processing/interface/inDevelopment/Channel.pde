@@ -57,7 +57,7 @@ class Channel {
      
      chN.clicked = true;
      
-     vertScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","v/div",1f,50e-3f,20f,x+10,y+23,w-20,20,1);//21
+     vertScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","v/div",1f,100e-3f,10f,x+10,y+23,w-20,20,1);//21
      horiScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","s/div",300e-6f,50e-6f,400e-6f,x+10,vertScale.y+vertScale.h+3,w-20,20,2);
      
      p0 = display.y+4*DIV*(n+1);
