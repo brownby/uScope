@@ -134,8 +134,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bDescriptorSubtype  = 0x01,   // general
     .bTerminalLink       = 0x02,   // ID for output scope terminal
     .bDelay              = 0x00,   // 0x01 in example, interface delay *flag
-    //.wFormatTag          = 0x0002, // 0x0002 for Windows, 0x0001 for Mac
-     .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag 
+    .wFormatTag          = 0x0001, // 0x0001 = PCM, 0x0002 = PCM8 *flag 
                                    // macOS recognizes PCM, but not PCM8 (legacy = unsupported)? 
   },
 
@@ -147,13 +146,11 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bFormatType         = 0x01, // type I
     .bNrChannels         = 0x01, // 1 channel
     .bSubframeSize       = 0x02, // 2 bytes per audio subframe 
-    //.bSubframeSize       = 0x01,
     .bBitResolution      = 0x10, // 16 bits
-   // .bBitResolution      = 0x08, // 8 bits 
     .bSamFreqType        = 0x01, // 1 sampling frequency
-    .bSamFreq0_byte0     = 0x44,
-    .bSamFreq0_byte1     = 0xAC,
-    .bSamFreq0_byte2     = 0x00, // 44.1 kHz
+    .bSamFreq0_byte0     = 0x10,
+    .bSamFreq0_byte1     = 0xB1,
+    .bSamFreq0_byte2     = 0x02, // 176400 Hz > 107.1 kHz (sample rate)
   },
 
   .scope_iso_ep =
