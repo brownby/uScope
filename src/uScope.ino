@@ -1429,7 +1429,7 @@ void fngenerator(){
           }
 
           uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
-          amplitude = map(control_str.toInt(),100,3000,1,510);
+          amplitude = map(control_str.toInt(),100,3300,1,510);
           uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
           break;
 
