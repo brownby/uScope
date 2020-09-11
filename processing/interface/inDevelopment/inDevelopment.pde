@@ -126,7 +126,7 @@ void setup() {
   marg2 = marg1+200;
   
   minim = new Minim(this);
-  in = minim.getLineIn(Minim.MONO, 1000, 44100, 16);
+  in = minim.getLineIn(Minim.MONO, 1000, 176400, 16);
   in.disableMonitoring();
   in.mute();
   
