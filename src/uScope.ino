@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 312         // number of beats for adc transfer
+#define NBEATS 312          // number of beats for adc transfer
 #define NPTS 1024           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
@@ -1382,7 +1382,7 @@ void fngenerator(){
   int i;
   float phase = 3.14159*3.0*2./NPTS;
 
-  for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 250.0f + 251.0f; // default
+  for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 510.0f + 512.0f; // default
   type waveform = sine;
   
   while(true) {
@@ -1429,7 +1429,7 @@ void fngenerator(){
           }
 
           uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
-          amplitude = map(control_str.toInt(),100,3000,1,250);
+          amplitude = map(control_str.toInt(),100,3000,1,510);
           uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
           break;
 
@@ -1456,7 +1456,7 @@ void fngenerator(){
       switch(waveform){
 
         case 0:  // sine wave
-          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + 251.0f;
+          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + 512.0f;
           break;
       
         case 1:  // pulse wave
