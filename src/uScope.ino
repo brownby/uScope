@@ -40,10 +40,10 @@ uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass t
 #define USB_CDC_CMD(dir, rcpt, type, cmd) \
     ((cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
 
-uint8_t adc_buffer0[NBEATS];  // buffer with length set by NBEATS
-uint8_t adc_buffer1[NBEATS];  // alternating buffer
-uint8_t adc_buffer2[NBEATS];
-uint8_t adc_buffer3[NBEATS];
+uint16_t adc_buffer0[NBEATS];  // buffer with length set by NBEATS
+uint16_t adc_buffer1[NBEATS];  // alternating buffer
+uint16_t adc_buffer2[NBEATS];
+uint16_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
 float amplitude = 250.0;
@@ -225,7 +225,7 @@ void adc_init() {
 
   pinPeripheral(ADCPIN, PIO_ANALOG);     // for pin, set function
 
-  ADC->CTRLA.bit.ENABLE = 0x00;          // disable ADC before configuration
+  ADC->CTRLA.bit.ENABLE = 0x0;          // disable ADC before configuration
   while(ADC->STATUS.bit.SYNCBUSY == 1);  // wait
 
   ADC->INPUTCTRL.bit.GAIN = 0xF;         // 0xF for DIV2 or 0x0 for 1X
@@ -239,11 +239,11 @@ void adc_init() {
   while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
-  ADC->SAMPCTRL.reg = 0x00;              // add 8 half ADC clk cycle periods to sample time
+  ADC->SAMPCTRL.reg = 0x4;              // add 8 half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
-  ADC->CTRLB.bit.PRESCALER = 0x4;        // 0x5 = DIV128
-  ADC->CTRLB.bit.RESSEL = 0x3;           // result resolution, 0x2 = 10 bit, 0x3 = 8 bit
+  ADC->CTRLB.bit.PRESCALER = 0x5;        // 0x5 = DIV128
+  ADC->CTRLB.bit.RESSEL = 0x0;           // result resolution, 0x0 = 12 bit, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;            // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;           // ADC is single-ended, ignore MUXNEG defined above
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
@@ -274,7 +274,7 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
   descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
   descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x0); // beat size is 1 byte
+  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
   descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
@@ -300,7 +300,7 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
   descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
   descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x0); // beat size is 1 byte
+  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
   descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
@@ -326,7 +326,7 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
   descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
   descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x0); // beat size is 1 byte
+  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
   descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
@@ -352,7 +352,7 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
   descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
   descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x0); // beat size is 1 byte
+  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
   descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
