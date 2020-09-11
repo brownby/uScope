@@ -30,7 +30,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bConfigurationValue = 0x01, // used to select this configuration, not important given bNumConfigurations = 1
     .iConfiguration      = 0x00, //unused
     .bmAttributes        = 0x80,
-    .bMaxPower           = 250, // 400 mA
+    .bMaxPower           = 200, // 400 mA
   },
 
   .audio_IAD =

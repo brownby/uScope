@@ -126,12 +126,12 @@ void setup() {
   marg2 = marg1+200;
   
   minim = new Minim(this);
-  in = minim.getLineIn(Minim.MONO, 1000, 44100, 8);
+  in = minim.getLineIn(Minim.MONO, 1000, 44100, 16);
   in.disableMonitoring();
   in.mute();
   
   printArray(Serial.list());
-  myDevice = new Serial(this, "COM11", 115200);
+  myDevice = new Serial(this, "/dev/cu.usbmodemALL_00013", 115200);
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
   for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+25+k*130, 185, 110); }
@@ -411,8 +411,8 @@ void handleIncoming() {
   
   if (stream == true){
   
-    for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*300)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
-    for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.left.get(i)*300)+40; } 
+    for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*3000)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
+    for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.left.get(i)*3000)+40; } 
     
     channel[0].updated=true;
     channel[1].updated=true;
