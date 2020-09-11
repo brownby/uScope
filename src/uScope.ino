@@ -225,7 +225,7 @@ void adc_init() {
 
   pinPeripheral(ADCPIN, PIO_ANALOG);     // for pin, set function
 
-  ADC->CTRLA.bit.ENABLE = 0x0;          // disable ADC before configuration
+  ADC->CTRLA.bit.ENABLE = 0x00;          // disable ADC before configuration
   while(ADC->STATUS.bit.SYNCBUSY == 1);  // wait
 
   ADC->INPUTCTRL.bit.GAIN = 0xF;         // 0xF for DIV2 or 0x0 for 1X
@@ -239,7 +239,7 @@ void adc_init() {
   while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
-  ADC->SAMPCTRL.reg = 0x4;              // add 8 half ADC clk cycle periods to sample time
+  ADC->SAMPCTRL.reg = 0x4;               // add 4 half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
   ADC->CTRLB.bit.PRESCALER = 0x5;        // 0x5 = DIV128
@@ -268,7 +268,7 @@ void adc_to_sram_dma() {
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf1]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer0 + NBEATS; // end of target address
+  descriptor.DSTADDR = (uint32_t) adc_buffer0 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
@@ -294,7 +294,7 @@ void adc_to_sram_dma() {
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer1 + NBEATS; // end of target address
+  descriptor.DSTADDR = (uint32_t) adc_buffer1 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
@@ -320,7 +320,7 @@ void adc_to_sram_dma() {
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer2 + NBEATS; // end of target address
+  descriptor.DSTADDR = (uint32_t) adc_buffer2 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
@@ -346,7 +346,7 @@ void adc_to_sram_dma() {
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer3 + NBEATS; // end of target address
+  descriptor.DSTADDR = (uint32_t) adc_buffer3 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
