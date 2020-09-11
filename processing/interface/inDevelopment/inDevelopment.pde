@@ -411,8 +411,8 @@ void handleIncoming() {
   
   if (stream == true){
   
-    for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*3000)+40; } // empirical 'calibration' to match Waveforms amplitude, offset
-    for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.left.get(i)*3000)+40; } 
+    for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*4095); } // empirical 'calibration' to match Waveforms amplitude, offset
+    for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.right.get(i)*3000); } 
     
     channel[0].updated=true;
     channel[1].updated=true;

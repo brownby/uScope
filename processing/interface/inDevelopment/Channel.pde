@@ -251,8 +251,10 @@ class Channel {
  
   void edgeDetector(){
     
-    byte hysteresis = 10;
-    byte margin = 5;
+    byte hysteresis = 5;
+    int margin = (int)map(horiScale.v.v,horiScale.vMin,horiScale.vMax,4.0,2.0);
+    
+    println(margin);
     
     int threshold_high = vTrigger + hysteresis;
     int threshold_low = vTrigger - hysteresis;
