@@ -16,12 +16,12 @@
 #include "usb_enums.h"
 
 #define freq_CPU 48000000                                           // CPU clock frequency
-static uint32_t baud = 115200;                                      // for UART debug of USB
+static uint32_t baud = 230400;                                      // for UART debug of USB
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 500         // number of beats for adc transfer
-#define NPTS 1024           // number of points within waveform definition
+#define NBEATS 500          // number of beats for adc transfer, MUST be < 512 (?)
+#define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
 #define ISO_ENDPOINT_IN   1
@@ -48,6 +48,9 @@ uint16_t waveout[NPTS];       // buffer for waveform
 
 float amplitude = 510.0;
 float frequency = 1000.0;
+
+unsigned long LoopTimer = 0;
+const int LoopTime = 1; // set to < 10 for 20 kHz output, < 5 seems to improve jitter
 
 volatile bool mute = false;
 volatile uint16_t volume = 5;
@@ -1238,12 +1241,14 @@ void usb_pipe_status(){
 void fngenerator(){
 
   int i;
-  float phase = 3.14159*3.0*2./NPTS;
+  float phase = (2.0*3.14159*3.0)/NPTS;
 
   for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 510.0f + 512.0f; // default
   type waveform = sine;
   
   while(true) {
+
+    int t = micros();
 
     if(cmd_recv) {
 
@@ -1309,7 +1314,7 @@ void fngenerator(){
           break;
       }
 
-      phase = 2.0*3.14159*frequency/NPTS;
+      phase = (2.0*3.14159*frequency)/NPTS;
 
       switch(waveform){
 
@@ -1336,7 +1341,10 @@ void fngenerator(){
 
     if(!mute) {
       for (int i = 0; i < NPTS; i++) { 
-        analogWrite(A0,waveout[i]);
+        if (micros() > LoopTimer) {
+          LoopTimer += LoopTime;
+          analogWrite(A0,waveout[i]);
+        }
       }
     }
   }
@@ -1357,6 +1365,7 @@ void setup() {
   usb_init();
 
   pinMode(LED_BUILTIN,OUTPUT);
+  digitalWrite(LED_BUILTIN,HIGH);
   
   adc_to_sram_dma();
   start_adc_sram_dma(); 
@@ -1368,7 +1377,7 @@ void setup() {
 }
 
 void loop() {
-
-  fngenerator();
   
+  fngenerator();
+
 }
