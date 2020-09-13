@@ -849,20 +849,6 @@ void USB_Handler(){
         
       } break;
 
-      case USB_CMD(IN, DEVICE, STANDARD, GET_STATUS):{
-
-        uart_puts("\nGetStatus: Device");
-        uart_puts("\nEmpty case");
-
-      }
-      
-      case USB_CMD(IN, INTERFACE, STANDARD, GET_STATUS):{
-
-        uart_puts("\nGetStatus: Interface");
-        uart_puts("\nEmpty case");
-
-      }
-
       case USB_CMD(IN, ENDPOINT, STANDARD, GET_STATUS): {
 
         uart_puts("\nGetStatus: Endpoint");
@@ -945,49 +931,6 @@ void USB_Handler(){
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
-      } break;
-
-      case USB_CMD(OUT, ENDPOINT, STANDARD, SET_FEATURE): {
-
-        uart_puts("\nSetFeature: Interface");
-        uart_puts("\nEmpty case");
-        
-        //TODO
-      
-      } break;
-
-      case USB_CMD(OUT, DEVICE, STANDARD, CLEAR_FEATURE): {
-      
-        uart_puts("\nClearFeature: Device");
-        uart_puts("\nEmpty case");
-        
-        //TODO
-      
-      } break;
-
-      case USB_CMD(OUT, INTERFACE, STANDARD, CLEAR_FEATURE): {
-      
-        uart_puts("\nClearFeature: Interface");
-        uart_puts("\nEmpty case");
-        
-        //TODO
-      
-      } break;
-
-      case USB_CMD(OUT, ENDPOINT, STANDARD, CLEAR_FEATURE): {
-
-        uart_puts("\nClearFeature: Endpoint");
-        uart_puts("\nEmpty case");
-        
-        //TODO
-
-      } break;
-
-      case USB_CMD(IN, INTERFACE, STANDARD, GET_DESCRIPTOR): {
-
-        uart_puts("\nGetDescriptor: Interface");
-        uart_puts("\nEmpty case");
-    
       } break;
 
       case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_MIN):{
@@ -1210,17 +1153,14 @@ void USB_Handler(){
 
   for (int i = 0; epint && i < USB_EPT_NUM; i++){
     
-    if (0 == (epint & (1 << i)))
-    {
-      continue;
-    }
-
+    if (0 == (epint & (1 << i))){ continue; }
     epint &= ~(1 << i);
     
     flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
+
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
 
-      if(i == CDC_ENDPOINT_OUT) {
+      if(i == CDC_ENDPOINT_OUT){
       
         int incoming_length = EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT & 0xff;
         for (int i=0; i<incoming_length; i++){ incoming_string[i] = usb_cdc_out_buf[i]; }
@@ -1249,39 +1189,19 @@ void USB_Handler(){
     
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT1){
 
-      if(i == ISO_ENDPOINT_IN)
-      {
-        if(interface_num != 0)
-        {            
-          if(bufnum != prevBuf || prevBuf == 4)
-          {
+      if(i == ISO_ENDPOINT_IN){
+        if(interface_num != 0){            
+          if(bufnum != prevBuf || prevBuf == 4){
             
             prevBuf = bufnum;
-
 
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
           
-            if(bufnum == 0)
-            {
-              EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer3;
-              // uart_puts("\n3--");
-            }
-            else if(bufnum == 1)
-            {
-              EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
-              // uart_puts("\n0--");
-            }
-            else if(bufnum == 2)
-            {
-              EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
-              // uart_puts("\n1--");
-            }
-            else if(bufnum == 3)
-            {
-              EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer2;
-              // uart_puts("\n2--");
-            }
+            if(bufnum == 0){ EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer3; }
+            else if(bufnum == 1){ EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0; }
+            else if(bufnum == 2){ EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1; }
+            else if(bufnum == 3){ EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer2; }
 
             EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS*2;    // size of ADC buffer in SRAM
             EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
@@ -1290,11 +1210,8 @@ void USB_Handler(){
 
           }
         
-          else if (bufnum == prevBuf)
-          {
+          else if (bufnum == prevBuf){
 
-            // uart_puts("\nZLP");
-            
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
             USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
 
@@ -1320,20 +1237,9 @@ void USB_Handler(){
               DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 
             }
-
           }
         continue;
         }
-      }
-
-      if(i == CDC_ENDPOINT_IN)
-      {
-        // char * test_message = "Test sending\n";
-
-        // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)test_message;
-        // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(*test_message);
-        // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-        // USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
       }
 
       if(i == CDC_ENDPOINT_COMM)
