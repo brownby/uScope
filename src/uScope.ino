@@ -1248,8 +1248,6 @@ void fngenerator(){
   
   while(true) {
 
-    int t = micros();
-
     if(cmd_recv) {
 
       cmd_recv = false;
