@@ -1223,8 +1223,6 @@ void fngenerator(){
 
     if(cmd_recv) {
 
-      uart_puts("cmd");
-
       cmd_recv = false;
 
       switch (command[0]){
@@ -1258,29 +1256,23 @@ void fngenerator(){
         case 'a':
           
           control_str = "";
-          for (int i = 0; i < 5; i++){ 
+          for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
-            control_str += command[i+1]; 
-            
-          }
-
-          uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
           amplitude = map(control_str.toInt(),100,3300,15,510);
-          uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
+
+          //uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
+          //uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
           break;
 
         case 'f':
           
           control_str = "";
-          for (int i = 0; i < 5; i++){ 
-            
-            control_str += command[i+1]; 
-            
-          }
+          for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
-          uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
           frequency = map(control_str.toInt(),1,20000,2,20);
-          uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
+
+          // uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
+          // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
           break;
 
         default:

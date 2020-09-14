@@ -118,7 +118,7 @@ CheckBox  sawtoothWave;  // type
 void setup() {
   
   size(1040, 635); 
-  frameRate(30);
+  frameRate(24);
 
   display = new Display(30+10, 60, 17*DIV, 12*DIV);  // 17 horizontal and 12 vertical divisions
   
@@ -411,8 +411,8 @@ void handleIncoming() {
   
   if (stream == true){
   
-    for(int i = 0; i < in.bufferSize()-1; i++) { channel[0].buffer[i]= int(in.left.get(i)*5400); } // empirical 'calibration' to match Waveforms amplitude, offset
-    for(int i = 0; i < in.bufferSize()-1; i++) { channel[1].buffer[i]= int(in.left.get(i)*5400); } 
+    for(int i = 0; i < in.bufferSize(); i++) { channel[0].buffer[i]= int(in.left.get(i)*5400); } // empirical 'calibration' to match Waveforms amplitude, offset
+    for(int i = 0; i < in.bufferSize(); i++) { channel[1].buffer[i]= int(in.left.get(i)*5400); } 
     
     channel[0].updated=true;
     channel[1].updated=true;
