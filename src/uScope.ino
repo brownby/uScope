@@ -117,6 +117,11 @@ typedef struct {
     UsbDeviceDescBank DeviceDescBank[2]; 
 } UsbdDescriptor;
 
+typedef struct {
+  uint8_t interface_num;
+  uint8_t alternate_setting;
+} usb_interface_status_t;
+
 static usb_cdc_line_coding_t usb_cdc_line_coding =
 {
   .dwDTERate   = 115200,
@@ -135,6 +140,8 @@ uint8_t alt_setting = 0;
 usb_cdc_notify_serial_state_t usb_cdc_notify_message; 
 static int usb_cdc_serial_state;
 static bool usb_cdc_comm_busy;
+
+usb_interface_status_t audio_stream_interface;
 
 void uart_init() {
    
@@ -412,7 +419,7 @@ void DMAC_Handler() {
       break;
   }
 
-  if(interface_num != 0){ 
+  if(audio_stream_interface.alternate_setting == 1){ 
 
     USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
     USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
@@ -431,10 +438,6 @@ void DMAC_Handler() {
       case 3:
         EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer2;
     }
-    // if(bufnum == 0){ EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer3; }
-    // else if(bufnum == 1){ EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0; }
-    // else if(bufnum == 2){ EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1; }
-    // else if(bufnum == 3){ EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer2; }
 
     EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS*2;    // size of ADC buffer in SRAM
     EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
@@ -442,6 +445,7 @@ void DMAC_Handler() {
     USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
   
   }
+  
  __enable_irq();
 }
 
@@ -496,6 +500,7 @@ void usb_init() {
 
   usb_cdc_serial_state = 0;
   // usb_cdc_comm_busy = false;
+  audio_stream_interface.interface_num = 1;
   
   NVIC_SetPriority(USB_IRQn, 0x01); // second priority
   NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
@@ -855,11 +860,19 @@ void USB_Handler(){
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
         // send ISO ZLP - to trigger first TRCPT1
-        if(interface_num == 1 && alt_setting == 1) // AudioStreaming interface, stream1 selected, start streaming
+        if(interface_num == 1) // AudioStreaming interface
         {
-          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-          USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-          USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+          // EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
+          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+          if(alt_setting == 0)
+          {
+            audio_stream_interface.alternate_setting = 0;
+          }
+          else if(alt_setting == 1)
+          {
+            audio_stream_interface.alternate_setting = 1;
+          }
         }
         
       } break;
