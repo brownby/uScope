@@ -404,7 +404,6 @@ void DMAC_Handler() {
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
 
   USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
-  EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS*2;    // size of ADC buffer in SRAM
   EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
 
   switch((audio_stream_interface.alternate_setting << 4) | bufnum)
@@ -761,6 +760,7 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.DTGLIN = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
           EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
+          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS*2;    // size of ADC buffer in SRAM
 
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].ADDR.reg = (uint32_t)&usb_cdc_notify_message;
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
