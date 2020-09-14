@@ -399,25 +399,9 @@ void DMAC_Handler() {
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL; // | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
   //uart_puts("\nd");uart_put_hex(bufnum);
-
-  switch(bufnum){
-    case 0:
-      DMAC->CHID.reg = DMAC_CHID_ID(1); // select active channel
-      DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-      break;
-    case 1:
-      DMAC->CHID.reg = DMAC_CHID_ID(2); // select active channel
-      DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-      break;
-    case 2:
-      DMAC->CHID.reg = DMAC_CHID_ID(3); // select active channel
-      DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-      break;
-    case 3: 
-      DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
-      DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-      break;
-  }
+  
+  DMAC->CHID.reg = (bufnum + 1 == 4) ? (DMAC_CHID_ID(0)) : (DMAC_CHID_ID(bufnum + 1));
+  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
 
   if(audio_stream_interface.alternate_setting == 1){ 
 
@@ -445,7 +429,7 @@ void DMAC_Handler() {
     USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
   
   }
-  
+
  __enable_irq();
 }
 
