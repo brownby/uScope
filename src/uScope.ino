@@ -19,9 +19,9 @@
 static uint32_t baud = 115200;                                      // for UART debug of USB
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
-#define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 312          // number of beats for adc transfer
-#define NPTS 1024           // number of points within waveform definition
+#define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
+#define NBEATS 500          // number of beats for adc transfer, MUST be < 512 (?)
+#define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
 #define ISO_ENDPOINT_IN   1
@@ -47,7 +47,10 @@ uint16_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
 float amplitude = 510.0;
-float frequency = 1000.0;
+float frequency = 5.0;
+
+unsigned long LoopTimer = 0;
+const int LoopTime = 1; // set to < 10 for 20 kHz output, < 5 seems to improve jitter
 
 volatile bool mute = false;
 volatile uint16_t volume = 5;
@@ -114,6 +117,11 @@ typedef struct {
     UsbDeviceDescBank DeviceDescBank[2]; 
 } UsbdDescriptor;
 
+typedef struct {
+  uint8_t interface_num;
+  uint8_t alternate_setting;
+} usb_interface_status_t;
+
 static usb_cdc_line_coding_t usb_cdc_line_coding =
 {
   .dwDTERate   = 115200,
@@ -132,6 +140,8 @@ uint8_t alt_setting = 0;
 usb_cdc_notify_serial_state_t usb_cdc_notify_message; 
 static int usb_cdc_serial_state;
 static bool usb_cdc_comm_busy;
+
+usb_interface_status_t audio_stream_interface;
 
 void uart_init() {
    
@@ -267,8 +277,8 @@ void adc_to_sram_dma() {
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf1]; 
-  descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer0 + 2*NBEATS; // end of target address
+  descriptor.SRCADDR =  (uint32_t) &ADC->RESULT.reg; 
+  descriptor.DSTADDR =  (uint32_t) adc_buffer0 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
@@ -292,7 +302,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
+  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf2]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer1 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -318,7 +328,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
+  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf3]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer2 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -385,45 +395,35 @@ void DMAC_Handler() {
 
   __disable_irq(); // disable interrupts
 
-  ZLP_c = 0;
-
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
-  // uart_puts("\n\nd"); uart_write(bufnum + ascii);
-
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
-  DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
+  DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL; // | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
+  //uart_puts("\nd");uart_put_hex(bufnum);
+  
+  DMAC->CHID.reg = (bufnum + 1 == 4) ? (DMAC_CHID_ID(0)) : (DMAC_CHID_ID(bufnum + 1));
+  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
 
-  if (bufnum == 0)
+  USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
+  EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
+
+  switch((audio_stream_interface.alternate_setting << 4) | bufnum)
   {
-    // uart_puts("\ncmd1");
-
-    DMAC->CHID.reg = DMAC_CHID_ID(1); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  } 
-  else if (bufnum == 1)
-  {
-    // uart_puts("\ncmd2");
-
-    DMAC->CHID.reg = DMAC_CHID_ID(2); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  }
-  else if (bufnum == 2)
-  {
-    // uart_puts("\ncmd3");
-
-    DMAC->CHID.reg = DMAC_CHID_ID(3); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  }
-  else if (bufnum == 3)
-  {
-    // uart_puts("\ncmd0");
-
-    DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
+    case 0x10: // bufnum == 0
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer3;
+      USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+      break;
+    case 0x11: // bufnum == 1
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
+      USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+      break;
+    case 0x12: // bufnum == 2
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
+      USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+      break;
+    case 0x13: // bufnum == 3
+      EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer2;
+      USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+      break;
   }
 
   __enable_irq();
@@ -480,6 +480,7 @@ void usb_init() {
 
   usb_cdc_serial_state = 0;
   // usb_cdc_comm_busy = false;
+  audio_stream_interface.interface_num = 1;
   
   NVIC_SetPriority(USB_IRQn, 0x01); // second priority
   NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
@@ -507,7 +508,6 @@ void usb_cdc_send_state_notify()
 
 void USB_Handler(){
 
-  __disable_irq();
   int epint, flags;
 
   // Reset
@@ -757,10 +757,10 @@ void USB_Handler(){
           uart_puts("\nConfigured");
 
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPCFG.bit.EPTYPE1 = 2; // isochronous IN
-          USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTENSET.bit.TRCPT1 = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.DTGLIN = 1;
           USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
           EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
+          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS*2;    // size of ADC buffer in SRAM
 
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].ADDR.reg = (uint32_t)&usb_cdc_notify_message;
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
@@ -840,28 +840,22 @@ void USB_Handler(){
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
         // send ISO ZLP - to trigger first TRCPT1
-        if(interface_num == 1 && alt_setting == 1) // AudioStreaming interface, stream1 selected, start streaming
+        if(interface_num == 1) // AudioStreaming interface
         {
-          EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-          USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-          USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+          // EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
+          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
+          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
+          if(alt_setting == 0)
+          {
+            audio_stream_interface.alternate_setting = 0;
+          }
+          else if(alt_setting == 1)
+          {
+            audio_stream_interface.alternate_setting = 1;
+          }
         }
         
       } break;
-
-      case USB_CMD(IN, DEVICE, STANDARD, GET_STATUS):{
-
-        uart_puts("\nGetStatus: Device");
-        uart_puts("\nEmpty case");
-
-      }
-      
-      case USB_CMD(IN, INTERFACE, STANDARD, GET_STATUS):{
-
-        uart_puts("\nGetStatus: Interface");
-        uart_puts("\nEmpty case");
-
-      }
 
       case USB_CMD(IN, ENDPOINT, STANDARD, GET_STATUS): {
 
@@ -945,49 +939,6 @@ void USB_Handler(){
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
-      } break;
-
-      case USB_CMD(OUT, ENDPOINT, STANDARD, SET_FEATURE): {
-
-        uart_puts("\nSetFeature: Interface");
-        uart_puts("\nEmpty case");
-        
-        //TODO
-      
-      } break;
-
-      case USB_CMD(OUT, DEVICE, STANDARD, CLEAR_FEATURE): {
-      
-        uart_puts("\nClearFeature: Device");
-        uart_puts("\nEmpty case");
-        
-        //TODO
-      
-      } break;
-
-      case USB_CMD(OUT, INTERFACE, STANDARD, CLEAR_FEATURE): {
-      
-        uart_puts("\nClearFeature: Interface");
-        uart_puts("\nEmpty case");
-        
-        //TODO
-      
-      } break;
-
-      case USB_CMD(OUT, ENDPOINT, STANDARD, CLEAR_FEATURE): {
-
-        uart_puts("\nClearFeature: Endpoint");
-        uart_puts("\nEmpty case");
-        
-        //TODO
-
-      } break;
-
-      case USB_CMD(IN, INTERFACE, STANDARD, GET_DESCRIPTOR): {
-
-        uart_puts("\nGetDescriptor: Interface");
-        uart_puts("\nEmpty case");
-    
       } break;
 
       case USB_AUDIO_CMD(IN, INTERFACE, CLASS, GET_MIN):{
@@ -1210,17 +1161,35 @@ void USB_Handler(){
 
   for (int i = 0; epint && i < USB_EPT_NUM; i++){
     
-    if (0 == (epint & (1 << i)))
-    {
-      continue;
-    }
-
+    if (0 == (epint & (1 << i))){ continue; }
     epint &= ~(1 << i);
     
     flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
+
+    if (flags & USB_DEVICE_EPINTFLAG_TRCPT1){
+
+      if(i == CDC_ENDPOINT_COMM){
+        uart_puts("\nCDC COMM");
+
+        usb_cdc_comm_busy = false;
+
+        int one_shot = USB_CDC_SERIAL_STATE_BREAK | USB_CDC_SERIAL_STATE_RING |
+          USB_CDC_SERIAL_STATE_FRAMING | USB_CDC_SERIAL_STATE_PARITY |
+          USB_CDC_SERIAL_STATE_OVERRUN;
+
+        usb_cdc_notify_message.value &= ~one_shot;
+        usb_cdc_serial_state &= ~one_shot;
+
+        usb_cdc_send_state_notify();
+      }
+
+      USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
+      USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
+  
+    }
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
 
-      if(i == CDC_ENDPOINT_OUT) {
+      if(i == CDC_ENDPOINT_OUT){
       
         int incoming_length = EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT & 0xff;
         for (int i=0; i<incoming_length; i++){ incoming_string[i] = usb_cdc_out_buf[i]; }
@@ -1246,145 +1215,15 @@ void USB_Handler(){
       USB->DEVICE.DeviceEndpoint[i].EPSTATUSSET.bit.BK0RDY = 1;
     
     }
-    
-    if (flags & USB_DEVICE_EPINTFLAG_TRCPT1){
-
-      if(i == ISO_ENDPOINT_IN)
-      {
-        if(interface_num != 0)
-        {            
-          if(bufnum != prevBuf || prevBuf == 4)
-          {
-            
-            prevBuf = bufnum;
-
-
-            USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-            USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
-          
-            if(bufnum == 0)
-            {
-              EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer3;
-              // uart_puts("\n3--");
-            }
-            else if(bufnum == 1)
-            {
-              EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer0;
-              // uart_puts("\n0--");
-            }
-            else if(bufnum == 2)
-            {
-              EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer1;
-              // uart_puts("\n1--");
-            }
-            else if(bufnum == 3)
-            {
-              EP[ISO_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)&adc_buffer2;
-              // uart_puts("\n2--");
-            }
-
-            EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS*2;    // size of ADC buffer in SRAM
-            EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-
-            USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;   // start transfer when host sends IN token
-
-          }
-        
-          else if (bufnum == prevBuf)
-          {
-
-            // uart_puts("\nZLP");
-            
-            USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-            USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
-
-            EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-            EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-            
-            USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
-
-            ZLP_c++;
-            
-            if (ZLP_c > 10){
-
-              ZLP_c = 0;
-
-              // uart_puts("\nCONTINUE");
-              bufnum += 2;
-              if (bufnum == 4)
-              {
-                bufnum = 0;
-              }
-              
-              DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
-              DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-            }
-
-          }
-        continue;
-        }
-      }
-
-      if(i == CDC_ENDPOINT_IN)
-      {
-        // char * test_message = "Test sending\n";
-
-        // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].ADDR.reg = (uint32_t)test_message;
-        // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(*test_message);
-        // EP[CDC_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-        // USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
-      }
-
-      if(i == CDC_ENDPOINT_COMM)
-      {
-        uart_puts("\nCDC COMM");
-
-        usb_cdc_comm_busy = false;
-
-        int one_shot = USB_CDC_SERIAL_STATE_BREAK | USB_CDC_SERIAL_STATE_RING |
-          USB_CDC_SERIAL_STATE_FRAMING | USB_CDC_SERIAL_STATE_PARITY |
-          USB_CDC_SERIAL_STATE_OVERRUN;
-
-        usb_cdc_notify_message.value &= ~one_shot;
-        usb_cdc_serial_state &= ~one_shot;
-
-        usb_cdc_send_state_notify();
-      }
-
-      USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
-      USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
-  
-    }
   }
-  __enable_irq();
-}
-
-void usb_pipe_status(){
-
-  __disable_irq();
-
-  uart_puts("\n");
-
-  uart_puts("\nTRFAIL0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL0+ascii);
-  uart_puts("\nTRFAIL1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL1+ascii);
-  uart_puts("\nTRCPT0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT0+ascii);
-  uart_puts("\nTRCPT1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1+ascii);
-
-  uart_puts("\n");
-
-  __enable_irq();
-
 }
 
 void fngenerator(){
 
-  int i;
-  float phase = 3.14159*3.0*2./NPTS;
+  int i; type waveform = sine;
+  float phase = (2.0*3.14159*frequency)/(NPTS);
+  for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + amplitude + 2.0f;
 
-  for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 510.0f + 512.0f; // default
-  type waveform = sine;
-  
   while(true) {
 
     if(cmd_recv) {
@@ -1422,36 +1261,30 @@ void fngenerator(){
         case 'a':
           
           control_str = "";
-          for (int i = 0; i < 5; i++){ 
+          for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
-            control_str += command[i+1]; 
-            
-          }
-
-          uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
           amplitude = map(control_str.toInt(),100,3300,15,510);
-          uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
+
+          // uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
+          // uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
           break;
 
         case 'f':
           
           control_str = "";
-          for (int i = 0; i < 5; i++){ 
-            
-            control_str += command[i+1]; 
-            
-          }
+          for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
-          uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
-          frequency = map(control_str.toInt(),1,20000,2,20);
-          uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
+          frequency = map(control_str.toInt(),200,20000,1,100);
+
+          // uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
+          // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
           break;
 
         default:
           break;
       }
 
-      phase = 2.0*3.14159*frequency/NPTS;
+      phase = (2.0*3.14159*frequency)/(NPTS);
 
       switch(waveform){
 
@@ -1478,7 +1311,10 @@ void fngenerator(){
 
     if(!mute) {
       for (int i = 0; i < NPTS; i++) { 
-        analogWrite(A0,waveout[i]);
+        if (micros() > LoopTimer) {
+          analogWrite(A0,waveout[i]);
+          LoopTimer += LoopTime;
+        }
       }
     }
   }
@@ -1499,6 +1335,7 @@ void setup() {
   usb_init();
 
   pinMode(LED_BUILTIN,OUTPUT);
+  digitalWrite(LED_BUILTIN,HIGH);
   
   adc_to_sram_dma();
   start_adc_sram_dma(); 
@@ -1510,7 +1347,7 @@ void setup() {
 }
 
 void loop() {
-
-  fngenerator();
   
+  fngenerator();
+
 }
