@@ -270,8 +270,8 @@ void adc_to_sram_dma() {
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
   descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf1]; 
-  descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer0 + 2*NBEATS; // end of target address
+  descriptor.SRCADDR =  (uint32_t) &ADC->RESULT.reg; 
+  descriptor.DSTADDR =  (uint32_t) adc_buffer0 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
   descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
@@ -295,7 +295,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
+  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf2]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer1 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -321,7 +321,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
+  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf3]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer2 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -388,36 +388,28 @@ void DMAC_Handler() {
 
   __disable_irq(); // disable interrupts
 
-//  ZLP_c = 0;
-
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
-
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
-  DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
+  DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL; // | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
+  //uart_puts("\nd");uart_put_hex(bufnum);
 
-  if (bufnum == 0){
-
-    DMAC->CHID.reg = DMAC_CHID_ID(1); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  } 
-  else if (bufnum == 1){
-
-    DMAC->CHID.reg = DMAC_CHID_ID(2); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  }
-  else if (bufnum == 2){
-
-    DMAC->CHID.reg = DMAC_CHID_ID(3); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
-  }
-  else if (bufnum == 3){
-
-    DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
-    DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-
+  switch(bufnum){
+    case 0:
+      DMAC->CHID.reg = DMAC_CHID_ID(1); // select active channel
+      DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+      break;
+    case 1:
+      DMAC->CHID.reg = DMAC_CHID_ID(2); // select active channel
+      DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+      break;
+    case 2:
+      DMAC->CHID.reg = DMAC_CHID_ID(3); // select active channel
+      DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+      break;
+    case 3: 
+      DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
+      DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+      break;
   }
 
   if(interface_num != 0){ 
@@ -436,7 +428,7 @@ void DMAC_Handler() {
     USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
   
   }
-  __enable_irq();
+ __enable_irq();
 }
 
 void usb_init() {
@@ -517,7 +509,6 @@ void usb_cdc_send_state_notify()
 
 void USB_Handler(){
 
-  __disable_irq();
   int epint, flags;
 
   // Reset
@@ -1218,24 +1209,6 @@ void USB_Handler(){
     
     }
   }
-  __enable_irq();
-}
-
-void usb_pipe_status(){
-
-  __disable_irq();
-
-  uart_puts("\n");
-
-  uart_puts("\nTRFAIL0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL0+ascii);
-  uart_puts("\nTRFAIL1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRFAIL1+ascii);
-  uart_puts("\nTRCPT0: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT0+ascii);
-  uart_puts("\nTRCPT1: "); uart_write(USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTFLAG.bit.TRCPT1+ascii);
-
-  uart_puts("\n");
-
-  __enable_irq();
-
 }
 
 void fngenerator(){
@@ -1249,6 +1222,8 @@ void fngenerator(){
   while(true) {
 
     if(cmd_recv) {
+
+      uart_puts("cmd");
 
       cmd_recv = false;
 
@@ -1340,8 +1315,8 @@ void fngenerator(){
     if(!mute) {
       for (int i = 0; i < NPTS; i++) { 
         if (micros() > LoopTimer) {
-          LoopTimer += LoopTime;
           analogWrite(A0,waveout[i]);
+          LoopTimer += LoopTime;
         }
       }
     }
