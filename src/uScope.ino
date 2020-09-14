@@ -19,7 +19,7 @@
 static uint32_t baud = 230400;                                      // for UART debug of USB
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
-#define ADCPIN A1           // selected arbitrarily, consider moving away from DAC / A0
+#define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
 #define NBEATS 500          // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1000           // number of points within waveform definition
 
@@ -1269,7 +1269,7 @@ void fngenerator(){
           control_str = "";
           for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
-          frequency = map(control_str.toInt(),1,20000,2,20);
+          frequency = map(control_str.toInt(),200,20000,1,100);
 
           // uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
           // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
@@ -1279,7 +1279,7 @@ void fngenerator(){
           break;
       }
 
-      phase = (2.0*3.14159*frequency)/NPTS;
+      phase = (2.0*3.14159*frequency)/(NPTS);
 
       switch(waveform){
 

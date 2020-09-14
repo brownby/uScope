@@ -40,7 +40,6 @@
  * https://github.com/brownby/uScope/tree/usb-dev/processing/interface
  */
 
-
 // *** import libraries *** //
 
 import ddf.minim.*;           // used to connect to device over USB audio
@@ -62,14 +61,14 @@ byte scaleLog = 1;
 byte changeMove = 2;      // value changed by "MouseDragged"
 byte changeRelease = 3;   // value changed by "MouseReleased"
 
-int sample_rate = 150000; // unused for now, but to avoid "magic" numbers in setting up sampling / "show samples"
-int vTrigger = 0;         // value of trigger 0-1024 (0-5V), if 10 bit ADC 
+int samples = 4000;
+int sample_rate = 107100; // unused for now, but to avoid "magic" numbers in setting up sampling / "show samples"
+int vTrigger = 308;         // value of trigger 0-1024 (0-5V), if 10 bit ADC 
 int marg1, marg2;         // to adjust the position of objects
 
 float DIV = 45.0;         // division unit size
 
 color rgb[]={color(255, 255, 0), color(0, 204, 255)};  // for 2 channels: yellow (CH0) and blue (CH1)
-
 
 // *** object instantiation *** //
 
@@ -112,7 +111,6 @@ CheckBox  pulseWave;     // type
 CheckBox  squareWave;    // type
 CheckBox  sawtoothWave;  // type
 
-
 // *** setup function *** //
 
 void setup() {
@@ -126,7 +124,7 @@ void setup() {
   marg2 = marg1+200;
   
   minim = new Minim(this);
-  in = minim.getLineIn(Minim.MONO, 1000, 176400, 16);
+  in = minim.getLineIn(Minim.MONO, samples, 176400, 16);
   in.disableMonitoring();
   in.mute();
   
@@ -135,6 +133,8 @@ void setup() {
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
   for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+25+k*130, 185, 110); }
+  
+  channel[0].trigger.clicked = true;
   
   for (byte k=0; k<numCh; k++){ 
   
@@ -152,7 +152,7 @@ void setup() {
   
   pnlWave          = new Panel("Waveform Generator", color(168,52,235), marg1+15, display.y+display.h-150, 185, 150);   //display.x+785
   wave             = new CheckBox("output status", showSamples.x, pnlWave.y+25, 15);
-  fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 3e3f, 1, 20e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
+  fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 1e3f, 200, 20e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
   aWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 3.3f, 100e-3f, 3.3f, pnlWave.x+10, fWave.y+fWave.h+3, pnlWave.w-20, 20);
   sineWave         = new CheckBox("sine", pnlWave.x+10, aWave.y+aWave.h+10, 15);  
   pulseWave        = new CheckBox("pulse", pnlWave.x+90, aWave.y+aWave.h+10, 15);  
@@ -162,20 +162,16 @@ void setup() {
   wave.clicked = true;
   sineWave.clicked = true;
 
-  
 // ---- sampling controls ---- //
 
   pnlSamples       = new Panel("sampling", color(0,100, 255), display.x+785, display.y+display.h-85, 200, 85);
   dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 9.333e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
   dtReal           = new FmtNum(0,nInt,fmt);
-  q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", 1000-1, 1, 100, dt.x+dt.w+5, dt.y, 60, 20);
+  q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", samples, 100, 3000, dt.x+dt.w+5, dt.y, 60, 20);
   tTotal           = new FmtNum(dt.v.getV()*q.v.getV(), !nInt);
   tTotalReal       = new FmtNum(0,!nInt);
  
 }
-
-
-// *** draw function *** //
 
 void draw() {
 
@@ -213,9 +209,6 @@ void draw() {
   handleIncoming();
   
 }
-
-
-// *** mouseClicked function *** //
 
 void mouseClicked() {
   
@@ -338,9 +331,6 @@ void mouseClicked() {
   
 }
 
-
-// *** mousePressed function *** //
-
 void mousePressed() {
   
   for (int k=0; k<numCh; k++) { channel[k].mousePressed(); }
@@ -351,9 +341,6 @@ void mousePressed() {
   resetCursors.mousePressed();
   
 }
-
-
-// *** mouseReleased function *** //
 
 void mouseReleased() {
 
@@ -367,9 +354,6 @@ void mouseReleased() {
   
 }
 
-
-// *** mouseMoved function *** //
-
 void mouseMoved() {
   
   for (int k=0; k<numCh; k++) { channel[k].mouseMoveu(); } 
@@ -378,9 +362,6 @@ void mouseMoved() {
   aWave.mouseMoveu();
 
 }
-
-
-// *** mouseDragged function *** //
 
 void mouseDragged() {
 
@@ -394,18 +375,12 @@ void mouseDragged() {
 
 }
 
-
-// *** adjustFt function *** //
-
 void adjustFt() {
   
   float ftNew=dt.v.getV()*q.v.getV()/10.0;
   for (int k=0; k<numCh; k++) { channel[k].horiScale.setV(ftNew); }
   
 }
-
-
-// *** handleIncoming function *** //
   
 void handleIncoming() {
   

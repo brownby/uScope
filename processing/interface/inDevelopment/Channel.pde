@@ -18,7 +18,7 @@ class Channel {
   int h;  // height
   
   int qPeaks;
-  int qMax = 1000; 
+  int qMax = 4000; 
   int latch_index = 0;
  
   int v[]      = new int[qMax];
@@ -32,6 +32,7 @@ class Channel {
   float mouseOffSet;      // for moving objects, like p0
   float xi, yi, dx, dy;   // rectangle for measuring time and voltage on the display
   float fa=5.0/(1023.0);  // ADC conversion from / to voltage
+  float horiCalibrate = 1.7;
   
   FmtNum fCalc = new FmtNum(0,!nInt,fmt);
   FmtNum tCalc = new FmtNum(0,!nInt,fmt); // frequency and period calcuated from the peaks
@@ -58,9 +59,9 @@ class Channel {
      chN.clicked = true;
      
      vertScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","v/div",1f,100e-3f,10f,x+10,y+23,w-20,20,1);//21
-     horiScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","s/div",300e-6f,50e-6f,400e-6f,x+10,vertScale.y+vertScale.h+3,w-20,20,2);
+     horiScale = new Dial(scaleLog,changeMove,!nInt,fmt,"","s/div",1e-3f,50e-6f,2e-3f,x+10,vertScale.y+vertScale.h+3,w-20,20,2);
      
-     p0 = display.y+4*DIV*(n+1);
+     p0 = display.y+5*DIV*(n+1);
      p0Trigger = p0;
      
      cursors = new CheckBox("cursors",horiScale.x,horiScale.y+horiScale.h+5,15);
@@ -245,7 +246,7 @@ class Channel {
   }
  
    
-  float fx(int x){ return display.x + DIV*dt.v.v/horiScale.v.v*x; } // dt.v.v is sample time = 6.67E-6, horiScale.v.v = time/div
+  float fx(int x){ return display.x + horiCalibrate*DIV*dt.v.v/horiScale.v.v*x; } // dt.v.v is sample time = 9.33E-6, horiScale.v.v = time/div
   float fy(int y){ return p0 - y*fa/vertScale.v.v*DIV; }  
  
  
@@ -391,9 +392,11 @@ class Channel {
       dashed(xi,yi,xi+dx,yi+dy,3);
          
       fill(255);
+      
+      //horiCalibrate*DIV*dt.v.v/horiScale.v.v*x;
          
-      float vTemp=abs(dx)/(DIV)*horiScale.v.v*1000.0;
-      String vh=nf(vTemp,0,1)+" ms";
+      float vTemp=(abs(dx)/(DIV*horiCalibrate))*horiScale.v.v*1000.0;
+      String vh=nf(vTemp,0,2)+" ms";
       String fh=nf(1000/vTemp,0,1)+ " Hz";
       String vv=nf(abs(dy)/(DIV)*vertScale.v.v,0,2)+" V";
       
