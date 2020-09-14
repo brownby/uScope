@@ -392,16 +392,14 @@ class Channel {
       dashed(xi,yi,xi+dx,yi+dy,3);
          
       fill(255);
-      
-      //horiCalibrate*DIV*dt.v.v/horiScale.v.v*x;
-         
+
       float vTemp=(abs(dx)/(DIV*horiCalibrate))*horiScale.v.v*1000.0;
       String vh=nf(vTemp,0,2)+" ms";
       String fh=nf(1000/vTemp,0,1)+ " Hz";
       String vv=nf(abs(dy)/(DIV)*vertScale.v.v,0,2)+" V";
       
-      textAlign(RIGHT); text(vh+" "+fh,xi+dx-10,yi+dy/2);
-      textAlign(LEFT); text(vv,xi+dx,yi+dy/2);
+      if (xi+dx > xi){ textAlign(LEFT); text(vh+" "+fh+" "+ vv,xi,yi-15); }
+      else { textAlign(RIGHT); text(vh+" "+fh+" "+ vv,xi,yi-15); }
          
     }       
   }
