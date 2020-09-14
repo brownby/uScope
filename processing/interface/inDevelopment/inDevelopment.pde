@@ -134,7 +134,7 @@ void setup() {
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
   for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+25+k*130, 185, 110); }
   
-  channel[0].trigger.clicked = true;
+  //channel[0].trigger.clicked = true;
   
   for (byte k=0; k<numCh; k++){ 
   
@@ -299,7 +299,7 @@ void mouseClicked() {
     
     for (int k=0; k<numCh;k++) {
       
-     channel[k].p0 = display.y+4*DIV*(k+1); // reset zero voltage position for all channels
+     channel[k].p0 = display.y+5*DIV*(k+1); // reset zero voltage position for all channels
      channel[k].chN.clicked = true;         // turn on all channels
 
      channel[k].horiScale.restore();
