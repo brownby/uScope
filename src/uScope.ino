@@ -47,7 +47,7 @@ uint16_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
 float amplitude = 510.0;
-float frequency = 1000.0;
+float frequency = 5.0;
 
 unsigned long LoopTimer = 0;
 const int LoopTime = 1; // set to < 10 for 20 kHz output, < 5 seems to improve jitter
@@ -1213,12 +1213,10 @@ void USB_Handler(){
 
 void fngenerator(){
 
-  int i;
-  float phase = (2.0*3.14159*3.0)/NPTS;
+  int i; type waveform = sine;
+  float phase = (2.0*3.14159*frequency)/(NPTS);
+  for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + amplitude + 2.0f;
 
-  for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * 510.0f + 512.0f; // default
-  type waveform = sine;
-  
   while(true) {
 
     if(cmd_recv) {
@@ -1260,8 +1258,8 @@ void fngenerator(){
 
           amplitude = map(control_str.toInt(),100,3300,15,510);
 
-          //uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
-          //uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
+          // uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
+          // uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
           break;
 
         case 'f':
