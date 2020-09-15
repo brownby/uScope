@@ -385,9 +385,14 @@ void dma_init() {
 
 }
 
+volatile int time;
+volatile int time_dif;
+
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
+
+  time = micros();
 
   uint8_t ch = (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk);
   DMAC->CHID.reg = DMAC_CHID_ID(ch); // select active channel
@@ -418,6 +423,9 @@ void DMAC_Handler() {
   }
 
   bufnum = (bufnum + 1 == 4) ? (0) : (bufnum + 1);
+
+  time_dif = micros() - time;
+  uart_putc('\n'); uart_putc(time_dif + ascii);
 
   __enable_irq();
 }
