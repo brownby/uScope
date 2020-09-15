@@ -82,13 +82,7 @@ char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","A
 
 uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
 
-volatile uint8_t ZLP_c   = 0;
 volatile uint8_t bufnum  = 0;  // track which buffer to write to, while USB reads
-volatile uint8_t prevBuf = 4;
-
-extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
-extern UsbDeviceDescriptor usb_endpoints[];
-extern const uint8_t usb_num_endpoints;
 
 enum type {sine, pulse, square, sawtooth}; // supported waveform types
 
@@ -134,7 +128,7 @@ volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16)));        // write-
 dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
 dmacdescriptor descriptor __attribute__ ((aligned (16)));
 UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
-uint8_t interface_num = 0; // Current interface selected by host
+uint8_t interface_num = 0;
 uint8_t alt_setting = 0;
 
 usb_cdc_notify_serial_state_t usb_cdc_notify_message; 
@@ -238,8 +232,8 @@ void adc_init() {
   ADC->CTRLA.bit.ENABLE = 0x00;          // disable ADC before configuration
   while(ADC->STATUS.bit.SYNCBUSY == 1);  // wait
 
-  ADC->INPUTCTRL.bit.GAIN = 0xF;         // 0xF for DIV2 or 0x0 for 1X
-  ADC->REFCTRL.bit.REFSEL = 0x2;         // reference voltage = 0.5 VDDANA
+  ADC->INPUTCTRL.bit.GAIN = 0xF;         // 0xF for DIV2 -> Delay Gain = 1 CLK_ADC
+  ADC->REFCTRL.bit.REFSEL = 0x2;         // reference voltage = 0.5 VDDANA (1.65V)
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
   ADC->INPUTCTRL.bit.MUXPOS = g_APinDescription[ADCPIN].ulADCChannelNumber; // select ADC pin, positive node
@@ -467,7 +461,7 @@ void usb_init() {
   USB->DEVICE.CTRLB.bit.DETACH = 0;
   
   USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_EORST;  
-  USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1;
+  // USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1; // do this upon reset in handlerf
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
 
@@ -487,7 +481,7 @@ void usb_init() {
 
 }
 
-void usb_cdc_send_state_notify()
+void usb_cdc_send_state_notify() // do we need this?
 {
   if(usb_cdc_comm_busy)
   {
@@ -839,12 +833,8 @@ void USB_Handler(){
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
-        // send ISO ZLP - to trigger first TRCPT1
         if(interface_num == 1) // AudioStreaming interface
         {
-          // EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
           if(alt_setting == 0)
           {
             audio_stream_interface.alternate_setting = 0;
