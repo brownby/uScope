@@ -261,7 +261,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf1]; 
+  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf1]; 
   descriptor.SRCADDR =  (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR =  (uint32_t) adc_buffer0 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -287,7 +287,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf2]; 
+  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf2]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer1 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -313,7 +313,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf3]; 
+  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf3]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer2 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -339,7 +339,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
+  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer3 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -359,6 +359,15 @@ void adc_to_sram_dma() {
 void start_adc_sram_dma() {
 
   DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select channel
+  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+  
+  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select channel
+  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+
+  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf2); // select channel
+  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
+
+  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf3); // select channel
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 }
 
