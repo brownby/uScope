@@ -250,7 +250,7 @@ void adc_init() {
 
 void adc_to_sram_dma() { 
   
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0);  // select adc channel, 0
+  DMAC->CHID.reg = DMAC_CHID_ID(0);  // select adc channel, 0
   DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
   
   DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
@@ -270,22 +270,22 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
   descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
   descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
-  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
+  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x1); // interrupt after a block transfer
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
 
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select adc channel, 1
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
+  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select adc channel, 1
+  // DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
   
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
+  // DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
+  // while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
   
-  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
+  // DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
+  // DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
+  // DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
+  // DMAC->CHINTENSET.bit.TCMPL = 1;
   
   descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf2]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
@@ -296,22 +296,22 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
   descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
   descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
-  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
+  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x1); // interrupt after a block transfer
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
 
   memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
 
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf2); // select adc channel, 2
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
+  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf2); // select adc channel, 2
+  // DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
   
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
+  // DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
+  // while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
   
-  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
+  // DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
+  // DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
+  // DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
+  // DMAC->CHINTENSET.bit.TCMPL = 1;
   
   descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf3]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
@@ -322,22 +322,22 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
   descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
   descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
-  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
+  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x1); // interrupt after a block transfer
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
 
   memcpy(&descriptor_section[adctobuf2], &descriptor, sizeof(dmacdescriptor));
 
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf3); // select adc channel, 1
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
+  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf3); // select adc channel, 1
+  // DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
   
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
+  // DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
+  // while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
   
-  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
+  // DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
+  // DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
+  // DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
+  // DMAC->CHINTENSET.bit.TCMPL = 1;
   
   descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
@@ -348,7 +348,7 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
   descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
   descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
-  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
+  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x1); // interrupt after a block transfer
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
 
@@ -389,13 +389,10 @@ void DMAC_Handler() {
 
   __disable_irq(); // disable interrupts
 
-  bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
-  DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
+  uint8_t ch = (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk);
+  DMAC->CHID.reg = DMAC_CHID_ID(ch); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL; // | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
-  //uart_puts("\nd");uart_put_hex(bufnum);
-  
-  DMAC->CHID.reg = (bufnum + 1 == 4) ? (DMAC_CHID_ID(0)) : (DMAC_CHID_ID(bufnum + 1));
-  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
+  // uart_puts("\nd");uart_put_hex(bufnum);
 
   USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSCLR.bit.BK1RDY = 1;
   EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
@@ -419,6 +416,8 @@ void DMAC_Handler() {
       USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
       break;
   }
+
+  bufnum = (bufnum + 1 == 4) ? (0) : (bufnum + 1);
 
   __enable_irq();
 }
