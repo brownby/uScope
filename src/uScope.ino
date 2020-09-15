@@ -82,13 +82,7 @@ char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","A
 
 uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
 
-volatile uint8_t ZLP_c   = 0;
 volatile uint8_t bufnum  = 0;  // track which buffer to write to, while USB reads
-volatile uint8_t prevBuf = 4;
-
-extern USBDevice_SAMD21G18x usbd; // defined in USBCore.cpp
-extern UsbDeviceDescriptor usb_endpoints[];
-extern const uint8_t usb_num_endpoints;
 
 enum type {sine, pulse, square, sawtooth}; // supported waveform types
 
@@ -107,11 +101,6 @@ typedef struct __attribute__((packed)) {
   uint16_t  wIndex;
   uint16_t  wLength;
 } usb_request_t;
-
-typedef struct __attribute__((packed)) {
-  usb_request_t request;
-  uint16_t      value;
-} usb_cdc_notify_serial_state_t;
 
 typedef struct { 
     UsbDeviceDescBank DeviceDescBank[2]; 
@@ -134,12 +123,8 @@ volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16)));        // write-
 dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
 dmacdescriptor descriptor __attribute__ ((aligned (16)));
 UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
-uint8_t interface_num = 0; // Current interface selected by host
+uint8_t interface_num = 0;
 uint8_t alt_setting = 0;
-
-usb_cdc_notify_serial_state_t usb_cdc_notify_message; 
-static int usb_cdc_serial_state;
-static bool usb_cdc_comm_busy;
 
 usb_interface_status_t audio_stream_interface;
 
@@ -238,8 +223,8 @@ void adc_init() {
   ADC->CTRLA.bit.ENABLE = 0x00;          // disable ADC before configuration
   while(ADC->STATUS.bit.SYNCBUSY == 1);  // wait
 
-  ADC->INPUTCTRL.bit.GAIN = 0xF;         // 0xF for DIV2 or 0x0 for 1X
-  ADC->REFCTRL.bit.REFSEL = 0x2;         // reference voltage = 0.5 VDDANA
+  ADC->INPUTCTRL.bit.GAIN = 0xF;         // 0xF for DIV2 -> Delay Gain = 1 CLK_ADC
+  ADC->REFCTRL.bit.REFSEL = 0x2;         // reference voltage = 0.5 VDDANA (1.65V)
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
   ADC->INPUTCTRL.bit.MUXPOS = g_APinDescription[ADCPIN].ulADCChannelNumber; // select ADC pin, positive node
@@ -467,43 +452,15 @@ void usb_init() {
   USB->DEVICE.CTRLB.bit.DETACH = 0;
   
   USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_EORST;  
-  USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1;
+  // USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1; // do this upon reset in handlerf
   
   USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
 
-  usb_cdc_notify_message.request.bmRequestType = USB_IN_TRANSFER | USB_INTERFACE_RECIPIENT | USB_CLASS_REQUEST;
-  usb_cdc_notify_message.request.bRequest = NOTIFY_SERIAL_STATE;
-  usb_cdc_notify_message.request.wValue = 0;
-  usb_cdc_notify_message.request.wIndex = 0;
-  usb_cdc_notify_message.request.wLength = sizeof(uint16_t);
-  usb_cdc_notify_message.value = 0;
-
-  usb_cdc_serial_state = 0;
-  // usb_cdc_comm_busy = false;
   audio_stream_interface.interface_num = 1;
   
   NVIC_SetPriority(USB_IRQn, 0x01); // second priority
   NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
 
-}
-
-void usb_cdc_send_state_notify()
-{
-  if(usb_cdc_comm_busy)
-  {
-    return;
-  }
-
-  if(usb_cdc_serial_state != usb_cdc_notify_message.value)
-  {
-    usb_cdc_comm_busy = true;
-    usb_cdc_notify_message.value = usb_cdc_serial_state;
-
-    EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
-    EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = sizeof(usb_cdc_notify_message);
-
-    USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPSTATUSSET.bit.BK1RDY = 1;
-  }
 }
 
 void USB_Handler(){
@@ -762,13 +719,11 @@ void USB_Handler(){
           EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_1023;
           EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = NBEATS*2;    // size of ADC buffer in SRAM
 
-          EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].ADDR.reg = (uint32_t)&usb_cdc_notify_message;
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.MULTI_PACKET_SIZE = 0;
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
 
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPCFG.bit.EPTYPE1 = 4; // interrupt IN
-          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPINTENSET.bit.TRCPT1 = 1;
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPSTATUSCLR.bit.DTGLIN = 1;
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPSTATUSSET.bit.BK1RDY = 1;
 
@@ -791,8 +746,7 @@ void USB_Handler(){
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPINTENSET.bit.TRCPT0 = 1;
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPSTATUSCLR.bit.DTGLOUT = 1;
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_OUT].EPSTATUSCLR.bit.BK0RDY = 1; // arm receive
-
-          usb_cdc_serial_state |= USB_CDC_SERIAL_STATE_DSR;
+          
         }
       } break;
 
@@ -839,12 +793,8 @@ void USB_Handler(){
         USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPSTATUSSET.bit.BK1RDY = 1;
         while (0 == USB->DEVICE.DeviceEndpoint[0].EPINTFLAG.bit.TRCPT1);
 
-        // send ISO ZLP - to trigger first TRCPT1
         if(interface_num == 1) // AudioStreaming interface
         {
-          // EP[ISO_ENDPOINT_IN].DeviceDescBank[1].PCKSIZE.bit.BYTE_COUNT = 0;
-          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPINTFLAG.bit.TRCPT1 = 1;
-          // USB->DEVICE.DeviceEndpoint[ISO_ENDPOINT_IN].EPSTATUSSET.bit.BK1RDY = 1;
           if(alt_setting == 0)
           {
             audio_stream_interface.alternate_setting = 0;
@@ -1168,31 +1118,17 @@ void USB_Handler(){
 
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT1){
 
-      if(i == CDC_ENDPOINT_COMM){
-        uart_puts("\nCDC COMM");
-
-        usb_cdc_comm_busy = false;
-
-        int one_shot = USB_CDC_SERIAL_STATE_BREAK | USB_CDC_SERIAL_STATE_RING |
-          USB_CDC_SERIAL_STATE_FRAMING | USB_CDC_SERIAL_STATE_PARITY |
-          USB_CDC_SERIAL_STATE_OVERRUN;
-
-        usb_cdc_notify_message.value &= ~one_shot;
-        usb_cdc_serial_state &= ~one_shot;
-
-        usb_cdc_send_state_notify();
-      }
-
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
       USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
   
     }
+
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT0){
 
       if(i == CDC_ENDPOINT_OUT){
       
         int incoming_length = EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT & 0xff;
-        for (int i=0; i<incoming_length; i++){ incoming_string[i] = usb_cdc_out_buf[i]; }
+        for (int i=0; i<incoming_length; i++) { incoming_string[i] = usb_cdc_out_buf[i]; }
 
         uart_puts("\nCDC OUT");
         uart_puts("\nBYTECOUNT: "); uart_put_hex((uint8_t)(EP[CDC_ENDPOINT_OUT].DeviceDescBank[0].PCKSIZE.bit.BYTE_COUNT & 0xff));
