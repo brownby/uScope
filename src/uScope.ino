@@ -70,11 +70,6 @@ bool cmd_recv = 0;
 bool RTS = false;
 bool DTR = false;
 
-static uint32_t adctobuf0 = 0;  // dma channel for adc to buf0
-static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
-static uint32_t adctobuf2 = 2;  // dma channel for adc to buf2
-static uint32_t adctobuf3 = 3;  // dma channel for adc to buf3
-
 static uint8_t ascii = 48;      // offset to interpret single digit uart outputs
 static int usb_config;
 
@@ -275,7 +270,7 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
 
-  memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
+  memcpy(&descriptor_section[0], &descriptor, sizeof(dmacdescriptor));
   
   descriptor.DESCADDR = (uint32_t) &ch0_descriptor_section[1]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
@@ -307,7 +302,7 @@ void adc_to_sram_dma() {
 
   memcpy(&ch0_descriptor_section[1], &descriptor, sizeof(dmacdescriptor));
   
-  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0]; 
+  descriptor.DESCADDR = (uint32_t) &descriptor_section[0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer3 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -326,7 +321,7 @@ void adc_to_sram_dma() {
   
 void start_adc_sram_dma() {
 
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select channel
+  DMAC->CHID.reg = DMAC_CHID_ID(0); // select channel
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
 }
 
@@ -348,8 +343,7 @@ void DMAC_Handler() {
 
   __disable_irq(); // disable interrupts
 
-  uint8_t ch = (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk);
-  DMAC->CHID.reg = DMAC_CHID_ID(ch); // select active channel
+  DMAC->CHID.reg = DMAC_CHID_ID(0); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL; // | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
   // uart_puts("\nd");uart_put_hex(bufnum);
 
