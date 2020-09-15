@@ -120,7 +120,8 @@ static usb_cdc_line_coding_t usb_cdc_line_coding =
 };
 
 volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16)));        // write-back descriptor
-dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
+dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // first descriptors for each channel
+dmacdescriptor ch0_descriptor_section[3] __attribute__ ((aligned (16))); // additional descriptors for channel 0
 dmacdescriptor descriptor __attribute__ ((aligned (16)));
 UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
 uint8_t interface_num = 0;
@@ -261,7 +262,7 @@ void adc_to_sram_dma() {
   DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
   DMAC->CHINTENSET.bit.TCMPL = 1;
   
-  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf1]; 
+  descriptor.DESCADDR = (uint32_t) &ch0_descriptor_section[0]; 
   descriptor.SRCADDR =  (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR =  (uint32_t) adc_buffer0 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -275,19 +276,8 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
 
   memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
-
-  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select adc channel, 1
-  // DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
   
-  // DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  // while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  // DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  // DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  // DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  // DMAC->CHINTENSET.bit.TCMPL = 1;
-  
-  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf2]; 
+  descriptor.DESCADDR = (uint32_t) &ch0_descriptor_section[1]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer1 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -300,20 +290,9 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
 
-  memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
-
-  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf2); // select adc channel, 2
-  // DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
+  memcpy(&ch0_descriptor_section[0], &descriptor, sizeof(dmacdescriptor));
   
-  // DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  // while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  // DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  // DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  // DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  // DMAC->CHINTENSET.bit.TCMPL = 1;
-  
-  descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf3]; 
+  descriptor.DESCADDR = (uint32_t) &ch0_descriptor_section[2]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
   descriptor.DSTADDR = (uint32_t) adc_buffer2 + 2*NBEATS; // end of target address
   descriptor.BTCNT = NBEATS;
@@ -326,18 +305,7 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
 
-  memcpy(&descriptor_section[adctobuf2], &descriptor, sizeof(dmacdescriptor));
-
-  // DMAC->CHID.reg = DMAC_CHID_ID(adctobuf3); // select adc channel, 1
-  // DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
-  
-  // DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  // while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  // DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  // DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  // DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  // DMAC->CHINTENSET.bit.TCMPL = 1;
+  memcpy(&ch0_descriptor_section[1], &descriptor, sizeof(dmacdescriptor));
   
   descriptor.DESCADDR = (uint32_t) &descriptor_section[adctobuf0]; 
   descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
@@ -352,7 +320,7 @@ void adc_to_sram_dma() {
   descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
   descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
 
-  memcpy(&descriptor_section[adctobuf3], &descriptor, sizeof(dmacdescriptor));
+  memcpy(&ch0_descriptor_section[2], &descriptor, sizeof(dmacdescriptor));
 
 }
   
