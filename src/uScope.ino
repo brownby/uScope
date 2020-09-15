@@ -762,7 +762,6 @@ void USB_Handler(){
           EP[CDC_ENDPOINT_COMM].DeviceDescBank[1].PCKSIZE.bit.SIZE = USB_DEVICE_PCKSIZE_SIZE_64;
 
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPCFG.bit.EPTYPE1 = 4; // interrupt IN
-          USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPINTENSET.bit.TRCPT1 = 1;
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPSTATUSCLR.bit.DTGLIN = 1;
           USB->DEVICE.DeviceEndpoint[CDC_ENDPOINT_COMM].EPSTATUSSET.bit.BK1RDY = 1;
 
@@ -1157,21 +1156,6 @@ void USB_Handler(){
     flags = USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.reg;
 
     if (flags & USB_DEVICE_EPINTFLAG_TRCPT1){
-
-      if(i == CDC_ENDPOINT_COMM){
-        uart_puts("\nCDC COMM");
-
-        usb_cdc_comm_busy = false;
-
-        int one_shot = USB_CDC_SERIAL_STATE_BREAK | USB_CDC_SERIAL_STATE_RING |
-          USB_CDC_SERIAL_STATE_FRAMING | USB_CDC_SERIAL_STATE_PARITY |
-          USB_CDC_SERIAL_STATE_OVERRUN;
-
-        usb_cdc_notify_message.value &= ~one_shot;
-        usb_cdc_serial_state &= ~one_shot;
-
-        usb_cdc_send_state_notify();
-      }
 
       USB->DEVICE.DeviceEndpoint[i].EPINTFLAG.bit.TRCPT1 = 1;
       USB->DEVICE.DeviceEndpoint[i].EPSTATUSCLR.bit.BK1RDY = 1;
