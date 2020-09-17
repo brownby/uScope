@@ -148,7 +148,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bSubframeSize       = 0x02, // 2 bytes per audio subframe 
     .bBitResolution      = 0x10, // 16 bits
     .bSamFreqType        = 0x01, // 1 sampling frequency
-    .bSamFreq0_byte0     = 0x10,
+    .bSamFreq0_byte0     = 0x57,
     .bSamFreq0_byte1     = 0xB1,
     .bSamFreq0_byte2     = 0x02, // 176400 Hz > 107.1 kHz (sample rate)
   },
