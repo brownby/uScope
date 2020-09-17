@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 500          // number of beats for adc transfer, MUST be < 512 (?)
+#define NBEATS 510         // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
@@ -48,9 +48,7 @@ uint16_t waveout[NPTS];       // buffer for waveform
 
 float amplitude = 510.0;
 float frequency = 5.0;
-
-unsigned long LoopTimer = 0;
-const int LoopTime = 1; // set to < 10 for 20 kHz output, < 5 seems to improve jitter
+float offset = 510.0;
 
 volatile bool mute = false;
 volatile uint16_t volume = 5;
@@ -230,14 +228,14 @@ void adc_init() {
   ADC->INPUTCTRL.bit.MUXPOS = g_APinDescription[ADCPIN].ulADCChannelNumber; // select ADC pin, positive node
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
   
-  ADC->INPUTCTRL.bit.MUXNEG = 0x18;      // negative node, if differential, set to 0x18 = internal GND
-  while(ADC->STATUS.bit.SYNCBUSY == 1);
+  //ADC->INPUTCTRL.bit.MUXNEG = 0x18;      // negative node, if differential, set to 0x18 = internal GND
+  //while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
   ADC->SAMPCTRL.reg = 0x0;               // add NO half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
-  ADC->CTRLB.bit.PRESCALER = 0x3;        // 0x4 = DIV64, 0x5 = DIV128
+  ADC->CTRLB.bit.PRESCALER = 0x4;        // 0x4 = DIV64, 0x5 = DIV128
   ADC->CTRLB.bit.RESSEL = 0x0;           // result resolution, 0x0 = 12 bit, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;            // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;           // ADC is single-ended, ignore MUXNEG defined above
@@ -1189,7 +1187,7 @@ void fngenerator(){
           digitalWrite(LED_BUILTIN,HIGH);
           break;
 
-        case 'o':
+        case 'i':
           mute = true; 
           digitalWrite(LED_BUILTIN,LOW);
           break;
@@ -1200,6 +1198,17 @@ void fngenerator(){
           for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
           amplitude = map(control_str.toInt(),100,3300,15,510);
+
+          // uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
+          // uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
+          break;
+
+        case 'o':
+          
+          control_str = "";
+          for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
+
+          offset = map(control_str.toInt(),300,3000,15,900);
 
           // uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
           // uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
@@ -1225,7 +1234,7 @@ void fngenerator(){
       switch(waveform){
 
         case 0:  // sine wave
-          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + amplitude + 2.0f;
+          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + offset;
           break;
       
         case 1:  // pulse wave

@@ -126,7 +126,7 @@ void setup() {
   marg2 = marg1+200;
   
   minim = new Minim(this);
-  in = minim.getLineIn(Minim.MONO, samples, 176400, 16);
+  in = minim.getLineIn(Minim.MONO, samples, 115000, 16);
   in.disableMonitoring();
   in.mute();
   
@@ -234,7 +234,7 @@ void mouseClicked() {
       println("turning output on"); 
     }
     else{ 
-      myDevice.write("o");
+      myDevice.write("i");
       println("turning output off"); 
     }
   }
@@ -330,8 +330,9 @@ void mouseClicked() {
   showSamples.mouseClicked();
   calcFreq.mouseClicked();
 
-  fWave.mouseClicked(); // if dt changed, then adjustFt()
-  aWave.mouseClicked();// if q changed, then adjustFt()
+  fWave.mouseClicked(); 
+  aWave.mouseClicked();
+  oWave.mouseClicked();
   
 }
 
@@ -341,6 +342,8 @@ void mousePressed() {
   
   fWave.mousePressed();
   aWave.mousePressed();
+  oWave.mousePressed();
+  
   resetAxes.mousePressed();
   resetCursors.mousePressed();
   
@@ -355,6 +358,7 @@ void mouseReleased() {
 
   fWave.mouseReleased();
   aWave.mouseReleased();
+  oWave.mouseReleased();
   
 }
 
@@ -364,6 +368,7 @@ void mouseMoved() {
   
   fWave.mouseMoveu();
   aWave.mouseMoveu();
+  oWave.mouseMoveu();
 
 }
 
@@ -373,9 +378,11 @@ void mouseDragged() {
 
   fWave.mouseDragged();
   aWave.mouseDragged();
+  oWave.mouseDragged();
 
   if(fWave.mouseDragged()){ myDevice.write("f"+nf(round(fWave.v.v))); }
   if(aWave.mouseDragged()){ myDevice.write("a"+nf(round(aWave.v.v*1E3))); }
+  if(oWave.mouseDragged()){ myDevice.write("o"+nf(round(oWave.v.v*1E3))); }
 
 }
 
