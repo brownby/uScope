@@ -237,7 +237,7 @@ void adc_init() {
   ADC->SAMPCTRL.reg = 0x0;               // add NO half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
-  ADC->CTRLB.bit.PRESCALER = 0x4;        // 0x4 = DIV64, 0x5 = DIV128
+  ADC->CTRLB.bit.PRESCALER = 0x3;        // 0x4 = DIV64, 0x5 = DIV128
   ADC->CTRLB.bit.RESSEL = 0x0;           // result resolution, 0x0 = 12 bit, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;            // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;           // ADC is single-ended, ignore MUXNEG defined above
@@ -1247,10 +1247,11 @@ void fngenerator(){
 
     if(!mute) {
       for (int i = 0; i < NPTS; i++) { 
-        if (micros() > LoopTimer) {
+        //if (micros() > LoopTimer) {
           analogWrite(A0,waveout[i]);
-          LoopTimer += LoopTime;
-        }
+        //  delayMicroseconds(1);
+        //  LoopTimer += LoopTime;
+        //}
       }
     }
   }
