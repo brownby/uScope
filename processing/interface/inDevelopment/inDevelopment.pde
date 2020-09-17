@@ -131,7 +131,7 @@ void setup() {
   in.mute();
   
   printArray(Serial.list());
-  myDevice = new Serial(this, "/dev/cu.usbmodemALL_00013", 115200);
+  myDevice = new Serial(this, "COM11", 115200);
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
   for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+12+k*125, 185, 110); }
