@@ -88,6 +88,7 @@ Button    resetCursors;  // measure vs size? *flag
 
 CheckBox  showSamples; 
 CheckBox  calcFreq;    // detect frequency
+CheckBox  slowRoll;
 
 // ---- sampling controls ---- //
 
@@ -106,6 +107,7 @@ Panel     pnlWave;       // panel for the waveform generator
 CheckBox  wave;          // f and t are dependent: f = 1/t, t = 1/f
 Dial      fWave;         // frequency of waveform 
 Dial      aWave;         // amplitude of waveform 
+Dial      oWave;         // DC offset of waveform
 CheckBox  sineWave;      // type
 CheckBox  pulseWave;     // type
 CheckBox  squareWave;    // type
@@ -116,7 +118,7 @@ CheckBox  sawtoothWave;  // type
 void setup() {
   
   size(1040, 635); 
-  frameRate(24);
+  frameRate(15);
 
   display = new Display(30+10, 60, 17*DIV, 12*DIV);  // 17 horizontal and 12 vertical divisions
   
@@ -129,10 +131,10 @@ void setup() {
   in.mute();
   
   printArray(Serial.list());
-  myDevice = new Serial(this, "COM11", 115200);
+  myDevice = new Serial(this, "/dev/cu.usbmodemALL_00013", 115200);
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
-  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+25+k*130, 185, 110); }
+  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+12+k*125, 185, 110); }
   
   for (byte k=0; k<numCh; k++){ 
   
@@ -142,18 +144,20 @@ void setup() {
   }
   
   startStop        = new Button("start / stop",marg1+15,15,185,40,color(255,0,0),color(0));
-  resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+30,45,20);
-  resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+30,60,20);
+  resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+15,45,20);
+  resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+15,60,20);
   
-  showSamples      = new CheckBox("show samples", marg1+25, channel[1].y+channel[1].h+70, 15);
-  calcFreq         = new CheckBox("detect frequency", showSamples.x, showSamples.y+showSamples.h+5, 15);
+  slowRoll         = new CheckBox("slow roll", marg1+25, channel[1].y+channel[1].h+50, 15);
+  showSamples      = new CheckBox("show samples", slowRoll.x, slowRoll.y+slowRoll.h+5, 15);
+  calcFreq         = new CheckBox("detect frequency", slowRoll.x, showSamples.y+showSamples.h+5, 15);
   
-  pnlWave          = new Panel("Waveform Generator", color(168,52,235), marg1+15, display.y+display.h-150, 185, 150);   //display.x+785
+  pnlWave          = new Panel("Waveform Generator", color(168,52,235), marg1+15, display.y+display.h-170, 185, 170);   //display.x+785
   wave             = new CheckBox("output status", showSamples.x, pnlWave.y+25, 15);
   fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 1e3f, 200, 20e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
   aWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 3.3f, 100e-3f, 3.3f, pnlWave.x+10, fWave.y+fWave.h+3, pnlWave.w-20, 20);
-  sineWave         = new CheckBox("sine", pnlWave.x+10, aWave.y+aWave.h+10, 15);  
-  pulseWave        = new CheckBox("pulse", pnlWave.x+90, aWave.y+aWave.h+10, 15);  
+  oWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 1.65f, 300e-3f, 3f, pnlWave.x+10, aWave.y+aWave.h+3, pnlWave.w-20, 20); 
+  sineWave         = new CheckBox("sine", pnlWave.x+10, oWave.y+oWave.h+10, 15);  
+  pulseWave        = new CheckBox("pulse", pnlWave.x+90, oWave.y+oWave.h+10, 15);  
   squareWave       = new CheckBox("square", sineWave.x, sineWave.y+20, 15);    
   sawtoothWave     = new CheckBox("sawtooth", pulseWave.x, pulseWave.y+20, 15);    
 
@@ -188,6 +192,7 @@ void draw() {
   text("RESET",resetAxes.x-10,resetAxes.y+resetAxes.h/2);
 
   startStop.display();
+  slowRoll.display();
   resetAxes.display();
   resetCursors.display();
   showSamples.display();
@@ -197,6 +202,7 @@ void draw() {
   wave.display();
   fWave.display();
   aWave.display();
+  oWave.display();
   sineWave.display();
   pulseWave.display();
   squareWave.display();

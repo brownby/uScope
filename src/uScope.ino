@@ -1247,11 +1247,8 @@ void fngenerator(){
 
     if(!mute) {
       for (int i = 0; i < NPTS; i++) { 
-        //if (micros() > LoopTimer) {
           analogWrite(A0,waveout[i]);
-        //  delayMicroseconds(1);
-        //  LoopTimer += LoopTime;
-        //}
+          delayMicroseconds(1);
       }
     }
   }
