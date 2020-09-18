@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 44         // number of beats for adc transfer, MUST be < 512 (?)
+#define NBEATS 45         // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
@@ -374,15 +374,10 @@ void dma_init() {
 
 }
 
-volatile int time;
-volatile int time_dif;
-
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
-  time_dif = micros() - time;
-  time = micros();
-  uart_put_hex(time_dif);
+  digitalWrite(5, !digitalRead(5));
 
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
@@ -1285,6 +1280,9 @@ void setup() {
 
   pinMode(LED_BUILTIN,OUTPUT);
   digitalWrite(LED_BUILTIN,HIGH);
+
+  pinMode(5, OUTPUT);
+  digitalWrite(5, LOW);
   
   adc_to_sram_dma();
   start_adc_sram_dma(); 
