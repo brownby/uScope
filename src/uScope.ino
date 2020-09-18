@@ -232,7 +232,7 @@ void adc_init() {
   //while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
-  ADC->SAMPCTRL.reg = 0x14;               // add NO half ADC clk cycle periods to sample time
+  ADC->SAMPCTRL.reg = 0x14;               // add 20 half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
   ADC->CTRLB.bit.PRESCALER = 0x4;        // 0x3 = DIV32, 0x4 = DIV64, 0x5 = DIV128
@@ -374,9 +374,15 @@ void dma_init() {
 
 }
 
+volatile int time;
+volatile int time_dif;
+
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
+  time_dif = micros() - time;
+  time = micros();
+  uart_put_hex(time_dif);
 
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
