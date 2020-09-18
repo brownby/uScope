@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 45         // number of beats for adc transfer, MUST be < 512 (?)
+#define NBEATS 44         // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
@@ -230,6 +230,9 @@ void adc_init() {
   
   //ADC->INPUTCTRL.bit.MUXNEG = 0x18;      // negative node, if differential, set to 0x18 = internal GND
   //while(ADC->STATUS.bit.SYNCBUSY == 1);
+
+  ADC->CTRLB.bit.LEFTADJ = 1; // left align bits of the result
+  while(ADC->STATUS.bit.SYNCBUSY = 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
   ADC->SAMPCTRL.reg = 0x14;               // add 20 half ADC clk cycle periods to sample time
