@@ -44,21 +44,16 @@
 
 import ddf.minim.*;           // used to connect to device over USB audio
 import processing.serial.*;   // used to connect to device over virtual COM port
-import controlP5.*;
-import java.util.*;
 
 // *** variable initialization *** //
 
 String version="beta";
-String portName;
 
 boolean nInt = true;             // n is an integer (round) or decimal !nInt 
 boolean fmt = true;              // fmt = true = "format", !fmt = false = "no format"
-boolean stream = false;           // for startStop
+boolean stream = true;           // for startStop
 boolean dtError = false;         // check for sampling time error
 boolean waitforTrigger = false;   
-boolean connected = false;
-boolean selected = false;
 
 byte numCh = 2;
 byte scaleLinear = 0;   
@@ -68,33 +63,25 @@ byte changeRelease = 3;   // value changed by "MouseReleased"
 
 int samples = 4000;
 int sample_rate = 107100; // unused for now, but to avoid "magic" numbers in setting up sampling / "show samples"
-
-int vTrigger = 308;       // value of trigger 0-1024 (0-5V), if 10 bit ADC 
+int vTrigger = 308;         // value of trigger 0-1024 (0-5V), if 10 bit ADC 
 int marg1, marg2;         // to adjust the position of objects
-int fntSize = 10;
 
 float DIV = 45.0;         // division unit size
 
 color rgb[]={color(255, 255, 0), color(0, 204, 255)};  // for 2 channels: yellow (CH0) and blue (CH1)
-
-PFont font;
 
 // *** object instantiation *** //
 
 Minim minim;
 AudioInput in; // USB connection to device
 
-ControlP5 cp5;
 Serial myDevice;
-Textarea valueFld;
-Textlabel logFld;
 
 Channel channel[] = new Channel[numCh];
 Group group[]     = new Group[numCh+1]; // used to change V/div and ms/div simultaneously on all channels using SHIFT key
 
 Display display;
 
-Button    connect;
 Button    startStop;
 Button    resetAxes;
 Button    resetCursors;  // measure vs size? *flag
@@ -132,30 +119,35 @@ void setup() {
   
   size(1040, 635); 
   frameRate(15);
-  
-  display = new Display(30+10, 70, 17*DIV, 12*DIV);  // 17 horizontal and 12 vertical divisions
+
+  display = new Display(30+10, 60, 17*DIV, 12*DIV);  // 17 horizontal and 12 vertical divisions
   
   marg1 = display.x+display.w+10; 
   marg2 = marg1+200;
   
   minim = new Minim(this);
-  in = minim.getLineIn(Minim.MONO, samples, 44100, 16);
+  in = minim.getLineIn(Minim.MONO, samples, 176400, 16);
   in.disableMonitoring();
+  in.mute();
+  
+  printArray(Serial.list());
+  myDevice = new Serial(this, "COM11", 115200);
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
-  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+2+k*125, 185, 110); }
+  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+12+k*125, 185, 110); }
   
   for (byte k=0; k<numCh; k++){ 
   
-  channel[k].vertScale.saveV();
-  channel[k].horiScale.saveV();
+    channel[k].vertScale.saveV();
+    channel[k].horiScale.saveV();
+    
+  }
   
-  connect          = new Button("connect",marg1-102,15,93,40,rgb[0],rgb[0],color(0));
-  startStop        = new Button("start / stop",marg1+15,15,185,40,color(0,255,0),color(255,0,0),color(0));
-  resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+17,45,20);
-  resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w,channel[1].y+channel[1].h+17,60,20);
+  startStop        = new Button("start / stop",marg1+15,15,185,40,color(255,0,0),color(0));
+  resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+15,45,20);
+  resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+15,60,20);
   
-  slowRoll         = new CheckBox("slow roll", marg1+25, channel[1].y+channel[1].h+55, 15);
+  slowRoll         = new CheckBox("slow roll", marg1+25, channel[1].y+channel[1].h+50, 15);
   showSamples      = new CheckBox("show samples", slowRoll.x, slowRoll.y+slowRoll.h+5, 15);
   calcFreq         = new CheckBox("detect frequency", slowRoll.x, showSamples.y+showSamples.h+5, 15);
   
@@ -171,38 +163,16 @@ void setup() {
 
   wave.clicked = true;
   sineWave.clicked = true;
-  startStop.clicked = true;
 
 // ---- sampling controls ---- //
 
   pnlSamples       = new Panel("sampling", color(0,100, 255), display.x+785, display.y+display.h-85, 200, 85);
-  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 22.6667e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
+  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 5.667e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
   dtReal           = new FmtNum(0,nInt,fmt);
   q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", samples, 100, 3000, dt.x+dt.w+5, dt.y, 60, 20);
   tTotal           = new FmtNum(dt.v.getV()*q.v.getV(), !nInt);
   tTotalReal       = new FmtNum(0,!nInt);
-  
-  cp5 = new ControlP5(this);
-  font = createFont("Verdana", fntSize);
-
-  String[] ports = Serial.list();
-  List p = Arrays.asList(ports);
  
-  cp5.addScrollableList("SerialPorts")
-     .setPosition(connect.x-248, 17)
-     .setSize(247, 100)
-     .setCaptionLabel("Select Serial Port")
-     .setBarHeight(37)
-     .setItemHeight(18)
-     .setFont(font)
-     .setColorBackground(color(200))
-     .setColorActive(color(255))
-     .setColorForeground(rgb[0])
-     .setColorValueLabel(color(0))
-     .setColorCaptionLabel(color(0))
-     .addItems(p);  
-     
-  }
 }
 
 void draw() {
@@ -212,16 +182,15 @@ void draw() {
   
   display.display();
   
-  stroke(color(0)); strokeWeight(1.8); 
-  rect(connect.x-250,15,249,40); 
-  
   textSize(24); fill(255); textAlign(LEFT, CENTER);
   text("μScope "+version, display.x, 30);
   
+  textSize(15); textAlign(LEFT, CENTER);
+  text("open source instrumentation for Arduino", display.x+465, 30);
+
   textSize(15); textAlign(RIGHT, CENTER);  
   text("RESET",resetAxes.x-10,resetAxes.y+resetAxes.h/2);
 
-  connect.display();
   startStop.display();
   slowRoll.display();
   resetAxes.display();
@@ -241,16 +210,8 @@ void draw() {
   
   for (byte k=0; k<numCh; k++) { channel[k].display(); }
   
-  if (connected){
-    handleIncoming(); 
-  }  
-}
-
-void SerialPorts(int n) {
+  handleIncoming();
   
-  portName = cp5.get(ScrollableList.class, "SerialPorts").getItem(n).get("name").toString();
-  selected = true;
-
 }
 
 void mouseClicked() {
@@ -332,10 +293,10 @@ void mouseClicked() {
  
   if (startStop.mouseClicked()) {
     
-      stream = !stream; 
-      if (stream == false){ println("stop"); }
-      else { println("start"); }
-      
+    stream = !stream; 
+    if (stream == false){ println("stop"); }
+    else { println("start"); }
+    
   }
   
   if (resetAxes.mouseClicked()) {
@@ -366,17 +327,6 @@ void mouseClicked() {
      resetCursors.clicked = false;
   }
   
-  if (connect.mouseClicked()){
-    if(selected){
-      if(connected){ myDevice.stop(); }
-      myDevice = new Serial(this, portName, 115200);
-      connected = true;
-      startStop.clicked = false;
-      stream = true;
-    }
-    connect.clicked = false;
-  }
-
   showSamples.mouseClicked();
   calcFreq.mouseClicked();
 
@@ -394,7 +344,6 @@ void mousePressed() {
   aWave.mousePressed();
   oWave.mousePressed();
   
-  connect.mousePressed();
   resetAxes.mousePressed();
   resetCursors.mousePressed();
   
@@ -404,7 +353,6 @@ void mouseReleased() {
 
   for (int k=0; k<numCh; k++) { channel[k].mouseReleased(); }
   
-  connect.mouseReleased();
   resetAxes.mouseReleased();
   resetCursors.mouseReleased();
 

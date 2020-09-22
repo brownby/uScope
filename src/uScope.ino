@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 510          // number of beats for adc transfer, MUST be < 512 (?)
+#define NBEATS 232        // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
@@ -233,10 +233,10 @@ void adc_init() {
   while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
-  ADC->SAMPCTRL.reg = 0x0;               // add NO half ADC clk cycle periods to sample time
+  ADC->SAMPCTRL.reg = 0x03;               // add 20 half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
-  ADC->CTRLB.bit.PRESCALER = 0x4;        // 0x4 = DIV64, 0x5 = DIV128
+  ADC->CTRLB.bit.PRESCALER = 0x3;        // 0x3 = DIV32, 0x4 = DIV64, 0x5 = DIV128
   ADC->CTRLB.bit.RESSEL = 0x0;           // result resolution, 0x0 = 12 bit, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;            // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;           // ADC is single-ended, ignore MUXNEG defined above
@@ -378,6 +378,7 @@ void dma_init() {
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
+  digitalWrite(5, !digitalRead(5));
 
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
@@ -1282,6 +1283,9 @@ void setup() {
 
   pinMode(LED_BUILTIN,OUTPUT);
   digitalWrite(LED_BUILTIN,HIGH);
+
+  pinMode(5, OUTPUT);
+  digitalWrite(5, LOW);
   
   adc_to_sram_dma();
   start_adc_sram_dma(); 
