@@ -150,7 +150,7 @@ alignas(4) usb_configuration_hierarchy_t usb_configuration_hierarchy = {
     .bSamFreqType        = 0x01, // 1 sampling frequency
     .bSamFreq0_byte0     = 0x10,
     .bSamFreq0_byte1     = 0xB1,
-    .bSamFreq0_byte2     = 0x02, // 44.1kHz (sample rate)
+    .bSamFreq0_byte2     = 0x02, // 176400 (sample rate)
   },
 
   .scope_iso_ep =

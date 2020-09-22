@@ -126,7 +126,7 @@ void setup() {
   marg2 = marg1+200;
   
   minim = new Minim(this);
-  in = minim.getLineIn(Minim.MONO, samples, 44100, 16);
+  in = minim.getLineIn(Minim.MONO, samples, 176400, 16);
   in.disableMonitoring();
   in.mute();
   
@@ -167,7 +167,7 @@ void setup() {
 // ---- sampling controls ---- //
 
   pnlSamples       = new Panel("sampling", color(0,100, 255), display.x+785, display.y+display.h-85, 200, 85);
-  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 22.6757e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
+  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 5.667e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
   dtReal           = new FmtNum(0,nInt,fmt);
   q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", samples, 100, 3000, dt.x+dt.w+5, dt.y, 60, 20);
   tTotal           = new FmtNum(dt.v.getV()*q.v.getV(), !nInt);

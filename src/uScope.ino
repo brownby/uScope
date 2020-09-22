@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 176        // number of beats for adc transfer, MUST be < 512 (?)
+#define NBEATS 232        // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
