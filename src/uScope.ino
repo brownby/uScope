@@ -20,11 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
-<<<<<<< Updated upstream
-#define NBEATS 510         // number of beats for adc transfer, MUST be < 512 (?)
-=======
-#define NBEATS 44        // number of beats for adc transfer, MUST be < 512 (?)
->>>>>>> Stashed changes
+#define NBEATS 510          // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
@@ -52,6 +48,7 @@ uint16_t waveout[NPTS];       // buffer for waveform
 
 float amplitude = 510.0;
 float frequency = 5.0;
+float freq_scalar = 1.0;
 float offset = 510.0;
 
 volatile bool mute = false;
@@ -232,8 +229,8 @@ void adc_init() {
   ADC->INPUTCTRL.bit.MUXPOS = g_APinDescription[ADCPIN].ulADCChannelNumber; // select ADC pin, positive node
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
   
-  //ADC->INPUTCTRL.bit.MUXNEG = 0x18;      // negative node, if differential, set to 0x18 = internal GND
-  //while(ADC->STATUS.bit.SYNCBUSY == 1);
+  ADC->INPUTCTRL.bit.MUXNEG = 0x18;      // negative node, if differential, set to 0x18 = internal GND
+  while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
   ADC->SAMPCTRL.reg = 0x0;               // add NO half ADC clk cycle periods to sample time
@@ -1160,7 +1157,7 @@ void fngenerator(){
 
   int i; type waveform = sine;
   float phase = (2.0*3.14159*frequency)/(NPTS);
-  for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + amplitude + 2.0f;
+  for (i=0;i<NPTS/freq_scalar;i++) waveout[i]= sinf(i*phase) * amplitude + amplitude + 2.0f;
 
   while(true) {
 
@@ -1172,6 +1169,7 @@ void fngenerator(){
 
         case '0':  
           waveform = sine;
+          freq_scalar = 1.0;
           break;
       
         case '1':  
@@ -1224,6 +1222,7 @@ void fngenerator(){
           for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
           frequency = map(control_str.toInt(),200,20000,1,100);
+          freq_scalar = map(control_str.toInt(),200,20000,1,20);
 
           // uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
           // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
@@ -1242,24 +1241,24 @@ void fngenerator(){
           break;
       
         case 1:  // pulse wave
-          for (i=0;i<NPTS/20;i++) waveout[i] = 2.0 * amplitude;
-          for (i=NPTS/20;i<NPTS;i++) waveout[i] = 0.0f;
+          for (i=0;i<NPTS/(20*freq_scalar);i++) waveout[i] = 2.0 * amplitude;
+          for (i=NPTS/(20*freq_scalar);i<NPTS;i++) waveout[i] = 0.0f;
           break;
 
         case 2:  // square wave
-          for (i=0;i<NPTS/2;i++) waveout[i] = 2.0 * amplitude;
-          for (i=NPTS/2;i<NPTS;i++) waveout[i] = 0.0f;
+          for (i=0;i<NPTS/(2*freq_scalar);i++) waveout[i] = 2.0 * amplitude;
+          for (i=NPTS/(2*freq_scalar);i<NPTS;i++) waveout[i] = 0.0f;
           break;
 
         case 3:  // sawtooth wave
-          for (i=0;i<NPTS/2;i++) waveout[i] = waveout[NPTS-1-i] = 4.0*amplitude*i/NPTS;
+          for (i=0;i<NPTS/(2*freq_scalar);i++) waveout[i] = waveout[NPTS-1-i] = 4.0*amplitude*i/NPTS;
           break;
 
       }
     }
 
     if(!mute) {
-      for (int i = 0; i < NPTS; i++) { 
+      for (int i = 0; i < NPTS/freq_scalar; i++) { 
           analogWrite(A0,waveout[i]);
           delayMicroseconds(1);
       }
