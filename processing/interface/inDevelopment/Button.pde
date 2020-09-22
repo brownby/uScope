@@ -12,7 +12,7 @@ class Button{
    
    color rgb_active  = color(0,255,0);
    color rgb_outline = color(0);
-  
+   color rgb_pressed = color(0,255,0);
    
    Button(String txt_,int x_,int y_, int w_, int h_) {  //constructor
    
@@ -20,17 +20,18 @@ class Button{
    
    } 
    
-   Button(String txt_,int x_,int y_, int w_, int h_,color rgb_active_, color rgb_outline_) {
+   Button(String txt_,int x_,int y_, int w_, int h_, color rgb_pressed_, color rgb_active_, color rgb_outline_) {
      
       txt=txt_; x=x_; y=y_; w=w_; h=h_;
       rgb_active = rgb_active_;
       rgb_outline = rgb_outline_;
+      rgb_pressed = rgb_pressed_;
       
    }
    
    void display() {
      
-     if (mPressed){ fill(0,255,0); } 
+     if (mPressed){ fill(rgb_pressed); } 
      else if (clicked){ fill(rgb_active); } 
      else{ fill(200); }
      

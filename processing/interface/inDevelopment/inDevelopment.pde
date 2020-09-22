@@ -44,16 +44,33 @@
 
 import ddf.minim.*;           // used to connect to device over USB audio
 import processing.serial.*;   // used to connect to device over virtual COM port
+<<<<<<< Updated upstream
+=======
+import controlP5.*;
+import java.util.*;
+>>>>>>> Stashed changes
 
 // *** variable initialization *** //
 
 String version="beta";
+<<<<<<< Updated upstream
 
 boolean nInt = true;             // n is an integer (round) or decimal !nInt 
 boolean fmt = true;              // fmt = true = "format", !fmt = false = "no format"
 boolean stream = true;           // for startStop
 boolean dtError = false;         // check for sampling time error
 boolean waitforTrigger = false;   
+=======
+String portName;
+
+boolean nInt = true;             // n is an integer (round) or decimal !nInt 
+boolean fmt = true;              // fmt = true = "format", !fmt = false = "no format"
+boolean stream = false;           // for startStop
+boolean dtError = false;         // check for sampling time error
+boolean waitforTrigger = false;   
+boolean connected = false;
+boolean selected = false;
+>>>>>>> Stashed changes
 
 byte numCh = 2;
 byte scaleLinear = 0;   
@@ -63,25 +80,49 @@ byte changeRelease = 3;   // value changed by "MouseReleased"
 
 int samples = 4000;
 int sample_rate = 107100; // unused for now, but to avoid "magic" numbers in setting up sampling / "show samples"
+<<<<<<< Updated upstream
 int vTrigger = 308;         // value of trigger 0-1024 (0-5V), if 10 bit ADC 
 int marg1, marg2;         // to adjust the position of objects
+=======
+int vTrigger = 308;       // value of trigger 0-1024 (0-5V), if 10 bit ADC 
+int marg1, marg2;         // to adjust the position of objects
+int fntSize = 10;
+>>>>>>> Stashed changes
 
 float DIV = 45.0;         // division unit size
 
 color rgb[]={color(255, 255, 0), color(0, 204, 255)};  // for 2 channels: yellow (CH0) and blue (CH1)
+<<<<<<< Updated upstream
+=======
+color black = color(0,0,0);
+color gray = color(0, 160, 100);
+
+PFont font;
+>>>>>>> Stashed changes
 
 // *** object instantiation *** //
 
 Minim minim;
 AudioInput in; // USB connection to device
 
+<<<<<<< Updated upstream
 Serial myDevice;
+=======
+ControlP5 cp5;
+Serial myDevice;
+Textarea valueFld;
+Textlabel logFld;
+>>>>>>> Stashed changes
 
 Channel channel[] = new Channel[numCh];
 Group group[]     = new Group[numCh+1]; // used to change V/div and ms/div simultaneously on all channels using SHIFT key
 
 Display display;
 
+<<<<<<< Updated upstream
+=======
+Button    connect;
+>>>>>>> Stashed changes
 Button    startStop;
 Button    resetAxes;
 Button    resetCursors;  // measure vs size? *flag
@@ -120,12 +161,17 @@ void setup() {
   size(1040, 635); 
   frameRate(15);
 
+<<<<<<< Updated upstream
   display = new Display(30+10, 60, 17*DIV, 12*DIV);  // 17 horizontal and 12 vertical divisions
+=======
+  display = new Display(30+10, 70, 17*DIV, 12*DIV);  // 17 horizontal and 12 vertical divisions
+>>>>>>> Stashed changes
   
   marg1 = display.x+display.w+10; 
   marg2 = marg1+200;
   
   minim = new Minim(this);
+<<<<<<< Updated upstream
   in = minim.getLineIn(Minim.MONO, samples, 115000, 16);
   in.disableMonitoring();
   in.mute();
@@ -144,6 +190,22 @@ void setup() {
   }
   
   startStop        = new Button("start / stop",marg1+15,15,185,40,color(255,0,0),color(0));
+=======
+  in = minim.getLineIn(Minim.MONO, samples, 44100, 16);
+  in.disableMonitoring();
+  in.mute();
+
+  for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
+  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+k*125, 185, 110); }
+  
+  for (byte k=0; k<numCh; k++){ 
+  
+  channel[k].vertScale.saveV();
+  channel[k].horiScale.saveV();
+  
+  connect          = new Button("connect",marg1-102,15,93,40,rgb[0],rgb[0],color(0));
+  startStop        = new Button("start / stop",marg1+15,15,185,40,color(0,255,0),color(255,0,0),color(0));
+>>>>>>> Stashed changes
   resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+15,45,20);
   resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+15,60,20);
   
@@ -163,15 +225,48 @@ void setup() {
 
   wave.clicked = true;
   sineWave.clicked = true;
+<<<<<<< Updated upstream
+=======
+  startStop.clicked = true;
+>>>>>>> Stashed changes
 
 // ---- sampling controls ---- //
 
   pnlSamples       = new Panel("sampling", color(0,100, 255), display.x+785, display.y+display.h-85, 200, 85);
+<<<<<<< Updated upstream
   dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 9.333e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
+=======
+  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 22.6667e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
+>>>>>>> Stashed changes
   dtReal           = new FmtNum(0,nInt,fmt);
   q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", samples, 100, 3000, dt.x+dt.w+5, dt.y, 60, 20);
   tTotal           = new FmtNum(dt.v.getV()*q.v.getV(), !nInt);
   tTotalReal       = new FmtNum(0,!nInt);
+<<<<<<< Updated upstream
+=======
+  
+  cp5 = new ControlP5(this);
+  font = createFont("Verdana", fntSize);
+
+  String[] ports = Serial.list();
+  List p = Arrays.asList(ports);
+ 
+  cp5.addScrollableList("SerialPorts")
+     .setPosition(connect.x-248, 17)
+     .setSize(247, 100)
+     .setCaptionLabel("Select Serial Port")
+     .setBarHeight(37)
+     .setItemHeight(18)
+     .setFont(font)
+     .setColorBackground(color(200))
+     .setColorActive(color(255))
+     .setColorForeground(rgb[0])
+     .setColorValueLabel(color(0))
+     .setColorCaptionLabel(color(0))
+     .addItems(p);  
+     
+  }
+>>>>>>> Stashed changes
  
 }
 
@@ -182,15 +277,27 @@ void draw() {
   
   display.display();
   
+<<<<<<< Updated upstream
   textSize(24); fill(255); textAlign(LEFT, CENTER);
   text("μScope "+version, display.x, 30);
   
   textSize(15); textAlign(LEFT, CENTER);
   text("open source instrumentation for Arduino", display.x+465, 30);
+=======
+  stroke(color(0)); strokeWeight(1.8); 
+  rect(connect.x-250,15,249,40); 
+  
+  textSize(24); fill(255); textAlign(LEFT, CENTER);
+  text("μScope "+version, display.x, 30);
+>>>>>>> Stashed changes
 
   textSize(15); textAlign(RIGHT, CENTER);  
   text("RESET",resetAxes.x-10,resetAxes.y+resetAxes.h/2);
 
+<<<<<<< Updated upstream
+=======
+  connect.display();
+>>>>>>> Stashed changes
   startStop.display();
   slowRoll.display();
   resetAxes.display();
@@ -210,8 +317,21 @@ void draw() {
   
   for (byte k=0; k<numCh; k++) { channel[k].display(); }
   
+<<<<<<< Updated upstream
   handleIncoming();
   
+=======
+  if (connected){
+    handleIncoming(); 
+  }  
+}
+
+void SerialPorts(int n) {
+  
+  portName = cp5.get(ScrollableList.class, "SerialPorts").getItem(n).get("name").toString();
+  selected = true;
+
+>>>>>>> Stashed changes
 }
 
 void mouseClicked() {
@@ -293,10 +413,17 @@ void mouseClicked() {
  
   if (startStop.mouseClicked()) {
     
+<<<<<<< Updated upstream
     stream = !stream; 
     if (stream == false){ println("stop"); }
     else { println("start"); }
     
+=======
+      stream = !stream; 
+      if (stream == false){ println("stop"); }
+      else { println("start"); }
+      
+>>>>>>> Stashed changes
   }
   
   if (resetAxes.mouseClicked()) {
@@ -327,6 +454,20 @@ void mouseClicked() {
      resetCursors.clicked = false;
   }
   
+<<<<<<< Updated upstream
+=======
+  if (connect.mouseClicked()){
+    if(selected){
+      if(connected){ myDevice.stop(); }
+      myDevice = new Serial(this, portName, 115200);
+      connected = true;
+      startStop.clicked = false;
+      stream = true;
+    }
+    connect.clicked = false;
+  }
+  
+>>>>>>> Stashed changes
   showSamples.mouseClicked();
   calcFreq.mouseClicked();
 
@@ -344,6 +485,10 @@ void mousePressed() {
   aWave.mousePressed();
   oWave.mousePressed();
   
+<<<<<<< Updated upstream
+=======
+  connect.mousePressed();
+>>>>>>> Stashed changes
   resetAxes.mousePressed();
   resetCursors.mousePressed();
   
@@ -353,6 +498,10 @@ void mouseReleased() {
 
   for (int k=0; k<numCh; k++) { channel[k].mouseReleased(); }
   
+<<<<<<< Updated upstream
+=======
+  connect.mouseReleased();
+>>>>>>> Stashed changes
   resetAxes.mouseReleased();
   resetCursors.mouseReleased();
 

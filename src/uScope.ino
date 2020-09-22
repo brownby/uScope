@@ -20,7 +20,11 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
+<<<<<<< Updated upstream
 #define NBEATS 510         // number of beats for adc transfer, MUST be < 512 (?)
+=======
+#define NBEATS 44        // number of beats for adc transfer, MUST be < 512 (?)
+>>>>>>> Stashed changes
 #define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
@@ -76,7 +80,7 @@ static uint32_t adctobuf3 = 3;  // dma channel for adc to buf3
 static uint8_t ascii = 48;      // offset to interpret single digit uart outputs
 static int usb_config;
 
-char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","ALL-0001","Isochronous Audio","uScope Instrumentation"};
+char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","-uScope-","Isochronous Audio","uScope Instrumentation"};
 
 uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
 

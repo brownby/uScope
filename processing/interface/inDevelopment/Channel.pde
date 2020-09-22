@@ -53,7 +53,7 @@ class Channel {
   
      n = n_; nRGB = nRGB_; x = x_; y = y_; w = w_; h = h_;
 
-     chN     = new Button("CH-"+str(n),x,y,w/2,15,nRGB,nRGB);
+     chN     = new Button("CH-"+str(n),x,y,w/2,15,color(0,255,0),nRGB,nRGB);
      trigger = new CheckBox("trigger",x+w/2+10,y+3,14);
      
      chN.clicked = true;
