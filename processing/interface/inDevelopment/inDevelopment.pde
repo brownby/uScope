@@ -143,7 +143,7 @@ void setup() {
   in.disableMonitoring();
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
-  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+k*125, 185, 110); }
+  for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+2+k*125, 185, 110); }
   
   for (byte k=0; k<numCh; k++){ 
   
@@ -152,10 +152,10 @@ void setup() {
   
   connect          = new Button("connect",marg1-102,15,93,40,rgb[0],rgb[0],color(0));
   startStop        = new Button("start / stop",marg1+15,15,185,40,color(0,255,0),color(255,0,0),color(0));
-  resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+15,45,20);
-  resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w+2,channel[1].y+channel[1].h+15,60,20);
+  resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+17,45,20);
+  resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w,channel[1].y+channel[1].h+17,60,20);
   
-  slowRoll         = new CheckBox("slow roll", marg1+25, channel[1].y+channel[1].h+50, 15);
+  slowRoll         = new CheckBox("slow roll", marg1+25, channel[1].y+channel[1].h+55, 15);
   showSamples      = new CheckBox("show samples", slowRoll.x, slowRoll.y+slowRoll.h+5, 15);
   calcFreq         = new CheckBox("detect frequency", slowRoll.x, showSamples.y+showSamples.h+5, 15);
   
