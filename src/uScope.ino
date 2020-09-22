@@ -229,8 +229,8 @@ void adc_init() {
   ADC->INPUTCTRL.bit.MUXPOS = g_APinDescription[ADCPIN].ulADCChannelNumber; // select ADC pin, positive node
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
   
-  ADC->INPUTCTRL.bit.MUXNEG = 0x18;      // negative node, if differential, set to 0x18 = internal GND
-  while(ADC->STATUS.bit.SYNCBUSY == 1);
+  //ADC->INPUTCTRL.bit.MUXNEG = 0x18;      // negative node, if differential, set to 0x18 = internal GND
+  //while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
   ADC->SAMPCTRL.reg = 0x03;               // add 20 half ADC clk cycle periods to sample time
