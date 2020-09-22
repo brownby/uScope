@@ -20,7 +20,7 @@ static uint32_t baud = 115200;                                      // for UART 
 uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass to SERCOM0->USART.BAUD.reg
 
 #define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
-#define NBEATS 47        // number of beats for adc transfer, MUST be < 512 (?)
+#define NBEATS 176        // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1000           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
@@ -232,10 +232,10 @@ void adc_init() {
   //while(ADC->STATUS.bit.SYNCBUSY == 1);
   
   ADC->AVGCTRL.bit.SAMPLENUM = 0x0;      // 1 sample per conversion, no averaging
-  ADC->SAMPCTRL.reg = 0x14;               // add 20 half ADC clk cycle periods to sample time
+  ADC->SAMPCTRL.reg = 0x03;               // add 20 half ADC clk cycle periods to sample time
   while(ADC->STATUS.bit.SYNCBUSY == 1); 
 
-  ADC->CTRLB.bit.PRESCALER = 0x4;        // 0x3 = DIV32, 0x4 = DIV64, 0x5 = DIV128
+  ADC->CTRLB.bit.PRESCALER = 0x3;        // 0x3 = DIV32, 0x4 = DIV64, 0x5 = DIV128
   ADC->CTRLB.bit.RESSEL = 0x0;           // result resolution, 0x0 = 12 bit, 0x2 = 10 bit, 0x3 = 8 bit
   ADC->CTRLB.bit.FREERUN = 1;            // enable freerun
   ADC->CTRLB.bit.DIFFMODE = 0;           // ADC is single-ended, ignore MUXNEG defined above
