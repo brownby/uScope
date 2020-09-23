@@ -378,12 +378,11 @@ void dma_init() {
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
-  digitalWrite(5, !digitalRead(5));
+  //digitalWrite(5, !digitalRead(5));
 
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
   DMAC->CHINTFLAG.reg = DMAC_CHINTFLAG_TCMPL; // | DMAC_CHINTFLAG_SUSP | DMAC_CHINTFLAG_TERR;
-  //uart_puts("\nd");uart_put_hex(bufnum);
   
   DMAC->CHID.reg = (bufnum + 1 == 4) ? (DMAC_CHID_ID(0)) : (DMAC_CHID_ID(bufnum + 1));
   DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE;
@@ -1213,8 +1212,6 @@ void fngenerator(){
 
           offset = map(control_str.toInt(),300,3000,15,900);
 
-          // uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
-          // uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
           break;
 
         case 'f':
@@ -1238,21 +1235,21 @@ void fngenerator(){
       switch(waveform){
 
         case 0:  // sine wave
-          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + offset;
+          for (i=0;i<NPTS/freq_scalar;i++) waveout[i]= sinf(i*phase) * amplitude + offset;
           break;
       
         case 1:  // pulse wave
-          for (i=0;i<NPTS/(20*freq_scalar);i++) waveout[i] = 2.0 * amplitude;
-          for (i=NPTS/(20*freq_scalar);i<NPTS;i++) waveout[i] = 0.0f;
+          for (i=0;i<NPTS/(20*freq_scalar);i++) waveout[i] = 2.0 * amplitude + offset;
+          for (i=NPTS/(20*freq_scalar);i<NPTS;i++) waveout[i] = 0.0f + offset;
           break;
 
         case 2:  // square wave
-          for (i=0;i<NPTS/(2*freq_scalar);i++) waveout[i] = 2.0 * amplitude;
-          for (i=NPTS/(2*freq_scalar);i<NPTS;i++) waveout[i] = 0.0f;
+          for (i=0;i<NPTS/(2*freq_scalar);i++) waveout[i] = 2.0 * amplitude + offset;
+          for (i=NPTS/(2*freq_scalar);i<NPTS;i++) waveout[i] = 0.0f + offset;
           break;
 
         case 3:  // sawtooth wave
-          for (i=0;i<NPTS/(2*freq_scalar);i++) waveout[i] = waveout[NPTS-1-i] = 4.0*amplitude*i/NPTS;
+          for (i=0;i<NPTS/(2*freq_scalar);i++) waveout[i] = waveout[NPTS-1-i] = 4.0*amplitude*i/NPTS + offset;
           break;
 
       }
