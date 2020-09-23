@@ -11,4 +11,4 @@ __Supported boards__
 
 1. MKR Zero
 
-![interface](img/trigger.gif)
+![interface](img/screenshot.png)
