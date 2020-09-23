@@ -21,7 +21,7 @@ uint64_t br = (uint64_t)65536 * (freq_CPU - 16 * baud) / freq_CPU;  // to pass t
 
 #define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
 #define NBEATS 232        // number of beats for adc transfer, MUST be < 512 (?)
-#define NPTS 1000           // number of points within waveform definition
+#define NPTS 1022           // number of points within waveform definition
 
 #define CONTROL_ENDPOINT  0
 #define ISO_ENDPOINT_IN   1
@@ -1219,7 +1219,7 @@ void fngenerator(){
           control_str = "";
           for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
-          frequency = map(control_str.toInt(),200,20000,1,100);
+          frequency = map(control_str.toInt(),200,20000,1,61);
           
           //uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
 
@@ -1244,13 +1244,13 @@ void fngenerator(){
           break;
       
         case 1:  // pulse wave
-          for (i=0;i<NPTS/(10*freq_scalar);i++) waveout[i] = 2.0 * amplitude + offset;
-          for (i=NPTS/(10*freq_scalar);i<NPTS/freq_scalar;i++) waveout[i] = 0.0 + offset;
+          for (i=0;i<NPTS/(10*freq_scalar);i++) waveout[i] = offset + amplitude;
+          for (i=NPTS/(10*freq_scalar);i<NPTS/freq_scalar;i++) waveout[i] = offset - amplitude;
           break;
 
         case 2:  // square wave
-          for (i=0;i<(NPTS/2)*freq_scalar;i++) waveout[i] = 2.0 * amplitude + offset;
-          for (i=(NPTS/2)/freq_scalar;i<NPTS/freq_scalar;i++) waveout[i] = 0.0 + offset;
+          for (i=0;i<(NPTS/2)*freq_scalar;i++) waveout[i] = offset + amplitude;
+          for (i=(NPTS/2)/freq_scalar;i<NPTS/freq_scalar;i++) waveout[i] = offset - amplitude;
           break;
 
         case 3:  // sawtooth wave
