@@ -4,120 +4,68 @@
  * Code for graphical interface
  * 
  * J. Evan Smith, Ben Y. Brown, modified from work by Rogerio Bego
- * Last revised: 8 September 2020
+ * Last revised: 23 September 2020
  *
- * =========== OUTLINE ===========
- *
- * ☑ import libraries
- * ☑ variable initalization
- * ☑ object instantiation
- * ☑ setup() 
- * ☑ draw()
- * ☑ mouseClicked() 
- * ☑ mousePressed()
- * ☑ mouseReleased()
- * ☑ mouseMoved()
- * ☑ mouseDragged()
- * ☑ adjustFt()
- * ☑ handleIncoming() --> buffer
- * 
- * =========== CLASSES ===========
- *
- * ☑ Button
- * ☑ Channel
- * ☑ CheckBox
- * ☑ Dial
- * ☑ Display 
- * ☑ FmtNum
- * ☑ Group
- * ☑ Panel
- *
- * =========== LEGEND ===========
- *
- * ☐ = in development
- * ☑ = clean & 'complete'
- *
- * https://github.com/brownby/uScope/tree/usb-dev/processing/interface
+ * https://github.com/brownby/uScope/
  */
 
-// *** import libraries *** //
-
-import ddf.minim.*;           // used to connect to device over USB audio
-import processing.serial.*;   // used to connect to device over virtual COM port
+import ddf.minim.*;          // used to connect to device over USB audio
+import processing.serial.*;  // used to connect to device over virtual COM port
 import controlP5.*;
 import java.util.*;
 
-// *** variable initialization *** //
-
-String version="beta";
-String portName;
-
-boolean nInt = true;             // n is an integer (round) or decimal !nInt 
-boolean fmt = true;              // fmt = true = "format", !fmt = false = "no format"
-boolean stream = false;           // for startStop
-boolean dtError = false;         // check for sampling time error
-boolean waitforTrigger = false;   
-boolean connected = false;
-boolean selected = false;
+boolean nInt = true;         // n is an integer (round) or decimal !nInt 
+boolean fmt = true;          // fmt = true = "format", !fmt = false = "no format"
+boolean stream = false;      // for startStop
+boolean connected = false;   // for CDC
+boolean selected = false;    // for port selection
 
 byte numCh = 2;
 byte scaleLinear = 0;   
 byte scaleLog = 1;     
-byte changeMove = 2;      // value changed by "MouseDragged"
-byte changeRelease = 3;   // value changed by "MouseReleased"
+byte changeMove = 2;       // value changed by "MouseDragged"
+byte changeRelease = 3;    // value changed by "MouseReleased"
 
-int samples = 4000;
-int sample_rate = 107100; // unused for now, but to avoid "magic" numbers in setting up sampling / "show samples"
-
-int vTrigger = 308;       // value of trigger 0-1024 (0-5V), if 10 bit ADC 
-int marg1, marg2;         // to adjust the position of objects
+int samples = 4000;        // host-side buffer size
+int sample_rate = 176400;  // unused for now, but to avoid "magic" numbers in setting up sampling / "show samples"
+int vTrigger = 308;        // *flag -> why initialized here?
+int marg1, marg2;          // to adjust the position of objects
 int fntSize = 10;
 
-float DIV = 45.0;         // division unit size
+float DIV = 45.0;          // division unit size
+
+String version="beta";
+String portName;
 
 color rgb[]={color(255, 255, 0), color(0, 204, 255)};  // for 2 channels: yellow (CH0) and blue (CH1)
-
 PFont font;
 
-// *** object instantiation *** //
+Minim minim;       // parent to AudioInput
+AudioInput in;     // isochronous USB connection to device
+Serial myDevice;   // CDC USB connection to device
 
-Minim minim;
-AudioInput in; // USB connection to device
-
-ControlP5 cp5;
-Serial myDevice;
-Textarea valueFld;
-Textlabel logFld;
+ControlP5 cp5;     // used for scrollable list, COM port selection
 
 Channel channel[] = new Channel[numCh];
 Group group[]     = new Group[numCh+1]; // used to change V/div and ms/div simultaneously on all channels using SHIFT key
 
-Display display;
+Display   display;
 
 Button    connect;
 Button    startStop;
 Button    resetAxes;
-Button    resetCursors;  // measure vs size? *flag
+Button    resetCursors;
 
 CheckBox  showSamples; 
-CheckBox  calcFreq;    // detect frequency
+CheckBox  calcFreq;      // detect frequency via interpeak spacing
 CheckBox  slowRoll;
 
-// ---- sampling controls ---- //
-
-Panel     pnlSamples;          // panel for sampling controls
-Button    oneSample;           // request a sample
-Button    severalSamples;      // request several samples
-Button    streamContinuous;    // enters reading every dt
-Dial      dt;                  // delta t (time of each reading)
-Dial      q;                   // number of readings
-FmtNum    tTotal;              // total sampling time dt*q
-FmtNum    tTotalReal, dtReal;  // check if the real sample time is the same as desired
-
-// ---- waveform --- //
+Panel     pnlSamples;    // panel for sampling controls -> not displayed (!)
+Dial      dt;            // delta t (time of each reading), fixed in setup()
+Dial      q;             // number of readings, fixed in setup()
 
 Panel     pnlWave;       // panel for the waveform generator
-CheckBox  wave;          // f and t are dependent: f = 1/t, t = 1/f
+CheckBox  wave;          // toggle
 Dial      fWave;         // frequency of waveform 
 Dial      aWave;         // amplitude of waveform 
 Dial      oWave;         // DC offset of waveform
@@ -126,12 +74,10 @@ CheckBox  pulseWave;     // type
 CheckBox  squareWave;    // type
 CheckBox  sawtoothWave;  // type
 
-// *** setup function *** //
-
 void setup() {
   
-  size(1040, 635); 
-  frameRate(15);
+  size(1040, 635);  // *flag -> how does this display on 1080p monitor?
+  frameRate(15);    // sub-cinematic to reduce CPU utilization
   
   display = new Display(30+10, 70, 17*DIV, 12*DIV);  // 17 horizontal and 12 vertical divisions
   
@@ -139,16 +85,20 @@ void setup() {
   marg2 = marg1+200;
   
   minim = new Minim(this);
-  in = minim.getLineIn(Minim.MONO, samples, 44100, 16);
-  in.disableMonitoring();
+  in = minim.getLineIn(Minim.MONO, samples, 176400, 16);
+  
+  in.disableMonitoring();  // *flag
+  in.mute();
 
   for (byte k=0; k<numCh+1; k++){ group[k] = new Group(); }  // must be completed before channels
   for (byte k=0; k<numCh; k++){ channel[k] = new Channel(k, rgb[k], marg1+15, display.y+2+k*125, 185, 110); }
   
   for (byte k=0; k<numCh; k++){ 
   
-  channel[k].vertScale.saveV();
-  channel[k].horiScale.saveV();
+    channel[k].vertScale.saveV();  // *flag -> legacy?
+    channel[k].horiScale.saveV(); 
+  
+  }
   
   connect          = new Button("connect",marg1-102,15,93,40,rgb[0],rgb[0],color(0));
   startStop        = new Button("start / stop",marg1+15,15,185,40,color(0,255,0),color(255,0,0),color(0));
@@ -168,19 +118,14 @@ void setup() {
   pulseWave        = new CheckBox("pulse", pnlWave.x+90, oWave.y+oWave.h+10, 15);  
   squareWave       = new CheckBox("square", sineWave.x, sineWave.y+20, 15);    
   sawtoothWave     = new CheckBox("sawtooth", pulseWave.x, pulseWave.y+20, 15);    
-
+  
+  pnlSamples       = new Panel("sampling", color(0,100, 255), display.x+785, display.y+display.h-85, 200, 85);
+  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 5.667e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
+  q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", samples, 100, 3000, dt.x+dt.w+5, dt.y, 60, 20);
+  
   wave.clicked = true;
   sineWave.clicked = true;
   startStop.clicked = true;
-
-// ---- sampling controls ---- //
-
-  pnlSamples       = new Panel("sampling", color(0,100, 255), display.x+785, display.y+display.h-85, 200, 85);
-  dt               = new Dial(scaleLog, changeRelease, nInt, fmt, "dt", "s", 22.6667e-6f, 10e-6f, 2f, pnlSamples.x+5, pnlSamples.y+20, 100, 20);
-  dtReal           = new FmtNum(0,nInt,fmt);
-  q                = new Dial(scaleLinear, changeRelease, nInt, !fmt, "q", "", samples, 100, 3000, dt.x+dt.w+5, dt.y, 60, 20);
-  tTotal           = new FmtNum(dt.v.getV()*q.v.getV(), !nInt);
-  tTotalReal       = new FmtNum(0,!nInt);
   
   cp5 = new ControlP5(this);
   font = createFont("Verdana", fntSize);
@@ -202,15 +147,13 @@ void setup() {
      .setColorCaptionLabel(color(0))
      .addItems(p);  
      
-  }
 }
+
 
 void draw() {
 
   background(110); 
   fill(244, 244, 244); 
-  
-  display.display();
   
   stroke(color(0)); strokeWeight(1.8); 
   rect(connect.x-250,15,249,40); 
@@ -220,7 +163,9 @@ void draw() {
   
   textSize(15); textAlign(RIGHT, CENTER);  
   text("RESET",resetAxes.x-10,resetAxes.y+resetAxes.h/2);
-
+  
+  display.display();
+  
   connect.display();
   startStop.display();
   slowRoll.display();
