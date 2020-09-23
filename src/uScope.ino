@@ -378,7 +378,7 @@ void dma_init() {
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
-  //digitalWrite(5, !digitalRead(5));
+  digitalWrite(5, !digitalRead(5));
 
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
