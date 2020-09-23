@@ -19,6 +19,7 @@ boolean fmt = true;          // fmt = true = "format", !fmt = false = "no format
 boolean stream = false;      // for startStop
 boolean connected = false;   // for CDC
 boolean selected = false;    // for port selection
+boolean OoR = false;
 
 byte numCh = 2;
 byte scaleLinear = 0;   
@@ -28,7 +29,7 @@ byte changeRelease = 3;    // value changed by "MouseReleased"
 
 int samples = 4000;        // host-side buffer size
 int sample_rate = 176400;  // unused for now, but to avoid "magic" numbers in setting up sampling / "show samples"
-int vTrigger = 308;        // *flag -> why initialized here?
+int vTrigger = 0;        // *flag -> why initialized here?
 int marg1, marg2;          // to adjust the position of objects
 int fntSize = 10;
 
@@ -95,7 +96,7 @@ void setup() {
   
   for (byte k=0; k<numCh; k++){ 
   
-    channel[k].vertScale.saveV();  // *flag -> legacy?
+    channel[k].vertScale.saveV();  // for reset axes
     channel[k].horiScale.saveV(); 
   
   }
@@ -113,7 +114,7 @@ void setup() {
   wave             = new CheckBox("output status", showSamples.x, pnlWave.y+25, 15);
   fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 1e3f, 200, 20e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
   aWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 3.3f, 100e-3f, 3.3f, pnlWave.x+10, fWave.y+fWave.h+3, pnlWave.w-20, 20);
-  oWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 1.65f, 300e-3f, 3f, pnlWave.x+10, aWave.y+aWave.h+3, pnlWave.w-20, 20); 
+  oWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 1.65f, 50e-3f, 3.25f, pnlWave.x+10, aWave.y+aWave.h+3, pnlWave.w-20, 20); 
   sineWave         = new CheckBox("sine", pnlWave.x+10, oWave.y+oWave.h+10, 15);  
   pulseWave        = new CheckBox("pulse", pnlWave.x+90, oWave.y+oWave.h+10, 15);  
   squareWave       = new CheckBox("square", sineWave.x, sineWave.y+20, 15);    
@@ -161,7 +162,14 @@ void draw() {
   textSize(24); fill(255); textAlign(LEFT, CENTER);
   text("μScope "+version, display.x, 30);
   
-  textSize(15); textAlign(RIGHT, CENTER);  
+  if (OoR){
+    
+    textSize(13); fill(rgb[0]); textAlign(LEFT, CENTER);
+    text("the output waveform is out of range!", display.x + 165, 35);  
+    
+  }
+  
+  textSize(15); fill(255); textAlign(RIGHT, CENTER);  
   text("RESET",resetAxes.x-10,resetAxes.y+resetAxes.h/2);
   
   display.display();
@@ -378,9 +386,36 @@ void mouseDragged() {
   oWave.mouseDragged();
 
   if(fWave.mouseDragged()){ myDevice.write("f"+nf(round(fWave.v.v))); }
-  if(aWave.mouseDragged()){ myDevice.write("a"+nf(round(aWave.v.v*1E3))); }
-  if(oWave.mouseDragged()){ myDevice.write("o"+nf(round(oWave.v.v*1E3))); }
-
+  
+  if(aWave.mouseDragged()){ 
+  
+    if (((oWave.v.v + aWave.v.v/2)>3.3) || ((oWave.v.v - aWave.v.v/2)<0.0)){
+    
+      OoR = true;
+    
+    }
+    else{ 
+     
+      myDevice.write("a"+nf(round(aWave.v.v*1E3))); 
+      OoR = false;
+      
+    }
+  }
+   
+  if(oWave.mouseDragged()){ 
+    
+    if (((oWave.v.v + aWave.v.v/2)>3.3) || ((oWave.v.v - aWave.v.v/2)<0.0)){
+      
+      OoR = true;
+    
+    }
+    else{ 
+    
+      myDevice.write("o"+nf(round(oWave.v.v*1E3))); 
+      OoR = false;
+    
+    }
+  }
 }
 
 void adjustFt() {

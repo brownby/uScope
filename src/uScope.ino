@@ -46,7 +46,7 @@ uint16_t adc_buffer2[NBEATS];
 uint16_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
-float amplitude = 510.0;
+float amplitude = 509.0;
 float frequency = 5.0;
 float freq_scalar = 1.0;
 float offset = 510.0;
@@ -378,7 +378,7 @@ void dma_init() {
 void DMAC_Handler() { 
 
   __disable_irq(); // disable interrupts
-  digitalWrite(5, !digitalRead(5));
+  //digitalWrite(5, !digitalRead(5));
 
   bufnum =  (uint8_t)(DMAC->INTPEND.reg & DMAC_INTPEND_ID_Msk); // grab active channel
   DMAC->CHID.reg = DMAC_CHID_ID(bufnum); // select active channel
@@ -1157,7 +1157,7 @@ void fngenerator(){
 
   int i; type waveform = sine;
   float phase = (2.0*3.14159*frequency)/(NPTS);
-  for (i=0;i<NPTS/freq_scalar;i++) waveout[i]= sinf(i*phase) * amplitude + amplitude + 2.0f;
+  for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + offset;
 
   while(true) {
 
@@ -1199,7 +1199,7 @@ void fngenerator(){
           control_str = "";
           for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
-          amplitude = map(control_str.toInt(),100,3300,15,510);
+          amplitude = map(control_str.toInt(),100,3300,15,509);
 
           // uart_puts("\nAmplitude: "); uart_put_hex(control_str.toInt());
           // uart_puts("\nAmplitude_map: "); uart_put_hex(amplitude);
@@ -1210,7 +1210,7 @@ void fngenerator(){
           control_str = "";
           for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
-          offset = map(control_str.toInt(),300,3000,15,900);
+          offset = map(control_str.toInt(),50,3250,16,1008);
 
           break;
 
@@ -1220,10 +1220,15 @@ void fngenerator(){
           for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
           frequency = map(control_str.toInt(),200,20000,1,100);
-          freq_scalar = map(control_str.toInt(),200,20000,1,20);
+          
+          //uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
 
-          // uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
-          // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
+          if (waveform != sine){
+            freq_scalar = map(control_str.toInt(),200,20000,4,500);
+            // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
+            // uart_puts("\nScalar_map: "); uart_put_hex(freq_scalar);
+          }
+          
           break;
 
         default:
@@ -1235,17 +1240,17 @@ void fngenerator(){
       switch(waveform){
 
         case 0:  // sine wave
-          for (i=0;i<NPTS/freq_scalar;i++) waveout[i]= sinf(i*phase) * amplitude + offset;
+          for (i=0;i<NPTS;i++) waveout[i]= sinf(i*phase) * amplitude + offset;
           break;
       
         case 1:  // pulse wave
-          for (i=0;i<NPTS/(20*freq_scalar);i++) waveout[i] = 2.0 * amplitude + offset;
-          for (i=NPTS/(20*freq_scalar);i<NPTS;i++) waveout[i] = 0.0f + offset;
+          for (i=0;i<NPTS/(10*freq_scalar);i++) waveout[i] = 2.0 * amplitude + offset;
+          for (i=NPTS/(10*freq_scalar);i<NPTS/freq_scalar;i++) waveout[i] = 0.0 + offset;
           break;
 
         case 2:  // square wave
-          for (i=0;i<NPTS/(2*freq_scalar);i++) waveout[i] = 2.0 * amplitude + offset;
-          for (i=NPTS/(2*freq_scalar);i<NPTS;i++) waveout[i] = 0.0f + offset;
+          for (i=0;i<(NPTS/2)*freq_scalar;i++) waveout[i] = 2.0 * amplitude + offset;
+          for (i=(NPTS/2)/freq_scalar;i<NPTS/freq_scalar;i++) waveout[i] = 0.0 + offset;
           break;
 
         case 3:  // sawtooth wave
@@ -1255,10 +1260,16 @@ void fngenerator(){
       }
     }
 
-    if(!mute) {
+    if(!mute && waveform == sine) {
+      for (int i = 0; i < NPTS; i++) { 
+          analogWrite(A0,waveout[i]);
+          //delayMicroseconds(1);
+      }
+    }
+    else if(!mute) {
       for (int i = 0; i < NPTS/freq_scalar; i++) { 
           analogWrite(A0,waveout[i]);
-          delayMicroseconds(1);
+          //delayMicroseconds(1);
       }
     }
   }
