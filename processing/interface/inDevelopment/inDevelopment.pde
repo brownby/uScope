@@ -385,7 +385,21 @@ void mouseDragged() {
   aWave.mouseDragged();
   oWave.mouseDragged();
 
-  if(fWave.mouseDragged()){ myDevice.write("f"+nf(round(fWave.v.v))); }
+  if(fWave.mouseDragged()){ 
+    
+      if (sawtoothWave.clicked == true && fWave.v.v > 6000){
+        
+        OoR = true;
+        
+      }
+      else{
+       
+        myDevice.write("f"+nf(round(fWave.v.v))); 
+        OoR = false;
+        
+      }
+    
+  }
   
   if(aWave.mouseDragged()){ 
   

@@ -1220,15 +1220,11 @@ void fngenerator(){
           for (int i = 0; i < 5; i++){ control_str += command[i+1]; }
 
           frequency = map(control_str.toInt(),200,20000,1,61);
+          freq_scalar = map(control_str.toInt(),200,20000,3,511);
           
-          //uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
-
-          //if (waveform != sine){
-            freq_scalar = map(control_str.toInt(),200,20000,3,511);
-            // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
-             uart_puts("\nScalar_map: "); uart_put_hex(freq_scalar);
-          //}
-          
+          // uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());            
+          // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
+          // uart_puts("\nScalar_map: "); uart_put_hex(freq_scalar);
           break;
 
         default:
@@ -1254,7 +1250,7 @@ void fngenerator(){
           break;
 
         case 3:  // sawtooth wave
-          for (i=0;i<NPTS/(2*freq_scalar);i++) waveout[i] = waveout[NPTS-1-i] = 4.0*amplitude*i/NPTS + offset;
+          for (i=0;i<NPTS;i++) waveout[i-1] = 2.0*amplitude*((NPTS/freq_scalar)-i)/(NPTS/freq_scalar) + offset - amplitude;
           break;
 
       }
