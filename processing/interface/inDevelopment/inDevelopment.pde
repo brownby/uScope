@@ -112,7 +112,7 @@ void setup() {
   
   pnlWave          = new Panel("Waveform Generator", color(168,52,235), marg1+15, display.y+display.h-170, 185, 170);   //display.x+785
   wave             = new CheckBox("output status", showSamples.x, pnlWave.y+25, 15);
-  fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 1e3f, 200, 20e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
+  fWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "Hz", 1e3f, 300, 20e3f, pnlWave.x+10, pnlWave.y+53, pnlWave.w-20, 20);
   aWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 3.3f, 100e-3f, 3.3f, pnlWave.x+10, fWave.y+fWave.h+3, pnlWave.w-20, 20);
   oWave            = new Dial(scaleLinear, changeMove, !nInt, fmt, "", "V", 1.65f, 50e-3f, 3.25f, pnlWave.x+10, aWave.y+aWave.h+3, pnlWave.w-20, 20); 
   sineWave         = new CheckBox("sine", pnlWave.x+10, oWave.y+oWave.h+10, 15);  

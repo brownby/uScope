@@ -48,7 +48,7 @@ uint16_t waveout[NPTS];       // buffer for waveform
 
 float amplitude = 509.0;
 float frequency = 5.0;
-float freq_scalar = 1.0;
+float freq_scalar = 22.0;
 float offset = 510.0;
 
 volatile bool mute = false;
@@ -1223,11 +1223,11 @@ void fngenerator(){
           
           //uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());
 
-          if (waveform != sine){
-            freq_scalar = map(control_str.toInt(),200,20000,4,500);
+          //if (waveform != sine){
+            freq_scalar = map(control_str.toInt(),200,20000,3,511);
             // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
-            // uart_puts("\nScalar_map: "); uart_put_hex(freq_scalar);
-          }
+             uart_puts("\nScalar_map: "); uart_put_hex(freq_scalar);
+          //}
           
           break;
 
@@ -1244,13 +1244,13 @@ void fngenerator(){
           break;
       
         case 1:  // pulse wave
-          for (i=0;i<NPTS/(10*freq_scalar);i++) waveout[i] = offset + amplitude;
-          for (i=NPTS/(10*freq_scalar);i<NPTS/freq_scalar;i++) waveout[i] = offset - amplitude;
+          for (i=0;i<1;i++) waveout[i] = offset + amplitude;
+          for (i=1;i<NPTS/freq_scalar;i++) waveout[i] = offset - amplitude;
           break;
 
         case 2:  // square wave
-          for (i=0;i<(NPTS/2)*freq_scalar;i++) waveout[i] = offset + amplitude;
-          for (i=(NPTS/2)/freq_scalar;i<NPTS/freq_scalar;i++) waveout[i] = offset - amplitude;
+          for (i=0;i<(NPTS/freq_scalar)/2;i++) { waveout[i] = offset + amplitude; }
+          for (i=(NPTS/freq_scalar)/2;i<NPTS/freq_scalar;i++) { waveout[i] = offset - amplitude; }
           break;
 
         case 3:  // sawtooth wave
@@ -1263,13 +1263,11 @@ void fngenerator(){
     if(!mute && waveform == sine) {
       for (int i = 0; i < NPTS; i++) { 
           analogWrite(A0,waveout[i]);
-          //delayMicroseconds(1);
       }
     }
     else if(!mute) {
       for (int i = 0; i < NPTS/freq_scalar; i++) { 
           analogWrite(A0,waveout[i]);
-          //delayMicroseconds(1);
       }
     }
   }
