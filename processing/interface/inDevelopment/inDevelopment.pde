@@ -218,70 +218,7 @@ void mouseClicked() {
       }
     }
   }
-  
-  if (wave.mouseClicked()){
-    
-    if (wave.clicked == true){ 
-      myDevice.write("x");
-      println("turning output on"); 
-    }
-    else{ 
-      myDevice.write("i");
-      println("turning output off"); 
-    }
-  }
-  
-  if (sineWave.mouseClicked()){
-  
-    sineWave.clicked = true;
-    pulseWave.clicked = false;
-    squareWave.clicked = false;
-    sawtoothWave.clicked = false;
-    
-    myDevice.write("0");
-    
-    println("sine wave selected");
-       
-  }
-   
-  if (pulseWave.mouseClicked()){
-  
-    sineWave.clicked = false;
-    pulseWave.clicked = true;
-    squareWave.clicked = false;
-    sawtoothWave.clicked = false;
-    
-    myDevice.write("1");
-       
-    println("pulse wave selected");   
-       
-  }
-  
-  if (squareWave.mouseClicked()){
-  
-    sineWave.clicked = false;
-    pulseWave.clicked = false;
-    squareWave.clicked = true;
-    sawtoothWave.clicked = false;
-    
-    myDevice.write("2");
-    
-    println("square wave selected");
-       
-  }
-  
-    if (sawtoothWave.mouseClicked()){
-  
-    sineWave.clicked = false;
-    pulseWave.clicked = false;
-    squareWave.clicked = false;
-    sawtoothWave.clicked = true;
-    
-    myDevice.write("3");
-    
-    println("sawtooth wave selected");
-       
-  }
+ 
  
   if (startStop.mouseClicked()) {
     
@@ -331,26 +268,96 @@ void mouseClicked() {
   }
 
   showSamples.mouseClicked();
-  calcFreq.mouseClicked();
+//  calcFreq.mouseClicked(); // *flag -> on hold until second beta
 
-  fWave.mouseClicked(); 
-  aWave.mouseClicked();
-  oWave.mouseClicked();
+  if (connected){
+    
+    if (wave.mouseClicked()){
+    
+      if (wave.clicked == true){ 
+        myDevice.write("x");
+        println("turning output on"); 
+      }
+      else{ 
+        myDevice.write("i");
+        println("turning output off"); 
+      }
+    }
   
+    if (sineWave.mouseClicked()){
+    
+      sineWave.clicked = true;
+      pulseWave.clicked = false;
+      squareWave.clicked = false;
+      sawtoothWave.clicked = false;
+      
+      myDevice.write("0");
+      
+      println("sine wave selected");
+         
+    }
+     
+    if (pulseWave.mouseClicked()){
+    
+      sineWave.clicked = false;
+      pulseWave.clicked = true;
+      squareWave.clicked = false;
+      sawtoothWave.clicked = false;
+      
+      myDevice.write("1");
+         
+      println("pulse wave selected");   
+         
+    }
+    
+    if (squareWave.mouseClicked()){
+    
+      sineWave.clicked = false;
+      pulseWave.clicked = false;
+      squareWave.clicked = true;
+      sawtoothWave.clicked = false;
+      
+      myDevice.write("2");
+      
+      println("square wave selected");
+         
+    }
+    
+    if (sawtoothWave.mouseClicked()){
+    
+      sineWave.clicked = false;
+      pulseWave.clicked = false;
+      squareWave.clicked = false;
+      sawtoothWave.clicked = true;
+      
+      myDevice.write("3");
+      
+      println("sawtooth wave selected");
+         
+    }
+
+    fWave.mouseClicked(); 
+    aWave.mouseClicked();
+    oWave.mouseClicked();
+  
+  }
 }
 
 void mousePressed() {
   
   for (int k=0; k<numCh; k++) { channel[k].mousePressed(); }
   
-  fWave.mousePressed();
-  aWave.mousePressed();
-  oWave.mousePressed();
-  
   connect.mousePressed();
   resetAxes.mousePressed();
   resetCursors.mousePressed();
   
+  if (connected){
+  
+    fWave.mousePressed();
+    aWave.mousePressed();
+    oWave.mousePressed();
+  
+  }
 }
 
 void mouseReleased() {
@@ -361,30 +368,40 @@ void mouseReleased() {
   resetAxes.mouseReleased();
   resetCursors.mouseReleased();
 
+  if (connected){
+
   fWave.mouseReleased();
   aWave.mouseReleased();
   oWave.mouseReleased();
   
+  }
 }
 
 void mouseMoved() {
   
   for (int k=0; k<numCh; k++) { channel[k].mouseMoveu(); } 
   
+  if (connected){
+  
   fWave.mouseMoveu();
   aWave.mouseMoveu();
   oWave.mouseMoveu();
-
+  
+  }
 }
 
 void mouseDragged() {
 
   for (int k=0; k<numCh; k++) { channel[k].mouseDragged(); }
 
-  fWave.mouseDragged();
-  aWave.mouseDragged();
-  oWave.mouseDragged();
+  if (connected){
+    
+    fWave.mouseDragged();
+    aWave.mouseDragged();
+    oWave.mouseDragged();
 
+  }
+  
   if(fWave.mouseDragged()){ 
     
       if (sawtoothWave.clicked == true && fWave.v.v > 6000){
