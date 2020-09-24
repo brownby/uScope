@@ -1,5 +1,5 @@
-#ifndef _UART_H_
-#define _UART_H_
+#ifndef _UART_U_H_
+#define _UART_U_H_
 
 #include "Arduino.h"
 #define freq_CPU 48000000    // CPU clock frequency

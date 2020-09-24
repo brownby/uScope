@@ -11,20 +11,6 @@
 
 static char ascii = '0';
 
-#define LIMIT(a, b)     (((a) > (b)) ? (b) : (a))
-#define USB_CMD(dir, rcpt, type, cmd) \
-    ((USB_##cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
-
-#define USB_AUDIO_CMD(dir, rcpt, type, cmd) \
-    ((cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
-
-#define USB_CDC_CMD(dir, rcpt, type, cmd) \
-    ((cmd << 8) | (USB_##dir##_TRANSFER << 7) | (USB_##type##_REQUEST << 5) | (USB_##rcpt##_RECIPIENT << 0))
-
-uint16_t adc_buffer0[NBEATS];  // buffer with length set by NBEATS
-uint16_t adc_buffer1[NBEATS];  // alternating buffer
-uint16_t adc_buffer2[NBEATS];
-uint16_t adc_buffer3[NBEATS];
 uint16_t waveout[NPTS];       // buffer for waveform
 
 float amplitude = 509.0;
@@ -50,11 +36,6 @@ bool cmd_recv = 0;
 bool RTS = false;
 bool DTR = false;
 
-static uint32_t adctobuf0 = 0;  // dma channel for adc to buf0
-static uint32_t adctobuf1 = 1;  // dma channel for adc to buf1
-static uint32_t adctobuf2 = 2;  // dma channel for adc to buf2
-static uint32_t adctobuf3 = 3;  // dma channel for adc to buf3
-
 static int usb_config;
 
 char *usb_strings[100] = {"", "Arduino + Harvard","uScope by Active Learning","-uScope-","Isochronous Audio","uScope Instrumentation"};
@@ -64,14 +45,6 @@ uint8_t usb_string_descriptor_buffer[64] __attribute__ ((aligned (4)));
 volatile uint8_t bufnum  = 0;  // track which buffer to write to, while USB reads
 
 enum type {sine, pulse, square, sawtooth}; // supported waveform types
-
-typedef struct __attribute__((packed)){
-  uint16_t BTCTRL;   // block transfer control
-  uint16_t BTCNT;    // block transfer count
-  uint32_t SRCADDR;  // source address
-  uint32_t DSTADDR;  // destination address
-  uint32_t DESCADDR; // next descriptor address
-} dmacdescriptor;
 
 typedef struct __attribute__((packed)) {
   uint8_t   bmRequestType;
@@ -98,142 +71,10 @@ static usb_cdc_line_coding_t usb_cdc_line_coding =
   .bDataBits   = 8, // 8 data bits
 };
 
-volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16)));        // write-back descriptor
-dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
-dmacdescriptor descriptor __attribute__ ((aligned (16)));
-UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
 uint8_t interface_num = 0;
 uint8_t alt_setting = 0;
 
 usb_interface_status_t audio_stream_interface;
-
-void adc_to_sram_dma() { 
-  
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0);  // select adc channel, 0
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
-  
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
-  
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf1]; 
-  descriptor.SRCADDR =  (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR =  (uint32_t) adc_buffer0 + 2*NBEATS; // end of target address
-  descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
-  descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
-  descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
-  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
-  descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
-  descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
-
-  memcpy(&descriptor_section[adctobuf0], &descriptor, sizeof(dmacdescriptor));
-
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf1); // select adc channel, 1
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
-  
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
-  
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf2]; 
-  descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer1 + 2*NBEATS; // end of target address
-  descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
-  descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
-  descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
-  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
-  descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
-  descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
-
-  memcpy(&descriptor_section[adctobuf1], &descriptor, sizeof(dmacdescriptor));
-
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf2); // select adc channel, 2
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
-  
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
-  
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf3]; 
-  descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer2 + 2*NBEATS; // end of target address
-  descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
-  descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
-  descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
-  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
-  descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
-  descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
-
-  memcpy(&descriptor_section[adctobuf2], &descriptor, sizeof(dmacdescriptor));
-
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf3); // select adc channel, 1
-  DMAC->CHCTRLA.reg &= ~DMAC_CHCTRLA_ENABLE; // disable channel before configuration
-  
-  DMAC->CHCTRLA.reg = DMAC_CHCTRLA_SWRST; // soft reset
-  while(DMAC->CHCTRLA.reg & DMAC_CHCTRLA_SWRST); // wait until reset
-  
-  DMAC->CHCTRLB.bit.LVL = 0x03; // priority for the channel
-  DMAC->CHCTRLB.bit.TRIGSRC = 0x27; // 0x27 for ADC result ready
-  DMAC->CHCTRLB.bit.TRIGACT = 0x02; // 02 = beat, 03 = transaction, or 00 = block
-  DMAC->CHINTENSET.bit.TCMPL = 1;
-  
-  descriptor.DESCADDR = 0; //(uint32_t) &descriptor_section[adctobuf0]; 
-  descriptor.SRCADDR = (uint32_t) &ADC->RESULT.reg; 
-  descriptor.DSTADDR = (uint32_t) adc_buffer3 + 2*NBEATS; // end of target address
-  descriptor.BTCNT = NBEATS;
-  descriptor.BTCTRL |= DMAC_BTCTRL_STEPSIZE(0x0); // doesn't matter as long as DSTINC=1, SRCINC = 0, and STEPSEL = 1
-  descriptor.BTCTRL |= DMAC_BTCTRL_STEPSEL; // apply step size settings to source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_DSTINC; // increment destination address
-  descriptor.BTCTRL &= ~DMAC_BTCTRL_SRCINC; // do not increment source address
-  descriptor.BTCTRL |= DMAC_BTCTRL_BEATSIZE(0x1); // beat size is 2 bytes
-  descriptor.BTCTRL |= DMAC_BTCTRL_BLOCKACT(0x0); // disable channel after last block transfer
-  descriptor.BTCTRL |= DMAC_BTCTRL_EVOSEL(0x0); // disable event outputs
-  descriptor.BTCTRL |= DMAC_BTCTRL_VALID; // set descriptor valid
-
-  memcpy(&descriptor_section[adctobuf3], &descriptor, sizeof(dmacdescriptor));
-
-}
-  
-void start_adc_sram_dma() {
-
-  DMAC->CHID.reg = DMAC_CHID_ID(adctobuf0); // select channel
-  DMAC->CHCTRLA.reg |= DMAC_CHCTRLA_ENABLE; // enable
-}
-
-void dma_init() {
-
-  PM->AHBMASK.reg |= PM_AHBMASK_DMAC; // enable AHB clock
-  PM->APBBMASK.reg |= PM_APBBMASK_DMAC; // enable APBB clock
-
-  NVIC_SetPriority(DMAC_IRQn, 0x00); // top priority
-  NVIC_EnableIRQ(DMAC_IRQn); // enable interrupts, will trigger DMAC_Handler
-
-  DMAC->BASEADDR.reg = (uint32_t)descriptor_section; // where to find descriptor
-  DMAC->WRBADDR.reg = (uint32_t)wrb; // holds descriptor if interrupted 
-  DMAC->CTRL.reg = DMAC_CTRL_DMAENABLE | DMAC_CTRL_LVLEN(0xf); // enable DMA, priority level
-
-}
 
 void DMAC_Handler() { 
 
@@ -271,55 +112,6 @@ void DMAC_Handler() {
   }
 
   __enable_irq();
-}
-
-void usb_init() {
-
-  // reset and wait for reset to complete
-  // Arduino core enables SOF interrupts by default, causing ISR to be entered a lot
-
-  USB->DEVICE.CTRLA.bit.SWRST = 1;
-  while(USB->DEVICE.SYNCBUSY.bit.SWRST);
-
-  memset((uint8_t *)EP, 0, sizeof(EP));
-  USB->DEVICE.DESCADD.reg = (uint32_t)EP;
-
-  // pad calibration, copied from SAMD21_USBDevice.h
-
-  uint32_t *pad_transn_p = (uint32_t *) USB_FUSES_TRANSN_ADDR;
-  uint32_t *pad_transp_p = (uint32_t *) USB_FUSES_TRANSP_ADDR;
-  uint32_t *pad_trim_p   = (uint32_t *) USB_FUSES_TRIM_ADDR;
-
-  uint32_t pad_transn = (*pad_transn_p & USB_FUSES_TRANSN_Msk) >> USB_FUSES_TRANSN_Pos;
-  uint32_t pad_transp = (*pad_transp_p & USB_FUSES_TRANSP_Msk) >> USB_FUSES_TRANSP_Pos;
-  uint32_t pad_trim   = (*pad_trim_p   & USB_FUSES_TRIM_Msk  ) >> USB_FUSES_TRIM_Pos;
-
-  if (pad_transn == 0x1F)  // maximum value (31)
-    pad_transn = 5;
-  if (pad_transp == 0x1F)  // maximum value (31)
-    pad_transp = 29;
-  if (pad_trim == 0x7)     // maximum value (7)
-    pad_trim = 3;
-
-  USB->DEVICE.PADCAL.bit.TRANSN = pad_transn;
-  USB->DEVICE.PADCAL.bit.TRANSP = pad_transp;
-  USB->DEVICE.PADCAL.bit.TRIM   = pad_trim;
-  
-  USB->DEVICE.CTRLA.bit.MODE = USB_CTRLA_MODE_DEVICE_Val;
-  USB->DEVICE.CTRLA.bit.RUNSTDBY = 1;
-  USB->DEVICE.CTRLB.bit.SPDCONF = USB_DEVICE_CTRLB_SPDCONF_FS_Val;
-  USB->DEVICE.CTRLB.bit.DETACH = 0;
-  
-  USB->DEVICE.INTENSET.reg = USB_DEVICE_INTENSET_EORST;  
-  // USB->DEVICE.DeviceEndpoint[CONTROL_ENDPOINT].EPINTENSET.bit.RXSTP = 1; // do this upon reset in handlerf
-  
-  USB->DEVICE.CTRLA.reg |= USB_CTRLA_ENABLE;
-
-  audio_stream_interface.interface_num = 1;
-  
-  NVIC_SetPriority(USB_IRQn, 0x01); // second priority
-  NVIC_EnableIRQ(USB_IRQn); // will trigger USB_Handler
-
 }
 
 void USB_Handler(){

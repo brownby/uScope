@@ -10,6 +10,8 @@
 #include "usb_enums.h"
 #include "uart_u.h"
 #include "adc.h"
+#include "dmac_u.h"
+#include "usb_u.h"
 
 #define NBEATS 232        // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1022           // number of points within waveform definition
@@ -20,5 +22,11 @@
 #define CDC_ENDPOINT_COMM 3
 #define CDC_ENDPOINT_IN   4
 #define CDC_ENDPOINT_OUT  5
+
+void adc_to_sram_dma();
+
+void DMAC_Handler();
+
+void USB_Handler();
 
 #endif
