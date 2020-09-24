@@ -1033,5 +1033,7 @@ void uScope_init() {
 
   uart_puts("\nStarting...");
 
+  audio_stream_interface.interface_num = 1;
+
   __enable_irq();
 }
