@@ -11,10 +11,9 @@ typedef struct __attribute__((packed)){
   uint32_t DESCADDR; // next descriptor address
 } dmacdescriptor;
 
-
-volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16)));        // write-back descriptor
-dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
-dmacdescriptor descriptor __attribute__ ((aligned (16)));
+extern volatile dmacdescriptor wrb[12] __attribute__ ((aligned (16)));        // write-back descriptor
+extern dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
+extern dmacdescriptor descriptor __attribute__ ((aligned (16)));
 
 void start_adc_sram_dma();
 

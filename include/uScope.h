@@ -23,10 +23,14 @@
 #define CDC_ENDPOINT_IN   4
 #define CDC_ENDPOINT_OUT  5
 
+enum type {sine, pulse, square, sawtooth}; // supported waveform types
+
 void adc_to_sram_dma();
 
 void DMAC_Handler();
 
 void USB_Handler();
+
+void fngenerator();
 
 #endif
