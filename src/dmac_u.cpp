@@ -1,5 +1,7 @@
 #include "dmac_u.h"
 
+volatile dmacdescriptor wrb[12] __attribute__ ((aligned(16)));
+
 void start_adc_sram_dma() {
 
   DMAC->CHID.reg = DMAC_CHID_ID(0); // select channel

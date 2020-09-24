@@ -33,4 +33,6 @@ void USB_Handler();
 
 void fngenerator();
 
+void uScope_init();
+
 #endif

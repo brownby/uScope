@@ -9,6 +9,8 @@ uint16_t adc_buffer0[NBEATS];  // buffer with length set by NBEATS
 uint16_t adc_buffer1[NBEATS];  // alternating buffer
 uint16_t adc_buffer2[NBEATS];
 uint16_t adc_buffer3[NBEATS];
+dmacdescriptor descriptor_section[12] __attribute__ ((aligned (16)));  // channel descriptors
+dmacdescriptor descriptor __attribute__ ((aligned (16)));
 
 // Function generator variables
 float amplitude = 509.0;
@@ -41,6 +43,7 @@ static usb_cdc_line_coding_t usb_cdc_line_coding =
 uint8_t interface_num = 0;
 uint8_t alt_setting = 0;
 usb_interface_status_t audio_stream_interface;
+UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned(4)));
 
 volatile uint8_t bufnum  = 0;  // track which buffer to write to, while USB reads
 
@@ -1003,4 +1006,32 @@ void fngenerator(){
       }
     }
   }
+}
+
+void uScope_init() {
+    
+  __disable_irq();
+
+  uart_init();
+  delay(100);
+  uart_puts("\nInitializing...");
+  
+  analogWriteResolution(10);
+
+  adc_init();
+  dma_init(); 
+  usb_init();
+
+  pinMode(LED_BUILTIN,OUTPUT);
+  digitalWrite(LED_BUILTIN,HIGH);
+
+  pinMode(5, OUTPUT);
+  digitalWrite(5, LOW);
+  
+  adc_to_sram_dma();
+  start_adc_sram_dma(); 
+
+  uart_puts("\nStarting...");
+
+  __enable_irq();
 }

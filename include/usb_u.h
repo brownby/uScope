@@ -30,7 +30,7 @@ typedef struct {
     UsbDeviceDescBank DeviceDescBank[2]; 
 } UsbdDescriptor;
 
-UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
+extern UsbDeviceDescriptor EP[USB_EPT_NUM] __attribute__ ((aligned (4)));
 
 void usb_init();
 
