@@ -9,7 +9,7 @@
 #include "usb_descriptors.h"
 #include "usb_enums.h"
 #include "uart_u.h"
-#include "adc.h"
+#include "adc_u.h"
 #include "dmac_u.h"
 #include "usb_u.h"
 

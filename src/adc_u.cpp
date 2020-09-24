@@ -1,4 +1,4 @@
-#include "adc.h"
+#include "adc_u.h"
 
 void adc_init() {
 

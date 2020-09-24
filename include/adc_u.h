@@ -1,5 +1,5 @@
-#ifndef _ADC_H_
-#define _ADC_H_
+#ifndef _ADC_U_H_
+#define _ADC_U_H_
 
 #include "Arduino.h"
 #include "wiring_private.h"
