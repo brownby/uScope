@@ -9,8 +9,8 @@
 #include "usb_descriptors.h"
 #include "usb_enums.h"
 #include "uart_u.h"
+#include "adc.h"
 
-#define ADCPIN A6           // selected arbitrarily, consider moving away from DAC / A0
 #define NBEATS 232        // number of beats for adc transfer, MUST be < 512 (?)
 #define NPTS 1022           // number of points within waveform definition
 
