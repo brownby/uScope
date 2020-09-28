@@ -17,7 +17,7 @@ import java.io.InputStream;
 import java.io.OutputStream; 
 import java.io.IOException; 
 
-public class inDevelopment extends PApplet {
+public class uInterface extends PApplet {
 
 /*
  * Harvard University, Active Learning Labs
@@ -1639,7 +1639,7 @@ class Panel {
 }
   public void settings() {  size(1040, 635); }
   static public void main(String[] passedArgs) {
-    String[] appletArgs = new String[] { "inDevelopment" };
+    String[] appletArgs = new String[] { "uInterface" };
     if (passedArgs != null) {
       PApplet.main(concat(appletArgs, passedArgs));
     } else {
