@@ -4,7 +4,7 @@
  * Code for graphical interface
  * 
  * J. Evan Smith, Ben Y. Brown, modified from work by Rogerio Bego
- * Last revised: 23 September 2020
+ * Last revised: 11 October 2020
  *
  * https://github.com/brownby/uScope/
  */
