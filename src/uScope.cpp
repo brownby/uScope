@@ -16,6 +16,7 @@ dmacdescriptor descriptor __attribute__ ((aligned (16)));
 float amplitude = 509.0;
 float frequency = 5.0;
 float freq_scalar = 22.0;
+float freq_scalar_old = freq_scalar;
 float offset = 510.0;
 char incoming_string[255] = {0}; // up to 255 character long strings
 String control_str = "";  // range up to 99,999 
@@ -913,14 +914,17 @@ void fngenerator(){
       
         case '1':  
           waveform = pulse;
+          freq_scalar = freq_scalar_old;
           break;
 
         case '2':  
           waveform = square;
+          freq_scalar = freq_scalar_old;
           break;
 
         case '3': 
           waveform = sawtooth;
+          freq_scalar = freq_scalar_old;
           break;
 
         case 'x':
@@ -960,6 +964,7 @@ void fngenerator(){
 
           frequency = map(control_str.toInt(),200,20000,1,61);
           freq_scalar = map(control_str.toInt(),200,20000,3,511);
+          freq_scalar_old = freq_scalar;
           
           // uart_puts("\nFrequency: "); uart_put_hex(control_str.toInt());            
           // uart_puts("\nFrequency_map: "); uart_put_hex(frequency);
