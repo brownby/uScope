@@ -217,6 +217,10 @@ class Channel {
         if (showSamples.clicked){ stroke(255); strokeWeight(4); point(px,py); strokeWeight(2); stroke(nRGB); }
       }
       endShape();
+      if (nTrigger.clicked){
+        startStop.clicked = true;
+        stream = false;
+      }
     }
     else if (enable_latch == false){
       

@@ -59,7 +59,7 @@ Button    resetCursors;
 
 CheckBox  showSamples; 
 CheckBox  calcFreq;      // detect frequency via interpeak spacing
-CheckBox  slowRoll;
+CheckBox  nTrigger;
 
 Panel     pnlSamples;    // panel for sampling controls -> not displayed (!)
 Dial      dt;            // delta t (time of each reading), fixed in setup()
@@ -106,9 +106,9 @@ void setup() {
   resetAxes        = new Button("axes",marg1+70,channel[1].y+channel[1].h+17,45,20);
   resetCursors     = new Button("cursors",resetAxes.x+resetAxes.w,channel[1].y+channel[1].h+17,60,20);
   
-  slowRoll         = new CheckBox("slow roll", marg1+25, channel[1].y+channel[1].h+55, 15);
-  showSamples      = new CheckBox("show samples", slowRoll.x, slowRoll.y+slowRoll.h+5, 15);
-  calcFreq         = new CheckBox("detect frequency", slowRoll.x, showSamples.y+showSamples.h+5, 15);
+  nTrigger         = new CheckBox("normal trigger", marg1+25, channel[1].y+channel[1].h+55, 15);
+  showSamples      = new CheckBox("show samples", nTrigger.x, nTrigger.y+nTrigger.h+5, 15);
+  calcFreq         = new CheckBox("detect frequency", nTrigger.x, showSamples.y+showSamples.h+5, 15);
   
   pnlWave          = new Panel("Waveform Generator", color(168,52,235), marg1+15, display.y+display.h-170, 185, 170);   //display.x+785
   wave             = new CheckBox("output status", showSamples.x, pnlWave.y+25, 15);
@@ -176,7 +176,7 @@ void draw() {
   
   connect.display();
   startStop.display();
-  slowRoll.display();
+  nTrigger.display();
   resetAxes.display();
   resetCursors.display();
   showSamples.display();
@@ -223,6 +223,9 @@ void mouseClicked() {
   if (startStop.mouseClicked()) {
     
       stream = !stream; 
+      nTrigger.clicked = false; 
+      //channel[0].enable_latch = false;
+      //channel[1].enable_latch = false;
       if (stream == false){ println("stop"); }
       else { println("start"); }
       
@@ -268,6 +271,7 @@ void mouseClicked() {
   }
 
   showSamples.mouseClicked();
+  nTrigger.mouseClicked();
 //  calcFreq.mouseClicked(); // *flag -> on hold until second beta
 
   if (connected){
